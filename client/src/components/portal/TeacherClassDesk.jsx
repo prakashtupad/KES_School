@@ -534,8 +534,15 @@ export default function TeacherClassDesk() {
               ) : (
                 <div className="max-h-80 overflow-y-auto divide-y divide-slate-200 border border-slate-200 rounded-xl">
                   {classStudents.map((st) => {
+                    const parentPhone =
+                      st.whatsappNumber ||
+                      st.primaryPhone ||
+                      st.father?.mobile ||
+                      st.father?.mobileNumber ||
+                      '';
+                    const parentName = st.father?.name || st.fatherName || 'Parent';
                     const directUrl = getDirectParentWhatsAppUrl(
-                      st.whatsappNumber || st.primaryPhone,
+                      parentPhone,
                       broadcastHomework,
                       st.studentName
                     );
@@ -553,11 +560,11 @@ export default function TeacherClassDesk() {
                             </span>
                           </div>
                           <div className="text-[11px] text-slate-600 flex items-center gap-2 mt-0.5">
-                            <span>Parent: {st.fatherName}</span>
+                            <span>Parent: {parentName}</span>
                             <span>•</span>
                             <span className="font-mono inline-flex items-center gap-1">
                               <Phone className="w-3 h-3 text-brand-gold" />
-                              +91 {st.primaryPhone}
+                              +91 {parentPhone}
                             </span>
                           </div>
                         </div>

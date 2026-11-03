@@ -353,7 +353,7 @@ router.get('/overview', async (req, res) => {
         Enquiry.countDocuments(),
         Enquiry.countDocuments({ status: 'new' }),
         Enquiry.countDocuments({ status: 'visit_scheduled' }),
-        Student.countDocuments({ status: 'Active' }),
+        Student.countDocuments({ status: { $in: ['Active', 'Enrolled'] } }),
         User.countDocuments(),
         Homework.countDocuments(),
         Notice.countDocuments({ isActive: true }),
@@ -379,7 +379,9 @@ router.get('/overview', async (req, res) => {
         totalEnquiries: memoryStore.enquiries.length,
         newEnquiries: memoryStore.enquiries.filter((e) => e.status === 'new').length,
         visitScheduled: memoryStore.enquiries.filter((e) => e.status === 'visit_scheduled').length,
-        studentCount: (memoryStore.students || []).filter((s) => s.status === 'Active').length,
+        studentCount: (memoryStore.students || []).filter(
+          (s) => s.status === 'Active' || s.status === 'Enrolled'
+        ).length,
         staffCount: memoryStore.users.length,
         homeworkCount: memoryStore.homework.length,
         noticesCount: memoryStore.notices.length,
