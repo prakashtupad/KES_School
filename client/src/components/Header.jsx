@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Lock } from 'lucide-react';
 import { SCHOOL_INFO } from '../constants/schoolData';
 
 const NAV_ITEMS = [
@@ -99,6 +101,14 @@ export default function Header() {
               <path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z" />
             </svg>
           </a>
+          <Link
+            to="/portal/login"
+            title="Staff & Teacher Portal Login"
+            className="whitespace-nowrap inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:text-brand-navy hover:border-brand-gold/50 hover:bg-slate-50 transition flex-shrink-0"
+          >
+            <Lock className="w-3.5 h-3.5 text-brand-gold" />
+            <span>Staff Portal</span>
+          </Link>
           <a
             href="#enquiry"
             className="whitespace-nowrap bg-brand-navy hover:bg-brand-navyDark text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm border border-brand-gold/40 hover:border-brand-gold transition duration-150 inline-flex items-center gap-2"
@@ -191,6 +201,14 @@ export default function Header() {
             ))}
           </nav>
           <div className="pt-3 space-y-2">
+            <Link
+              to="/portal/login"
+              onClick={handleCloseMenu}
+              className="w-full text-center bg-slate-100 hover:bg-slate-200 text-brand-navy font-semibold py-2 px-4 rounded-md border border-slate-200 flex items-center justify-center gap-2 text-sm"
+            >
+              <Lock className="w-4 h-4 text-brand-gold" />
+              <span>Staff &amp; Teacher Portal</span>
+            </Link>
             <a
               href="#enquiry"
               onClick={handleCloseMenu}

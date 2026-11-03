@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { SCHOOL_INFO } from '../constants/schoolData';
 
 export default function Footer() {
@@ -72,6 +73,14 @@ export default function Footer() {
                 <a href="#contact" className="hover:text-brand-gold transition">
                   Contact Us
                 </a>
+              </li>
+              <li className="pt-1">
+                <Link
+                  to="/portal/login"
+                  className="inline-flex items-center gap-1.5 text-brand-goldSoft hover:text-brand-gold font-semibold transition"
+                >
+                  <span>🔒 Staff &amp; Teacher Portal</span>
+                </Link>
               </li>
             </ul>
           </div>
@@ -158,7 +167,13 @@ export default function Footer() {
             Siddharoodha English Medium School, Khanatti ({SCHOOL_INFO.registrationNo}). All rights
             reserved.
           </div>
-          <div>Official School Portal • Knowledge • Values • Excellence</div>
+          <div className="flex items-center gap-3">
+            <span>Official School Portal • Knowledge • Values • Excellence</span>
+            <span className="text-slate-600">•</span>
+            <Link to="/portal/login" className="text-slate-400 hover:text-brand-gold transition underline underline-offset-2">
+              Staff Login
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

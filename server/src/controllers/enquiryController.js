@@ -2,9 +2,7 @@ const mongoose = require('mongoose');
 const Enquiry = require('../models/Enquiry');
 const { getDbStatus } = require('../config/db');
 const { sendEnquiryNotification } = require('../services/mailService');
-
-// Resilient in-memory fallback list used only when local MongoDB is offline during dev preview
-const fallbackEnquiries = [];
+const memoryStore = require('../utils/memoryStore');
 
 const VALID_CLASSES = [
   'Nursery / LKG / UKG',
@@ -147,7 +145,7 @@ exports.createEnquiry = async (req, res) => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      fallbackEnquiries.unshift(savedEnquiry);
+      memoryStore.enquiries.unshift(savedEnquiry);
       console.warn(
         `[EnquiryController] MongoDB offline; stored enquiry ${referenceId} in resilient memory store.`
       );

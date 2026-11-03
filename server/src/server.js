@@ -5,6 +5,10 @@ const helmet = require('helmet');
 const { connectDB, getDbStatus } = require('./config/db');
 const enquiryRoutes = require('./routes/enquiryRoutes');
 const noticeRoutes = require('./routes/noticeRoutes');
+const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const teacherRoutes = require('./routes/teacherRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,7 +23,7 @@ app.use(
     origin: process.env.CLIENT_ORIGIN
       ? [process.env.CLIENT_ORIGIN, 'http://localhost:5173', 'http://127.0.0.1:5173']
       : '*',
-    methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
@@ -37,9 +41,13 @@ app.get('/api/v1/health', (req, res) => {
   });
 });
 
-// API v1 Routes
+// Public & Portal API v1 Routes
 app.use('/api/v1/enquiries', enquiryRoutes);
 app.use('/api/v1/notices', noticeRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/teacher', teacherRoutes);
+app.use('/api/v1/attendance', attendanceRoutes);
 
 // 404 Handler for unknown API routes
 app.use('/api/*', (req, res) => {

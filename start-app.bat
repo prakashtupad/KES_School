@@ -42,13 +42,13 @@ if not exist "client\node_modules" (
 
 echo.
 echo [3/4] Starting Backend API Server on http://localhost:5000 ...
-start "KES School - Backend API (Port 5000)" cmd /k "set PATH=C:\Program Files\nodejs;%PATH% && cd /d "%~dp0server" && npm run dev"
+start "KES School - Backend API (Port 5000)" /D "%~dp0server" cmd /k "set PATH=C:\Program Files\nodejs;%PATH%&& node src/server.js"
 
 REM Wait briefly for backend to initialize
 ping 127.0.0.1 -n 3 >nul
 
 echo [4/4] Starting Frontend Vite Server on http://localhost:5173 ...
-start "KES School - Frontend Client (Port 5173)" cmd /k "set PATH=C:\Program Files\nodejs;%PATH% && cd /d "%~dp0client" && npm run dev"
+start "KES School - Frontend Client (Port 5173)" /D "%~dp0client" cmd /k "set PATH=C:\Program Files\nodejs;%PATH%&& node node_modules/vite/bin/vite.js --port 5173 --host"
 
 ping 127.0.0.1 -n 3 >nul
 echo.
