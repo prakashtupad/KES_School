@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function NoticePublisher() {
   const { user, token } = useAuth();
-  const canPublish = user?.role === 'super_admin' || user?.role === 'admin';
+  const canPublish = user?.role === 'admin';
 
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);

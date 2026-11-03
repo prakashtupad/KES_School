@@ -40,41 +40,41 @@ export default function OverviewDashboard() {
 
   const cards = [
     {
-      label: 'Total Admission Enquiries',
+      label: 'Enquiries',
       value: stats.totalEnquiries,
-      sub: `${stats.newEnquiries} new awaiting call`,
+      sub: `${stats.newEnquiries} new leads`,
       icon: ClipboardList,
       to: '/portal/admin',
       color: 'bg-brand-navy text-white',
     },
     {
-      label: 'Enrolled Student Directory',
+      label: 'Enrolled Students',
       value: stats.studentCount ?? 0,
-      sub: 'Admitted students & WhatsApp connect',
+      sub: 'Student directory',
       icon: GraduationCap,
       to: '/portal/students',
       color: 'bg-white text-brand-navy border border-slate-200',
     },
     {
-      label: 'Scheduled Campus Visits',
+      label: 'Campus Visits',
       value: stats.visitScheduled,
-      sub: 'Prospective parents visiting Khanatti',
+      sub: 'Scheduled visits',
       icon: CalendarCheck,
       to: '/portal/admin',
       color: 'bg-white text-brand-navy border border-slate-200',
     },
     {
-      label: 'Authorized Staff & Faculty',
+      label: 'Staff & Faculty',
       value: stats.staffCount,
-      sub: 'Office Admin & Faculty Teachers',
+      sub: 'Active accounts',
       icon: Users,
       to: '/portal/staff',
       color: 'bg-white text-brand-navy border border-slate-200',
     },
     {
-      label: 'Published Homework Tasks',
+      label: 'Homework & Notices',
       value: stats.homeworkCount,
-      sub: `${stats.noticesCount} active school notices`,
+      sub: `${stats.noticesCount} active notices`,
       icon: BookOpen,
       to: '/portal/teacher',
       color: 'bg-white text-brand-navy border border-slate-200',
@@ -82,47 +82,49 @@ export default function OverviewDashboard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-brand-navy to-brand-navyDark text-white rounded-2xl p-6 sm:p-8 shadow-md border border-brand-gold/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="bg-gradient-to-r from-brand-navy to-brand-navyDark text-white rounded-2xl p-4 sm:p-6 shadow-md border border-brand-gold/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-brand-gold/20 border border-brand-gold/40 text-brand-goldSoft text-xs font-bold uppercase tracking-wider mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-brand-gold" />
-            Institutional Governance Overview
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-brand-gold/20 border border-brand-gold/40 text-brand-goldSoft text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1.5">
+            <Sparkles className="w-3 h-3 text-brand-gold" />
+            School Overview
           </span>
-          <h2 className="text-2xl sm:text-3xl font-serif font-bold">
+          <h2 className="text-lg sm:text-2xl font-serif font-bold">
             Welcome, {user?.fullName}
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1">
-            {SCHOOL_INFO.societyName} {SCHOOL_INFO.schoolName} ({SCHOOL_INFO.registrationNo})
+          <p className="text-xs text-slate-300 mt-0.5">
+            {SCHOOL_INFO.schoolName} ({SCHOOL_INFO.registrationNo})
           </p>
         </div>
 
         <Link
           to="/portal/admin"
-          className="bg-brand-gold hover:bg-brand-goldLight text-brand-navyDark font-bold px-5 py-2.5 rounded-lg shadow transition text-xs sm:text-sm whitespace-nowrap"
+          className="bg-brand-gold hover:bg-brand-goldLight text-brand-navyDark font-bold px-4 py-2 rounded-lg shadow transition text-xs whitespace-nowrap"
         >
-          Open Admissions Desk →
+          Admissions Desk →
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {cards.map((card) => {
           const IconComponent = card.icon;
           return (
             <Link
               key={card.label}
               to={card.to}
-              className={`rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between ${card.color}`}
+              className={`rounded-xl p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between ${card.color}`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold uppercase tracking-wider opacity-80">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider opacity-80 truncate">
                   {card.label}
                 </span>
-                <IconComponent className="w-5 h-5 text-brand-gold" />
+                <IconComponent className="w-4 h-4 text-brand-gold flex-shrink-0" />
               </div>
               <div>
-                <div className="text-3xl font-serif font-bold">{card.value}</div>
-                <div className="text-xs opacity-75 mt-1">{card.sub}</div>
+                <div className="text-2xl sm:text-3xl font-serif font-bold leading-none">
+                  {card.value}
+                </div>
+                <div className="text-[11px] opacity-75 mt-1 truncate">{card.sub}</div>
               </div>
             </Link>
           );

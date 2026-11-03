@@ -242,34 +242,34 @@ export default function StaffTimesheetDesk() {
   const hasClockedOut = Boolean(todayRecord?.checkOutTime);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header Banner */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <span className="inline-block px-2.5 py-0.5 rounded bg-brand-goldSoft text-brand-gold font-bold text-[11px] uppercase tracking-wider mb-1">
-            Staff Self-Service Timesheet
+          <span className="inline-block px-2 py-0.5 rounded bg-brand-goldSoft text-brand-gold font-bold text-[10px] uppercase tracking-wider mb-0.5">
+            Staff Timesheet
           </span>
-          <h2 className="text-xl sm:text-2xl font-serif font-bold text-brand-navy">
-            Daily Punch Clock &amp; Teaching Log
+          <h2 className="text-lg sm:text-xl font-serif font-bold text-brand-navy">
+            Daily Punch Clock &amp; Log
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-            Record your daily school check-in, check-out, periods covered, and classroom summary.
+          <p className="text-xs text-slate-600 mt-0.5">
+            Record daily check-in, check-out, and periods taught.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 self-start sm:self-center">
-          <div className="text-right">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Reporting Time Rule
+        <div className="flex items-center justify-between sm:justify-end gap-3">
+          <div className="text-left sm:text-right">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              Reporting Time
             </div>
             <div className="text-xs font-bold text-brand-navy">
-              Before 09:15 AM (IST)
+              Before 09:15 AM
             </div>
           </div>
           <button
             type="button"
             onClick={fetchAttendanceData}
-            className="p-2.5 rounded-lg border border-slate-200 text-slate-600 hover:text-brand-navy hover:bg-slate-50 transition"
+            className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:text-brand-navy hover:bg-slate-50 transition"
             title="Refresh attendance log"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -524,76 +524,73 @@ export default function StaffTimesheetDesk() {
       </div>
 
       {/* Monthly Counter Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 shadow-sm flex items-center justify-between">
           <div>
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Days Present (This Month)
+            <div className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">
+              Present
             </div>
-            <div className="text-2xl font-serif font-bold text-emerald-700 mt-1">
-              {summary.daysPresent}{' '}
-              <span className="text-xs font-sans font-medium text-slate-500">
+            <div className="text-lg sm:text-2xl font-serif font-bold text-emerald-700 mt-0.5">
+              {summary.daysPresent}
+              <span className="hidden sm:inline text-xs font-sans font-medium text-slate-500 ml-1">
                 days ({summary.daysLate} late)
               </span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
-            <CheckCircle2 className="w-5 h-5" />
+          <div className="hidden sm:flex w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 items-center justify-center text-emerald-600">
+            <CheckCircle2 className="w-4 h-4" />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 shadow-sm flex items-center justify-between">
           <div>
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Total Hours &amp; Periods Logged
+            <div className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">
+              Hours &amp; Periods
             </div>
-            <div className="text-2xl font-serif font-bold text-brand-navy mt-1">
-              {Number(summary.totalHoursLogged || 0).toFixed(1)} hrs{' '}
-              <span className="text-xs font-sans font-medium text-slate-500">
-                • {summary.totalPeriodsCovered || 0} periods
+            <div className="text-lg sm:text-2xl font-serif font-bold text-brand-navy mt-0.5">
+              {Number(summary.totalHoursLogged || 0).toFixed(1)}h
+              <span className="hidden sm:inline text-xs font-sans font-medium text-slate-500 ml-1">
+                • {summary.totalPeriodsCovered || 0}p
               </span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-brand-gold">
-            <Award className="w-5 h-5" />
+          <div className="hidden sm:flex w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 items-center justify-center text-brand-gold">
+            <Award className="w-4 h-4" />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 shadow-sm flex items-center justify-between">
           <div>
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Leaves Taken
+            <div className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">
+              Leaves
             </div>
-            <div className="text-2xl font-serif font-bold text-red-600 mt-1">
-              {summary.leavesTaken}{' '}
-              <span className="text-xs font-sans font-medium text-slate-500">days</span>
+            <div className="text-lg sm:text-2xl font-serif font-bold text-red-600 mt-0.5">
+              {summary.leavesTaken}
+              <span className="hidden sm:inline text-xs font-sans font-medium text-slate-500 ml-1">
+                days
+              </span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center text-red-600">
-            <Calendar className="w-5 h-5" />
+          <div className="hidden sm:flex w-9 h-9 rounded-xl bg-red-50 border border-red-200 items-center justify-center text-red-600">
+            <Calendar className="w-4 h-4" />
           </div>
         </div>
       </div>
 
-      {/* My Monthly Attendance Log Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="text-base sm:text-lg font-serif font-bold text-brand-navy flex items-center gap-2">
-              <FileText className="w-4 h-4 text-brand-gold" />
-              <span>My Monthly Attendance Log</span>
-            </h3>
-            <p className="text-xs text-slate-500">
-              Complete daily attendance and teaching activity history.
-            </p>
-          </div>
+      {/* My Monthly Attendance Log (Mobile Cards + Desktop Table) */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
+          <h3 className="text-sm sm:text-base font-serif font-bold text-brand-navy flex items-center gap-2">
+            <FileText className="w-4 h-4 text-brand-gold" />
+            <span>Monthly Log</span>
+          </h3>
 
           <div className="flex items-center gap-2">
             <select
               aria-label="Select Month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 bg-white"
+              className="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 bg-white"
             >
               {MONTHS.map((m) => (
                 <option key={m.value} value={m.value}>
@@ -606,7 +603,7 @@ export default function StaffTimesheetDesk() {
               aria-label="Select Year"
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 bg-white"
+              className="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 bg-white"
             >
               {[2025, 2026, 2027].map((yr) => (
                 <option key={yr} value={yr}>
@@ -617,76 +614,110 @@ export default function StaffTimesheetDesk() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">In-Time</th>
-                <th className="py-3 px-4">Out-Time</th>
-                <th className="py-3 px-4">Total Hours</th>
-                <th className="py-3 px-4">Periods &amp; Work Type</th>
-                <th className="py-3 px-4">Daily Summary / Notes</th>
-                <th className="py-3 px-4">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 text-xs sm:text-sm">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500">
-                    Loading monthly attendance records...
-                  </td>
-                </tr>
-              ) : history.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500">
-                    No attendance records logged for this month yet. Use the Punch Clock above to clock in!
-                  </td>
-                </tr>
-              ) : (
-                history.map((item) => (
-                  <tr key={item._id || item.dateKey} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3.5 px-4 font-semibold text-brand-navy whitespace-nowrap">
+        {loading ? (
+          <div className="py-8 text-center text-xs text-slate-500">
+            Loading attendance records...
+          </div>
+        ) : history.length === 0 ? (
+          <div className="py-8 text-center text-xs text-slate-500 px-4">
+            No attendance records logged for this month yet.
+          </div>
+        ) : (
+          <>
+            {/* Mobile Card View (< md) */}
+            <div className="md:hidden divide-y divide-slate-200">
+              {history.map((item) => (
+                <div key={item._id || item.dateKey} className="p-3.5 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-xs text-brand-navy">
                       {formatDateReadable(item.date || item.dateKey)}
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-xs text-slate-700 whitespace-nowrap">
-                      {formatTime(item.checkInTime)}
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-xs text-slate-700 whitespace-nowrap">
-                      {formatTime(item.checkOutTime)}
-                    </td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-800 whitespace-nowrap">
-                      {item.totalHours ? `${Number(item.totalHours).toFixed(2)} hrs` : '—'}
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className="font-semibold text-brand-navy">
-                        {item.periodsCovered || 0} Periods
+                    </span>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                        STATUS_BADGE_STYLES[item.status] ||
+                        'bg-slate-100 text-slate-700 border-slate-300'
+                      }`}
+                    >
+                      {item.status}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-slate-600">
+                    <span>In: {formatTime(item.checkInTime)}</span>
+                    <span>Out: {formatTime(item.checkOutTime)}</span>
+                    {item.totalHours ? (
+                      <span className="font-bold text-brand-navy">
+                        {Number(item.totalHours).toFixed(1)}h
                       </span>
-                      <span className="block text-[11px] text-slate-500">
-                        {item.workType || 'Regular Teaching'}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-xs text-slate-600 max-w-xs">
-                      {item.dailyNotes || item.leaveReason || (
-                        <span className="text-slate-400 italic">No notes added</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                          STATUS_BADGE_STYLES[item.status] ||
-                          'bg-slate-100 text-slate-700 border-slate-300'
-                        }`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
+                    ) : null}
+                    <span className="font-sans text-slate-500">
+                      • {item.periodsCovered || 0}p ({item.workType || 'Regular Teaching'})
+                    </span>
+                  </div>
+                  {(item.dailyNotes || item.leaveReason) && (
+                    <div className="text-[11px] text-slate-600 bg-slate-50 px-2.5 py-1 rounded border border-slate-100">
+                      {item.dailyNotes || item.leaveReason}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                    <th className="py-2.5 px-4">Date</th>
+                    <th className="py-2.5 px-4">Timings</th>
+                    <th className="py-2.5 px-4">Hours</th>
+                    <th className="py-2.5 px-4">Duty &amp; Periods</th>
+                    <th className="py-2.5 px-4">Notes</th>
+                    <th className="py-2.5 px-4">Status</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody className="divide-y divide-slate-200 text-xs">
+                  {history.map((item) => (
+                    <tr key={item._id || item.dateKey} className="hover:bg-slate-50/80 transition">
+                      <td className="py-3 px-4 font-semibold text-brand-navy whitespace-nowrap">
+                        {formatDateReadable(item.date || item.dateKey)}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-xs text-slate-700 whitespace-nowrap">
+                        {formatTime(item.checkInTime)} – {formatTime(item.checkOutTime)}
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-slate-800 whitespace-nowrap">
+                        {item.totalHours ? `${Number(item.totalHours).toFixed(1)} hrs` : '—'}
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span className="font-semibold text-brand-navy">
+                          {item.periodsCovered || 0} Periods
+                        </span>
+                        <span className="text-slate-400 mx-1">•</span>
+                        <span className="text-slate-500">
+                          {item.workType || 'Regular Teaching'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-xs text-slate-600 max-w-xs truncate">
+                        {item.dailyNotes || item.leaveReason || (
+                          <span className="text-slate-400 italic">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+                            STATUS_BADGE_STYLES[item.status] ||
+                            'bg-slate-100 text-slate-700 border-slate-300'
+                          }`}
+                        >
+                          {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

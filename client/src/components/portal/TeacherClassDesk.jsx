@@ -174,25 +174,24 @@ export default function TeacherClassDesk() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Top Banner */}
-      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-brand-gold">
-            Instructional Desk &amp; Free WhatsApp Broadcast
+          <span className="text-[11px] font-bold uppercase tracking-wider text-brand-gold">
+            Classroom &amp; WhatsApp Broadcast
           </span>
-          <h2 className="text-xl sm:text-2xl font-serif font-bold text-brand-navy mt-0.5">
-            My Classroom &amp; Daily Homework Publisher
+          <h2 className="text-lg sm:text-xl font-serif font-bold text-brand-navy mt-0.5">
+            Homework Publisher
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1">
-            Publish daily homework and instantly broadcast formatted updates to Class WhatsApp
-            Groups or individual parents in 1 click.
+          <p className="text-xs text-slate-600 mt-0.5">
+            Post homework and broadcast to Class WhatsApp Groups or parents in 1 click.
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-brand-goldSoft border border-brand-gold/40 text-brand-navyDark text-xs font-bold">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-goldSoft border border-brand-gold/40 text-brand-navyDark text-xs font-bold self-start sm:self-center">
           <GraduationCap className="w-4 h-4 text-brand-gold" />
-          <span>Nursery to Grade 5</span>
+          <span>Nursery – Grade 5</span>
         </div>
       </div>
 
