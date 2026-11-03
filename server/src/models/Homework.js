@@ -20,6 +20,12 @@ const homeworkSchema = new mongoose.Schema(
       enum: GRADE_OPTIONS,
       index: true,
     },
+    section: {
+      type: String,
+      default: 'A',
+      uppercase: true,
+      trim: true,
+    },
     subject: {
       type: String,
       required: [true, 'Subject is required'],

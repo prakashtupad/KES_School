@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList, Users, BookOpen, Bell, CalendarCheck, Sparkles } from 'lucide-react';
+import {
+  ClipboardList,
+  Users,
+  BookOpen,
+  CalendarCheck,
+  GraduationCap,
+  Sparkles,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { SCHOOL_INFO } from '../../constants/schoolData';
 
@@ -10,7 +17,8 @@ export default function OverviewDashboard() {
     totalEnquiries: 0,
     newEnquiries: 0,
     visitScheduled: 0,
-    staffCount: 3,
+    studentCount: 0,
+    staffCount: 2,
     homeworkCount: 0,
     noticesCount: 3,
   });
@@ -38,6 +46,14 @@ export default function OverviewDashboard() {
       icon: ClipboardList,
       to: '/portal/admin',
       color: 'bg-brand-navy text-white',
+    },
+    {
+      label: 'Enrolled Student Directory',
+      value: stats.studentCount ?? 0,
+      sub: 'Admitted students & WhatsApp connect',
+      icon: GraduationCap,
+      to: '/portal/students',
+      color: 'bg-white text-brand-navy border border-slate-200',
     },
     {
       label: 'Scheduled Campus Visits',
@@ -89,7 +105,7 @@ export default function OverviewDashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {cards.map((card) => {
           const IconComponent = card.icon;
           return (

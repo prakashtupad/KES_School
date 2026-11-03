@@ -26,6 +26,7 @@ import NoticePublisher from './components/portal/NoticePublisher';
 import OverviewDashboard from './components/portal/OverviewDashboard';
 import StaffTimesheetDesk from './components/portal/StaffTimesheetDesk';
 import AdminStaffAttendanceRegister from './components/portal/AdminStaffAttendanceRegister';
+import StudentDirectoryDesk from './components/portal/StudentDirectoryDesk';
 
 function PublicHomePage() {
   const { isAuthenticated, logout } = useAuth();
@@ -115,6 +116,16 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminEnquiryDesk />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Enrolled Student Directory & Parent WhatsApp Connect (Admin & Teacher) */}
+            <Route
+              path="students"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+                  <StudentDirectoryDesk />
                 </ProtectedRoute>
               }
             />

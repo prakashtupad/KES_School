@@ -4,6 +4,7 @@ const Enquiry = require('../models/Enquiry');
 const Notice = require('../models/Notice');
 const User = require('../models/User');
 const Homework = require('../models/Homework');
+const Student = require('../models/Student');
 const { getDbStatus } = require('../config/db');
 const memoryStore = require('../utils/memoryStore');
 const { protect, restrictTo } = require('../middleware/auth');
@@ -340,15 +341,23 @@ router.get('/overview', async (req, res) => {
   try {
     const dbStatus = getDbStatus();
     if (dbStatus.isConnected) {
-      const [totalEnquiries, newEnquiries, visitScheduled, staffCount, homeworkCount, noticesCount] =
-        await Promise.all([
-          Enquiry.countDocuments(),
-          Enquiry.countDocuments({ status: 'new' }),
-          Enquiry.countDocuments({ status: 'visit_scheduled' }),
-          User.countDocuments(),
-          Homework.countDocuments(),
-          Notice.countDocuments({ isActive: true }),
-        ]);
+      const [
+        totalEnquiries,
+        newEnquiries,
+        visitScheduled,
+        studentCount,
+        staffCount,
+        homeworkCount,
+        noticesCount,
+      ] = await Promise.all([
+        Enquiry.countDocuments(),
+        Enquiry.countDocuments({ status: 'new' }),
+        Enquiry.countDocuments({ status: 'visit_scheduled' }),
+        Student.countDocuments({ status: 'Active' }),
+        User.countDocuments(),
+        Homework.countDocuments(),
+        Notice.countDocuments({ isActive: true }),
+      ]);
 
       return res.status(200).json({
         success: true,
@@ -356,6 +365,7 @@ router.get('/overview', async (req, res) => {
           totalEnquiries,
           newEnquiries,
           visitScheduled,
+          studentCount,
           staffCount,
           homeworkCount,
           noticesCount,
@@ -369,6 +379,7 @@ router.get('/overview', async (req, res) => {
         totalEnquiries: memoryStore.enquiries.length,
         newEnquiries: memoryStore.enquiries.filter((e) => e.status === 'new').length,
         visitScheduled: memoryStore.enquiries.filter((e) => e.status === 'visit_scheduled').length,
+        studentCount: (memoryStore.students || []).filter((s) => s.status === 'Active').length,
         staffCount: memoryStore.users.length,
         homeworkCount: memoryStore.homework.length,
         noticesCount: memoryStore.notices.length,

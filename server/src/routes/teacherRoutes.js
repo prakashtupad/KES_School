@@ -63,7 +63,7 @@ router.get('/homework', async (req, res) => {
  */
 router.post('/homework', async (req, res) => {
   try {
-    const { grade, subject, title, description, dueDate } = req.body || {};
+    const { grade, section = 'A', subject, title, description, dueDate } = req.body || {};
 
     if (!grade || !subject || !title || !description) {
       return res.status(400).json({
@@ -77,6 +77,7 @@ router.post('/homework', async (req, res) => {
     if (dbStatus.isConnected) {
       const created = await Homework.create({
         grade,
+        section: String(section || 'A').trim().toUpperCase(),
         subject: String(subject).trim(),
         title: String(title).trim(),
         description: String(description).trim(),
@@ -96,6 +97,7 @@ router.post('/homework', async (req, res) => {
     const memItem = {
       _id: new mongoose.Types.ObjectId().toString(),
       grade,
+      section: String(section || 'A').trim().toUpperCase(),
       subject: String(subject).trim(),
       title: String(title).trim(),
       description: String(description).trim(),

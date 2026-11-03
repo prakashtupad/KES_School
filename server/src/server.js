@@ -9,6 +9,7 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const teacherRoutes = require('./routes/teacherRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
+const studentRoutes = require('./routes/studentRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -48,6 +49,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/teacher', teacherRoutes);
 app.use('/api/v1/attendance', attendanceRoutes);
+app.use('/api/v1/students', studentRoutes);
 
 // 404 Handler for unknown API routes
 app.use('/api/*', (req, res) => {

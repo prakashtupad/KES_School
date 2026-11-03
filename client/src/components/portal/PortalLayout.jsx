@@ -7,6 +7,7 @@ import {
   Bell,
   LayoutDashboard,
   Clock,
+  GraduationCap,
   LogOut,
   ExternalLink,
   Menu,
@@ -28,6 +29,12 @@ const NAV_CONFIG = [
     to: '/portal/admin',
     icon: ClipboardList,
     roles: ['admin'],
+  },
+  {
+    label: 'Student Directory',
+    to: '/portal/students',
+    icon: GraduationCap,
+    roles: ['admin', 'teacher'],
   },
   {
     label: 'My Classroom & Homework',
