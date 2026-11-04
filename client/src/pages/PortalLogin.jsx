@@ -4,20 +4,16 @@ import { Lock, Mail, ArrowRight, UserCheck, BookOpen, Home } from 'lucide-react'
 import { useAuth } from '../context/AuthContext';
 import { SCHOOL_INFO } from '../context/../constants/schoolData';
 
-const DEMO_ACCOUNTS = [
+const PORTAL_ROLES = [
   {
     label: 'Office Admin',
     roleBadge: 'admin',
-    email: 'admin@keskhanatti.org',
-    password: 'admin',
     desc: 'Overview, Admissions Desk, Staff & Attendance Register, Notices & Classroom',
     icon: UserCheck,
   },
   {
     label: 'Class Teacher / Staff',
     roleBadge: 'teacher',
-    email: 'teacher@keskhanatti.org',
-    password: 'teacher',
     desc: 'My Classroom & Homework, Daily Timesheet & School Circulars',
     icon: BookOpen,
   },
@@ -63,12 +59,6 @@ export default function PortalLogin() {
     }
   };
 
-  const handleFillDemo = (account) => {
-    setEmail(account.email);
-    setPassword(account.password);
-    setError('');
-  };
-
   return (
     <div className="min-h-screen bg-brand-navyDark flex flex-col justify-between py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Top Return Bar */}
@@ -111,29 +101,22 @@ export default function PortalLogin() {
             staff accounts, public circulars, and daily classroom homework assignments.
           </p>
 
-          {/* Demo Credentials Cards */}
+          {/* Portal Roles Overview (no credentials shown) */}
           <div className="bg-white/5 border border-brand-gold/30 rounded-xl p-4 sm:p-5 space-y-3 backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-brand-gold">
-                Quick Demo Credentials (Click to Autofill)
+                Portal Workspaces
               </span>
               <span className="text-[11px] font-mono text-slate-300">Role-based Login</span>
             </div>
 
             <div className="space-y-2.5">
-              {DEMO_ACCOUNTS.map((acc) => {
+              {PORTAL_ROLES.map((acc) => {
                 const IconComponent = acc.icon;
-                const isSelected = email === acc.email;
                 return (
-                  <button
-                    key={acc.email}
-                    type="button"
-                    onClick={() => handleFillDemo(acc)}
-                    className={`w-full text-left p-3 rounded-lg border transition flex items-start justify-between gap-3 ${
-                      isSelected
-                        ? 'bg-brand-gold/20 border-brand-gold text-white'
-                        : 'bg-brand-navy/60 hover:bg-brand-navy border-white/10 text-slate-200'
-                    }`}
+                  <div
+                    key={acc.roleBadge}
+                    className="w-full text-left p-3 rounded-lg border flex items-start gap-3 bg-brand-navy/60 border-white/10 text-slate-200"
                   >
                     <div className="flex items-start gap-2.5">
                       <IconComponent className="w-4 h-4 text-brand-gold flex-shrink-0 mt-0.5" />
@@ -144,16 +127,10 @@ export default function PortalLogin() {
                             {acc.roleBadge}
                           </span>
                         </div>
-                        <div className="text-[11px] font-mono text-slate-300 mt-0.5">
-                          {acc.email} • <span className="text-brand-goldSoft">Pass: {acc.password}</span>
-                        </div>
                         <div className="text-[11px] text-slate-400 mt-0.5">{acc.desc}</div>
                       </div>
                     </div>
-                    <span className="text-[11px] font-semibold text-brand-gold whitespace-nowrap">
-                      Use →
-                    </span>
-                  </button>
+                  </div>
                 );
               })}
             </div>

@@ -52,12 +52,16 @@ const ensureDemoUsersSeeded = async () => {
     });
 
     for (const seedUser of memoryStore.users) {
+      // Only seed/sync accounts whose password is explicitly configured via environment variables
+      const configuredPassword = seedUser.passwordEnvKey ? process.env[seedUser.passwordEnvKey] : null;
+      if (!configuredPassword) continue;
+
       const existing = await User.findOne({ email: seedUser.email }).select('+password');
       if (!existing) {
         await User.create({
           fullName: seedUser.fullName,
           email: seedUser.email,
-          password: seedUser.plainPassword || 'admin',
+          password: configuredPassword,
           role: seedUser.role,
           phone: seedUser.phone,
           assignedGrades: seedUser.assignedGrades,
@@ -65,7 +69,7 @@ const ensureDemoUsersSeeded = async () => {
         });
       } else {
         existing.fullName = seedUser.fullName;
-        existing.password = seedUser.plainPassword || 'admin';
+        existing.password = configuredPassword;
         existing.role = seedUser.role;
         existing.assignedGrades = seedUser.assignedGrades;
         existing.isActive = true;

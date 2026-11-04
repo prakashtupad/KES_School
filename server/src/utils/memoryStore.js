@@ -1,4 +1,11 @@
+require('dotenv').config();
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+
+// Default staff passwords come from environment variables (ADMIN_PASSWORD / TEACHER_PASSWORD).
+// If not configured, an unguessable random password is used so no well-known default exists.
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || crypto.randomBytes(24).toString('hex');
+const TEACHER_PASSWORD = process.env.TEACHER_PASSWORD || crypto.randomBytes(24).toString('hex');
 
 const memoryStore = {
   users: [
@@ -6,8 +13,9 @@ const memoryStore = {
       _id: '672700000000000000000002',
       fullName: 'Khanatti Office Admin',
       email: 'admin@keskhanatti.org',
-      plainPassword: 'admin',
-      password: bcrypt.hashSync('admin', 10),
+      passwordEnvKey: 'ADMIN_PASSWORD',
+      plainPassword: ADMIN_PASSWORD,
+      password: bcrypt.hashSync(ADMIN_PASSWORD, 10),
       role: 'admin',
       phone: '+91 77957 70785',
       assignedGrades: ['All Classes'],
@@ -19,8 +27,9 @@ const memoryStore = {
       _id: '672700000000000000000003',
       fullName: 'Smt. Savita Patil (Faculty)',
       email: 'teacher@keskhanatti.org',
-      plainPassword: 'teacher',
-      password: bcrypt.hashSync('teacher', 10),
+      passwordEnvKey: 'TEACHER_PASSWORD',
+      plainPassword: TEACHER_PASSWORD,
+      password: bcrypt.hashSync(TEACHER_PASSWORD, 10),
       role: 'teacher',
       phone: '+91 77957 70785',
       assignedGrades: ['All Classes'],

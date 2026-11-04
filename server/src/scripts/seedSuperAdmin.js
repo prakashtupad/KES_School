@@ -6,7 +6,7 @@ const SEED_ACCOUNTS = [
   {
     fullName: 'Khanatti Office Admin',
     email: 'admin@keskhanatti.org',
-    password: 'admin',
+    password: process.env.ADMIN_PASSWORD,
     role: 'admin',
     phone: '+91 77957 70785',
     assignedGrades: ['All Classes'],
@@ -14,7 +14,7 @@ const SEED_ACCOUNTS = [
   {
     fullName: 'Smt. Savita Patil (Faculty)',
     email: 'teacher@keskhanatti.org',
-    password: 'teacher',
+    password: process.env.TEACHER_PASSWORD,
     role: 'teacher',
     phone: '+91 77957 70785',
     assignedGrades: ['All Classes'],
@@ -25,6 +25,10 @@ async function seedSuperAdmin() {
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) {
     console.error('[Seed] MONGODB_URI is not set in server/.env');
+    process.exit(1);
+  }
+  if (!process.env.ADMIN_PASSWORD || !process.env.TEACHER_PASSWORD) {
+    console.error('[Seed] ADMIN_PASSWORD and TEACHER_PASSWORD must be set in server/.env');
     process.exit(1);
   }
 
