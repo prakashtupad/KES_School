@@ -31,6 +31,12 @@ app.use(
 app.use(express.json({ limit: '50kb' }));
 app.use(express.urlencoded({ extended: true, limit: '50kb' }));
 
+// Ensure MongoDB is connected before handling requests (needed for serverless cold starts on Vercel)
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
+
 // Health Check Endpoint
 app.get('/api/v1/health', (req, res) => {
   const db = getDbStatus();

@@ -1,8 +1,22 @@
 const mongoose = require('mongoose');
 
 let isConnected = false;
+// Cached in-flight connection promise (reused across serverless invocations on Vercel)
+let connectionPromise = null;
 
 const connectDB = async () => {
+  if (mongoose.connection.readyState === 1) return true;
+  if (connectionPromise) return connectionPromise;
+
+  connectionPromise = establishConnection().then((ok) => {
+    // Allow a fresh retry on the next request if this attempt failed
+    if (!ok) connectionPromise = null;
+    return ok;
+  });
+  return connectionPromise;
+};
+
+const establishConnection = async () => {
   const mongoUri = process.env.MONGODB_URI;
 
   if (!mongoUri) {
