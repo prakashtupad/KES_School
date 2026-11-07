@@ -345,7 +345,7 @@ router.get('/overview', async (req, res) => {
         totalEnquiries,
         newEnquiries,
         visitScheduled,
-        studentCount,
+        activeStudents,
         staffCount,
         homeworkCount,
         noticesCount,
@@ -353,11 +353,31 @@ router.get('/overview', async (req, res) => {
         Enquiry.countDocuments(),
         Enquiry.countDocuments({ status: 'new' }),
         Enquiry.countDocuments({ status: 'visit_scheduled' }),
-        Student.countDocuments({ status: { $in: ['Active', 'Enrolled'] } }),
+        Student.find(
+          { status: { $in: ['Active', 'Enrolled'] } },
+          { feeDetails: 1 }
+        ).lean(),
         User.countDocuments(),
         Homework.countDocuments(),
         Notice.countDocuments({ isActive: true }),
       ]);
+
+      const studentCount = activeStudents.length;
+      let totalFeeCollected = 0;
+      let paidStudentCount = 0;
+      let pendingFeeCount = 0;
+
+      for (const st of activeStudents) {
+        const isPaid = st.feeDetails?.paymentStatus === 'Paid';
+        const amt = Number(st.feeDetails?.amountPaid || 0);
+        if (isPaid) {
+          paidStudentCount += 1;
+          totalFeeCollected += amt > 0 ? amt : Number(st.feeDetails?.admissionFeeAmount || 500);
+        } else {
+          pendingFeeCount += 1;
+          if (amt > 0) totalFeeCollected += amt;
+        }
+      }
 
       return res.status(200).json({
         success: true,
@@ -366,11 +386,33 @@ router.get('/overview', async (req, res) => {
           newEnquiries,
           visitScheduled,
           studentCount,
+          totalFeeCollected,
+          paidStudentCount,
+          pendingFeeCount,
           staffCount,
           homeworkCount,
           noticesCount,
         },
       });
+    }
+
+    const memActiveStudents = (memoryStore.students || []).filter(
+      (s) => s.status === 'Active' || s.status === 'Enrolled'
+    );
+    let totalFeeCollected = 0;
+    let paidStudentCount = 0;
+    let pendingFeeCount = 0;
+
+    for (const st of memActiveStudents) {
+      const isPaid = st.feeDetails?.paymentStatus === 'Paid';
+      const amt = Number(st.feeDetails?.amountPaid || 0);
+      if (isPaid) {
+        paidStudentCount += 1;
+        totalFeeCollected += amt > 0 ? amt : Number(st.feeDetails?.admissionFeeAmount || 500);
+      } else {
+        pendingFeeCount += 1;
+        if (amt > 0) totalFeeCollected += amt;
+      }
     }
 
     return res.status(200).json({
@@ -379,9 +421,10 @@ router.get('/overview', async (req, res) => {
         totalEnquiries: memoryStore.enquiries.length,
         newEnquiries: memoryStore.enquiries.filter((e) => e.status === 'new').length,
         visitScheduled: memoryStore.enquiries.filter((e) => e.status === 'visit_scheduled').length,
-        studentCount: (memoryStore.students || []).filter(
-          (s) => s.status === 'Active' || s.status === 'Enrolled'
-        ).length,
+        studentCount: memActiveStudents.length,
+        totalFeeCollected,
+        paidStudentCount,
+        pendingFeeCount,
         staffCount: memoryStore.users.length,
         homeworkCount: memoryStore.homework.length,
         noticesCount: memoryStore.notices.length,

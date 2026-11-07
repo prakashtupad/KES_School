@@ -12,6 +12,7 @@ import {
   FileCheck,
   GraduationCap,
   Users,
+  IndianRupee,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -19,6 +20,9 @@ import {
   isValidAadhaar,
   sanitizeDigits,
 } from '../../utils/validationHelpers';
+import { printStudentAdmissionSummary } from '../../utils/printStudentSummary';
+import AdmissionPaymentModal from './AdmissionPaymentModal';
+import PrintableFeeReceipt from './PrintableFeeReceipt';
 
 const DRAFT_STORAGE_KEY = 'kes_direct_admission_draft_v1';
 
@@ -96,9 +100,9 @@ export const INITIAL_ONBOARDING_FORM = {
   primaryPhone: '',
   residentialAddress: {
     villageOrTown: 'Khanatti',
-    taluk: 'Gokak',
+    taluk: 'Mudalgi',
     district: 'Belagavi',
-    pincode: '591231',
+    pincode: '591312',
   },
 
   // Step 3: Academic History & State Compliance (STS / PEN / APAAR)
@@ -183,7 +187,12 @@ function mapStudentToForm(st) {
       aadhaarNo: st.father?.aadhaarNo || '',
     },
     mother: {
-      name: st.mother?.name || st.motherName || '',
+      name:
+        st.mother?.name && String(st.mother.name) !== 'true'
+          ? st.mother.name
+          : st.motherName && String(st.motherName) !== 'true'
+            ? st.motherName
+            : '',
       qualification: st.mother?.qualification || '',
       profession: st.mother?.profession || '',
       officeAddress: st.mother?.officeAddress || '',
@@ -197,9 +206,9 @@ function mapStudentToForm(st) {
     residentialAddress: {
       villageOrTown:
         st.residentialAddress?.villageOrTown || st.residentialVillage || 'Khanatti',
-      taluk: st.residentialAddress?.taluk || 'Gokak',
+      taluk: st.residentialAddress?.taluk || 'Mudalgi',
       district: st.residentialAddress?.district || 'Belagavi',
-      pincode: st.residentialAddress?.pincode || '591231',
+      pincode: st.residentialAddress?.pincode || '591312',
     },
     previousStudy: {
       schoolName: st.previousStudy?.schoolName || '',
@@ -252,6 +261,8 @@ export default function DirectAdmissionOnboardingModal({
   const [errorMessage, setErrorMessage] = useState('');
   const [draftSavedMsg, setDraftSavedMsg] = useState('');
   const [successInfo, setSuccessInfo] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   useEffect(() => {
     if (initialStudent) {
@@ -439,6 +450,11 @@ export default function DirectAdmissionOnboardingModal({
       const enrolledStudent = data.student || data.data;
       setSuccessInfo(enrolledStudent);
 
+      // Automatically open AdmissionPaymentModal if fee is not yet paid
+      if (enrolledStudent?.feeDetails?.paymentStatus !== 'Paid') {
+        setShowPaymentModal(true);
+      }
+
       if (onEnrollmentComplete) {
         onEnrollmentComplete(enrolledStudent);
       }
@@ -451,112 +467,7 @@ export default function DirectAdmissionOnboardingModal({
 
   const handlePrintAdmissionSummary = () => {
     if (!successInfo) return;
-    const printWin = window.open('', '_blank', 'width=850,height=700');
-    if (!printWin) {
-      window.print();
-      return;
-    }
-
-    const dobFormatted = successInfo.dateOfBirth
-      ? new Date(successInfo.dateOfBirth).toLocaleDateString('en-IN')
-      : '—';
-
-    printWin.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Admission Summary - ${successInfo.admissionNumber}</title>
-          <style>
-            body { font-family: Georgia, serif; color: #1e293b; padding: 28px; max-width: 760px; margin: 0 auto; }
-            .header { text-align: center; border-bottom: 2px solid #1A365D; padding-bottom: 12px; margin-bottom: 20px; }
-            .society { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; }
-            .school { font-size: 20px; font-weight: bold; color: #1A365D; margin: 4px 0; }
-            .badge { display: inline-block; background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-top: 6px; }
-            .section-title { font-size: 13px; text-transform: uppercase; color: #1A365D; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin: 16px 0 8px; font-weight: bold; }
-            table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; }
-            td { padding: 6px 8px; border: 1px solid #e2e8f0; }
-            td.label { font-weight: bold; background: #f8fafc; width: 28%; color: #475569; }
-            .sigs { display: flex; justify-content: space-between; margin-top: 48px; font-family: Arial, sans-serif; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="society">Khanatti Education Society's (Reg- DRBG/SOR/1243/2025-2026)</div>
-            <div class="school">Shri Siddharoodha English Medium School, Khanatti</div>
-            <div style="font-size: 12px; color: #475569;">Taluk: Gokak, District: Belagavi • Phone: +91 77957 70785</div>
-            <div class="badge">OFFICIAL STUDENT ADMISSION SUMMARY (${successInfo.academicYear || '2026-2027'})</div>
-          </div>
-
-          <div class="section-title">1. Institutional &amp; Student Particulars</div>
-          <table>
-            <tr>
-              <td class="label">Admission No</td>
-              <td><strong>${successInfo.admissionNumber}</strong></td>
-              <td class="label">Class &amp; Section</td>
-              <td><strong>${successInfo.grade} (Sec ${successInfo.section || 'A'})</strong></td>
-            </tr>
-            <tr>
-              <td class="label">Student Full Name</td>
-              <td><strong>${successInfo.studentName}</strong></td>
-              <td class="label">Date of Birth &amp; Gender</td>
-              <td>${dobFormatted} (${successInfo.gender})</td>
-            </tr>
-            <tr>
-              <td class="label">Student Aadhaar No</td>
-              <td>${successInfo.aadhaarNumber || successInfo.studentAadhaarNo || '—'}</td>
-              <td class="label">Blood Group &amp; Category</td>
-              <td>${successInfo.bloodGroup || '—'} / ${successInfo.category || 'General'}</td>
-            </tr>
-            <tr>
-              <td class="label">Mother Tongue &amp; 3rd Lang</td>
-              <td>${successInfo.motherTongue || 'Kannada'} / ${successInfo.languageIII || 'Kannada'}</td>
-              <td class="label">School Van / Transport</td>
-              <td>${successInfo.transportRequired ? 'Yes (Opted In)' : 'No (Self)'}</td>
-            </tr>
-          </table>
-
-          <div class="section-title">2. Parent / Guardian &amp; Address Details</div>
-          <table>
-            <tr>
-              <td class="label">Father's Name</td>
-              <td>${successInfo.father?.name || successInfo.fatherName || '—'}</td>
-              <td class="label">Mother's Name</td>
-              <td>${successInfo.mother?.name || successInfo.motherName || '—'}</td>
-            </tr>
-            <tr>
-              <td class="label">Primary WhatsApp / Mobile</td>
-              <td><strong>+91 ${successInfo.primaryPhone}</strong></td>
-              <td class="label">Village / Town</td>
-              <td>${successInfo.residentialAddress?.villageOrTown || successInfo.residentialVillage || 'Khanatti'}</td>
-            </tr>
-          </table>
-
-          <div class="section-title">3. Karnataka State Compliance (SATS / STS / PEN / APAAR)</div>
-          <table>
-            <tr>
-              <td class="label">Karnataka STS No</td>
-              <td>${successInfo.previousStudy?.stsNumber || '—'}</td>
-              <td class="label">National PEN No</td>
-              <td>${successInfo.previousStudy?.penNumber || '—'}</td>
-            </tr>
-            <tr>
-              <td class="label">APAAR Edu ID</td>
-              <td>${successInfo.previousStudy?.apaarId || '—'}</td>
-              <td class="label">Previous School</td>
-              <td>${successInfo.previousStudy?.schoolName || '—'}</td>
-            </tr>
-          </table>
-
-          <div class="sigs">
-            <div>Parent / Guardian Signature</div>
-            <div>Office Clerk</div>
-            <div>Headmaster / Principal Seal</div>
-          </div>
-          <script>window.onload = function() { window.print(); };</script>
-        </body>
-      </html>
-    `);
-    printWin.document.close();
+    printStudentAdmissionSummary(successInfo);
   };
 
   const wizardContent = successInfo ? (
@@ -617,10 +528,32 @@ export default function DirectAdmissionOnboardingModal({
       </div>
 
       <div className="flex flex-wrap justify-center gap-2.5">
+        {successInfo.feeDetails?.paymentStatus === 'Paid' ? (
+          <button
+            type="button"
+            onClick={() => setShowReceiptModal(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition cursor-pointer"
+          >
+            <Printer className="w-4 h-4" />
+            <span>
+              Print Official Receipt ({successInfo.feeDetails?.receiptNumber || 'Paid'})
+            </span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowPaymentModal(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition cursor-pointer"
+          >
+            <IndianRupee className="w-4 h-4" />
+            <span>Collect Admission Fee &amp; Issue Receipt</span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={handlePrintAdmissionSummary}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-brand-gold hover:bg-brand-goldLight text-brand-navyDark text-xs sm:text-sm font-bold rounded-xl shadow-sm transition"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-brand-gold hover:bg-brand-goldLight text-brand-navyDark text-xs sm:text-sm font-bold rounded-xl shadow-sm transition cursor-pointer"
         >
           <Printer className="w-4 h-4" />
           <span>Print Admission Summary</span>
@@ -773,13 +706,14 @@ export default function DirectAdmissionOnboardingModal({
 
               <div>
                 <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
-                  Section *
+                  Section
                 </label>
                 <select
                   value={formData.section}
                   onChange={(e) => updateRoot('section', e.target.value)}
                   className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white focus:border-brand-navy"
                 >
+                  <option value="N/A">N/A (Not Applicable)</option>
                   <option value="A">Section A</option>
                   <option value="B">Section B</option>
                   <option value="C">Section C</option>
@@ -1608,8 +1542,38 @@ export default function DirectAdmissionOnboardingModal({
     </div>
   );
 
+  const paymentAndReceiptOverlays = (
+    <>
+      {showPaymentModal && successInfo && (
+        <AdmissionPaymentModal
+          isOpen={showPaymentModal}
+          student={successInfo}
+          onClose={() => setShowPaymentModal(false)}
+          onPaymentRecorded={(updatedStudent) => {
+            setSuccessInfo(updatedStudent);
+            if (onEnrollmentComplete) {
+              onEnrollmentComplete(updatedStudent);
+            }
+          }}
+        />
+      )}
+
+      {showReceiptModal && successInfo && (
+        <PrintableFeeReceipt
+          student={successInfo}
+          onClose={() => setShowReceiptModal(false)}
+        />
+      )}
+    </>
+  );
+
   if (!isModal) {
-    return wizardContent;
+    return (
+      <>
+        {wizardContent}
+        {paymentAndReceiptOverlays}
+      </>
+    );
   }
 
   return (
@@ -1620,6 +1584,7 @@ export default function DirectAdmissionOnboardingModal({
       aria-label="Direct Student Admission & Onboarding Wizard"
     >
       {wizardContent}
+      {paymentAndReceiptOverlays}
     </div>
   );
 }

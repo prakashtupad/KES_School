@@ -1,6 +1,7 @@
 require('dotenv').config();
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const { DEFAULT_SITE_CONTENT } = require('../scripts/seedSiteContent');
 
 // Default staff passwords come from environment variables (ADMIN_PASSWORD / TEACHER_PASSWORD).
 // If not configured, an unguessable random password is used so no well-known default exists.
@@ -222,6 +223,16 @@ const memoryStore = {
         casteCertificate: true,
         passportPhotos: true,
       },
+      feeDetails: {
+        admissionFeeAmount: 500,
+        amountPaid: 500,
+        paymentStatus: 'Paid',
+        paymentMethod: 'Cash',
+        transactionId: 'CASH-101',
+        receiptNumber: 'KES-REC-2026-0001',
+        paidAt: new Date(Date.now() - 86400000),
+        remarks: 'Paid in Cash at Khanatti School Office Counter',
+      },
       status: 'Active',
       createdAt: new Date(),
     },
@@ -275,7 +286,7 @@ const memoryStore = {
       residentialVillage: 'Mudalagi',
       residentialAddress: {
         villageOrTown: 'Mudalagi',
-        taluk: 'Gokak',
+        taluk: 'Mudalgi',
         district: 'Belagavi',
         pincode: '591312',
       },
@@ -296,10 +307,21 @@ const memoryStore = {
         casteCertificate: true,
         passportPhotos: true,
       },
+      feeDetails: {
+        admissionFeeAmount: 500,
+        amountPaid: 0,
+        paymentStatus: 'Pending',
+        paymentMethod: 'Not_Applicable',
+      },
       status: 'Active',
       createdAt: new Date(),
     },
   ],
+  siteContent: DEFAULT_SITE_CONTENT.map((item) => ({
+    ...item,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  })),
 };
 
 module.exports = memoryStore;

@@ -14,6 +14,7 @@ import NewsSection from './components/NewsSection';
 import EnquiryForm from './components/EnquiryForm';
 import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
+import BackToTopButton from './components/BackToTopButton';
 
 // Staff & Teacher Portal Pages & Modules
 import PortalLogin from './pages/PortalLogin';
@@ -27,6 +28,7 @@ import OverviewDashboard from './components/portal/OverviewDashboard';
 import StaffTimesheetDesk from './components/portal/StaffTimesheetDesk';
 import AdminStaffAttendanceRegister from './components/portal/AdminStaffAttendanceRegister';
 import StudentDirectoryDesk from './components/portal/StudentDirectoryDesk';
+import WebsiteContentDesk from './components/portal/WebsiteContentDesk';
 
 function PublicHomePage() {
   const { isAuthenticated, logout } = useAuth();
@@ -73,6 +75,9 @@ function PublicHomePage() {
 
       {/* 4. Navy Footer */}
       <Footer />
+
+      {/* Floating Back to Top Button */}
+      <BackToTopButton />
     </div>
   );
 }
@@ -156,6 +161,16 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['admin', 'teacher']}>
                   <NoticePublisher />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Dynamic Website Content CMS (Admin) */}
+            <Route
+              path="cms"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <WebsiteContentDesk />
                 </ProtectedRoute>
               }
             />

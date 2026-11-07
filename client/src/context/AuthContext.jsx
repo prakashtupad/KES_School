@@ -73,7 +73,17 @@ export function AuthProvider({ children }) {
       body: JSON.stringify({ email, password }),
     });
 
-    const data = await response.json();
+    const rawText = await response.text();
+    let data = {};
+    if (rawText) {
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error('Server returned an unexpected response. Please make sure the backend server is running.');
+      }
+    } else if (!response.ok) {
+      throw new Error('Cannot reach the backend server (port 5000). Please try again in a moment.');
+    }
 
     if (!response.ok || !data.success) {
       throw new Error(data.message || 'Invalid login credentials.');

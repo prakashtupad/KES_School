@@ -10,11 +10,19 @@ import {
   Pencil,
   Download,
   Eye,
+  Printer,
+  IndianRupee,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getDirectStudentChatUrl } from '../../utils/whatsappFormatter';
+import {
+  printStudentAdmissionSummary,
+  printStudentDirectoryTable,
+} from '../../utils/printStudentSummary';
 import DirectAdmissionOnboardingModal from './DirectAdmissionOnboardingModal';
 import StudentProfileDrawer from './StudentProfileDrawer';
+import AdmissionPaymentModal from './AdmissionPaymentModal';
+import PrintableFeeReceipt from './PrintableFeeReceipt';
 
 const GRADE_FILTERS = [
   'All Classes',
@@ -28,7 +36,7 @@ const GRADE_FILTERS = [
   'Grade 5',
 ];
 
-const SECTIONS = ['All', 'A', 'B', 'C'];
+const SECTIONS = ['All', 'A', 'B', 'C', 'N/A'];
 
 export default function StudentDirectoryDesk() {
   const { user, token } = useAuth();
@@ -46,6 +54,8 @@ export default function StudentDirectoryDesk() {
   const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [selectedProfileStudent, setSelectedProfileStudent] = useState(null);
+  const [paymentModalStudent, setPaymentModalStudent] = useState(null);
+  const [receiptModalStudent, setReceiptModalStudent] = useState(null);
   const [feedback, setFeedback] = useState('');
 
   const fetchStudents = useCallback(async () => {
@@ -147,6 +157,9 @@ export default function StudentDirectoryDesk() {
       'Karnataka STS / SATS No',
       'National PEN No',
       'APAAR ID',
+      'Fee Status',
+      'Receipt Number',
+      'Amount Paid (INR)',
       'Status',
       'Enrolled Date',
     ];
@@ -171,6 +184,9 @@ export default function StudentDirectoryDesk() {
       escapeCsv(st.previousStudy?.stsNumber || ''),
       escapeCsv(st.previousStudy?.penNumber || ''),
       escapeCsv(st.previousStudy?.apaarId || ''),
+      escapeCsv(st.feeDetails?.paymentStatus || 'Pending'),
+      escapeCsv(st.feeDetails?.receiptNumber || ''),
+      escapeCsv(st.feeDetails?.amountPaid ?? 0),
       escapeCsv(st.status || 'Active'),
       escapeCsv(st.createdAt ? new Date(st.createdAt).toLocaleDateString('en-IN') : ''),
     ]);
@@ -215,6 +231,16 @@ export default function StudentDirectoryDesk() {
             title="Refresh directory"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+
+          <button
+            type="button"
+            disabled={students.length === 0}
+            onClick={() => printStudentDirectoryTable(students, gradeFilter, sectionFilter)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-50 text-brand-navy font-bold text-xs shadow-sm transition"
+          >
+            <Printer className="w-3.5 h-3.5 text-brand-gold" />
+            <span>Print Directory</span>
           </button>
 
           <button
@@ -271,7 +297,11 @@ export default function StudentDirectoryDesk() {
           >
             {SECTIONS.map((sec) => (
               <option key={sec} value={sec}>
-                {sec === 'All' ? 'All Sections' : `Sec ${sec}`}
+                {sec === 'All'
+                  ? 'All Sections'
+                  : sec === 'N/A'
+                    ? 'N/A (Not Applicable)'
+                    : `Sec ${sec}`}
               </option>
             ))}
           </select>
@@ -333,6 +363,15 @@ export default function StudentDirectoryDesk() {
                         <span className="px-2 py-0.5 rounded bg-brand-navy text-white text-[10px] font-bold">
                           {st.grade} ({st.section || 'A'})
                         </span>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                            st.feeDetails?.paymentStatus === 'Paid'
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : 'bg-amber-100 text-amber-800 border-amber-300'
+                          }`}
+                        >
+                          Fee: {st.feeDetails?.paymentStatus || 'Pending'}
+                        </span>
                       </div>
                       <button
                         type="button"
@@ -347,6 +386,27 @@ export default function StudentDirectoryDesk() {
                     </div>
 
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      {st.feeDetails?.paymentStatus === 'Paid' ? (
+                        <button
+                          type="button"
+                          onClick={() => setReceiptModalStudent(st)}
+                          className="p-1.5 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                          title="Print Official Fee Receipt"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => setPaymentModalStudent(st)}
+                            className="p-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                            title="Collect Admission Fee"
+                          >
+                            <IndianRupee className="w-3.5 h-3.5" />
+                          </button>
+                        )
+                      )}
                       <button
                         type="button"
                         onClick={() => setSelectedProfileStudent(st)}
@@ -403,6 +463,7 @@ export default function StudentDirectoryDesk() {
                     <th className="py-3 px-4">Class</th>
                     <th className="py-3 px-4">Parent / Guardian</th>
                     <th className="py-3 px-4">Mobile &amp; WhatsApp</th>
+                    <th className="py-3 px-4">Fee Status</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
@@ -415,7 +476,8 @@ export default function StudentDirectoryDesk() {
                       st.grade
                     );
                     const fatherDisplay = st.father?.name || st.fatherName || '—';
-                    const motherDisplay = st.mother?.name || st.motherName || '';
+                    const rawMother = st.mother?.name || st.motherName || '';
+                    const motherDisplay = String(rawMother) !== 'true' ? rawMother : '';
 
                     return (
                       <tr key={st._id} className="hover:bg-slate-50/80 transition">
@@ -485,6 +547,26 @@ export default function StudentDirectoryDesk() {
                         </td>
 
                         <td className="py-3 px-4 whitespace-nowrap">
+                          {st.feeDetails?.paymentStatus === 'Paid' ? (
+                            <div>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                <span>Paid (₹{st.feeDetails.amountPaid || 500})</span>
+                              </span>
+                              {st.feeDetails.receiptNumber && (
+                                <span className="block text-[10px] font-mono text-slate-500 mt-0.5">
+                                  {st.feeDetails.receiptNumber}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold">
+                              {st.feeDetails?.paymentStatus || 'Pending'}
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4 whitespace-nowrap">
                           <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
                             {st.status || 'Active'}
                           </span>
@@ -492,6 +574,30 @@ export default function StudentDirectoryDesk() {
 
                         <td className="py-3 px-4 text-right whitespace-nowrap">
                           <div className="inline-flex items-center justify-end gap-1.5">
+                            {st.feeDetails?.paymentStatus === 'Paid' ? (
+                              <button
+                                type="button"
+                                onClick={() => setReceiptModalStudent(st)}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition cursor-pointer"
+                                title="Print Official Fee Receipt"
+                              >
+                                <Printer className="w-3 h-3 text-emerald-700" />
+                                <span>Print Receipt</span>
+                              </button>
+                            ) : (
+                              isAdmin && (
+                                <button
+                                  type="button"
+                                  onClick={() => setPaymentModalStudent(st)}
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold transition cursor-pointer"
+                                  title="Collect Admission Fee & Generate Receipt"
+                                >
+                                  <IndianRupee className="w-3 h-3 text-brand-gold" />
+                                  <span>Collect Fee</span>
+                                </button>
+                              )
+                            )}
+
                             <button
                               type="button"
                               onClick={() => setSelectedProfileStudent(st)}
@@ -559,6 +665,30 @@ export default function StudentDirectoryDesk() {
           initialStudent={selectedProfileStudent}
           onClose={() => setSelectedProfileStudent(null)}
           onEdit={(st) => handleOpenEditStudent(st)}
+        />
+      )}
+
+      {/* Admission Fee Collection Modal */}
+      {paymentModalStudent && isAdmin && (
+        <AdmissionPaymentModal
+          isOpen={Boolean(paymentModalStudent)}
+          student={paymentModalStudent}
+          onClose={() => setPaymentModalStudent(null)}
+          onPaymentRecorded={(updatedStudent) => {
+            setFeedback(
+              `Official Fee Receipt (${updatedStudent.feeDetails?.receiptNumber || 'Paid'}) generated for ${updatedStudent.studentName}.`
+            );
+            setTimeout(() => setFeedback(''), 5000);
+            fetchStudents();
+          }}
+        />
+      )}
+
+      {/* Official Dual-Counterfoil Printable Fee Receipt Modal */}
+      {receiptModalStudent && (
+        <PrintableFeeReceipt
+          student={receiptModalStudent}
+          onClose={() => setReceiptModalStudent(null)}
         />
       )}
     </div>

@@ -205,9 +205,9 @@ const studentSchema = new mongoose.Schema(
     },
     residentialAddress: {
       villageOrTown: { type: String, default: 'Khanatti', trim: true },
-      taluk: { type: String, default: 'Gokak', trim: true },
+      taluk: { type: String, default: 'Mudalgi', trim: true },
       district: { type: String, default: 'Belagavi', trim: true },
-      pincode: { type: String, default: '591231', trim: true },
+      pincode: { type: String, default: '591312', trim: true },
     },
 
     // 3. Academic History & Karnataka State Identifiers (STS / PEN / APAAR)
@@ -246,6 +246,43 @@ const studentSchema = new mongoose.Schema(
     enrolledByStaff: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+    },
+
+    // 5. Admission Fee Collection & Official Receipt Details
+    feeDetails: {
+      admissionFeeAmount: { type: Number, default: 500 },
+      amountPaid: { type: Number, default: 0 },
+      paymentStatus: {
+        type: String,
+        enum: ['Pending', 'Partial', 'Paid', 'Waived / Free Ship'],
+        default: 'Pending',
+        index: true,
+      },
+      paymentMethod: {
+        type: String,
+        enum: [
+          'Cash',
+          'Online_UPI',
+          'Online_Card',
+          'Bank_Transfer',
+          'Cheque_DD',
+          'Not_Applicable',
+        ],
+        default: 'Not_Applicable',
+      },
+      transactionId: { type: String, trim: true },
+      orderId: { type: String, trim: true },
+      receiptNumber: {
+        type: String,
+        trim: true,
+        unique: true,
+        sparse: true,
+        index: true,
+      },
+      paidAt: { type: Date },
+      collectedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      collectedByStaff: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      remarks: { type: String, trim: true },
     },
 
     // Status
@@ -340,6 +377,11 @@ studentSchema.pre('validate', function (next) {
     this.previousStudy.affiliatedBoard = this.previousStudy.schoolAffiliatedTo;
   } else if (this.previousStudy?.affiliatedBoard && !this.previousStudy.schoolAffiliatedTo) {
     this.previousStudy.schoolAffiliatedTo = this.previousStudy.affiliatedBoard;
+  }
+
+  // Ensure empty receiptNumber is undefined so sparse unique index never collides
+  if (this.feeDetails && !this.feeDetails.receiptNumber) {
+    this.feeDetails.receiptNumber = undefined;
   }
 
   next();

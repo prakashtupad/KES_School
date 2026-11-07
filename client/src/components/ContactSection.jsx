@@ -41,8 +41,8 @@ export default function ContactSection() {
                   Shri Siddharoodha English Medium School
                 </p>
                 <p className="text-xs text-slate-500 font-mono mt-1">
-                  <span className="placeholder-badge">Khanatti Village</span>, Gokak Taluk, Belagavi
-                  District, Karnataka - 591233
+                  <span className="placeholder-badge">Khanatti Village</span>, Mudalgi Taluk, Belagavi
+                  District, Karnataka - 591312
                 </p>
               </div>
             </div>
@@ -136,15 +136,15 @@ export default function ContactSection() {
                 Location &amp; Map
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 mb-4">
-                The school is located in Khanatti village, Gokak Taluk. Parents and visitors are
+                The school is located in Khanatti village, Mudalgi Taluk. Parents and visitors are
                 requested to check office timings prior to in-person campus visits.
               </p>
 
-              {/* Embedded Google Map for Khanatti, Gokak Taluk */}
+              {/* Embedded Google Map for Khanatti, Mudalgi Taluk */}
               <div className="w-full aspect-[16/9] bg-slate-100 rounded-lg border border-slate-300 overflow-hidden relative">
                 <iframe
-                  title="Khanatti, Gokak Taluk, Belagavi Location Map"
-                  src="https://www.google.com/maps?q=Khanatti,Gokak,Belagavi,Karnataka&output=embed"
+                  title="Khanatti, Mudalgi Taluk, Belagavi Location Map"
+                  src="https://www.google.com/maps?q=Khanatti,Mudalagi,Belagavi,Karnataka&output=embed"
                   className="w-full h-full border-0"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
@@ -154,7 +154,7 @@ export default function ContactSection() {
 
             <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
               <span className="text-xs text-slate-500 font-mono">
-                Location: <span className="placeholder-badge">Khanatti, Gokak Taluk</span>
+                Location: <span className="placeholder-badge">Khanatti, Mudalgi Taluk</span>
               </span>
               <a
                 href={SCHOOL_INFO.mapQueryUrl}

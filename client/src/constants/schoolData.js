@@ -3,8 +3,8 @@ export const SCHOOL_INFO = {
   registrationNo: 'Reg- DRBG/SOR/1243/2025-2026',
   schoolName: 'Shri Siddharoodha English Medium School',
   shortLocation: 'Khanatti',
-  talukDistrict: 'Khanatti, Gokak Taluk',
-  fullAddress: 'Village Khanatti, Gokak Taluk, Belagavi District, Karnataka - 591233',
+  talukDistrict: 'Khanatti, Mudalgi Taluk',
+  fullAddress: 'Village Khanatti, Mudalgi Taluk, Belagavi District, Karnataka - 591312',
   tagline: 'Nurturing Young Minds, Inspiring Bright Futures',
   admissionYear: '2026–27',
   classesOffered: 'Nursery | LKG | UKG & Primary Classes',
@@ -22,6 +22,6 @@ export const SCHOOL_INFO = {
   facebookUrl: 'https://www.facebook.com/profile.php?id=61590568034704',
   facebookLabel: 'Facebook Page',
   officeHours: 'Mon – Sat: 9:00 AM to 4:30 PM (Sunday Closed)',
-  mapQueryUrl: 'https://www.google.com/maps/search/?api=1&query=Khanatti+Gokak+Taluk+Belagavi+Karnataka',
+  mapQueryUrl: 'https://www.google.com/maps/search/?api=1&query=Khanatti+Mudalgi+Taluk+Belagavi+Karnataka+591312',
   logoUrl: '/images/logo.jpg',
 };

@@ -31,10 +31,10 @@ export default function Footer() {
             </p>
             <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
               Dedicated to providing character-building, value-based English medium education (
-              {SCHOOL_INFO.prePrimaryGrades} &amp; Primary) in Khanatti, Gokak Taluk.
+              {SCHOOL_INFO.prePrimaryGrades} &amp; Primary) in Khanatti, Mudalgi Taluk.
             </p>
             <div className="text-[11px] text-slate-400">
-              Village Khanatti, Gokak Taluk, Belagavi District, Karnataka
+              Village Khanatti, Mudalgi Taluk, Belagavi District, Karnataka - 591312
             </div>
           </div>
 

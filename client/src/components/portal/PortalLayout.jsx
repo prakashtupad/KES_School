@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Shield,
+  Layers,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { SCHOOL_INFO } from '../../constants/schoolData';
@@ -65,6 +66,12 @@ const NAV_CONFIG = [
     to: '/portal/notices',
     icon: Bell,
     roles: ['admin', 'teacher'],
+  },
+  {
+    label: 'Website Content (CMS)',
+    to: '/portal/cms',
+    icon: Layers,
+    roles: ['admin'],
   },
 ];
 

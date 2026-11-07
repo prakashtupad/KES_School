@@ -137,9 +137,9 @@ function normalizeStudentPayload(raw = {}, userId = null) {
 
     residentialAddress: {
       villageOrTown: village,
-      taluk: (addressObj.taluk || 'Gokak').trim(),
+      taluk: (addressObj.taluk || 'Mudalgi').trim(),
       district: (addressObj.district || 'Belagavi').trim(),
-      pincode: (addressObj.pincode || '591231').trim(),
+      pincode: (addressObj.pincode || '591312').trim(),
     },
 
     previousStudy: {

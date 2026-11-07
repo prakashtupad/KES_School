@@ -10,9 +10,11 @@ import {
   FileCheck,
   CheckCircle2,
   MapPin,
+  Printer,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getDirectStudentChatUrl } from '../../utils/whatsappFormatter';
+import { printStudentAdmissionSummary } from '../../utils/printStudentSummary';
 
 export default function StudentProfileDrawer({
   studentId,
@@ -70,7 +72,12 @@ export default function StudentProfileDrawer({
     : '—';
 
   const fatherName = st.father?.name || st.fatherName || '—';
-  const motherName = st.mother?.name || st.motherName || '—';
+  const motherName =
+    st.mother?.name && String(st.mother.name) !== 'true'
+      ? st.mother.name
+      : st.motherName && String(st.motherName) !== 'true'
+        ? st.motherName
+        : '—';
   const village =
     st.residentialAddress?.villageOrTown || st.residentialVillage || 'Khanatti';
 
@@ -106,6 +113,15 @@ export default function StudentProfileDrawer({
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => printStudentAdmissionSummary(st)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-gold hover:bg-amber-700 text-white text-xs font-bold shadow-sm transition"
+              title="Print Admission Summary"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print</span>
+            </button>
             {isAdmin && onEdit && (
               <button
                 type="button"

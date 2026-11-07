@@ -1,59 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SCHOOL_INFO } from '../constants/schoolData';
 
-const CAMPUS_CARDS = [
+const DEFAULT_CAMPUS_CARDS = [
   {
-    id: 'campus-building',
+    _id: 'campus-building',
     title: 'School Building & Play Area',
-    caption:
+    description:
       'Modern, well-ventilated school building in Khanatti with a dedicated children’s outdoor play park.',
-    image: '/images/interactive-classroom.jpg?v=2',
-    badge: 'School Infrastructure',
+    imageUrl: '/images/interactive-classroom.jpg?v=2',
+    subtitle: 'School Infrastructure',
   },
   {
-    id: 'campus-entrance',
+    _id: 'campus-entrance',
     title: 'Main Campus Entrance & Fountain',
-    caption:
+    description:
       'Welcoming entrance arch of Khanatti Education Society’s Shri Siddharoodha English Medium School.',
-    image: '/images/campus-entrance.jpg?v=2',
-    badge: 'KES Khanatti Campus',
+    imageUrl: '/images/campus-entrance.jpg?v=2',
+    subtitle: 'KES Khanatti Campus',
   },
   {
-    id: 'transport',
+    _id: 'transport',
     title: 'New School Van & Rural Connectivity',
-    caption:
+    description:
       'Dedicated school van facility blessed and inaugurated by Khanatti Education Society for safe student transport.',
-    image: '/images/school-van.jpg?v=2',
-    badge: 'Student Transport',
+    imageUrl: '/images/school-van.jpg?v=2',
+    subtitle: 'Student Transport',
   },
   {
-    id: 'assembly',
+    _id: 'assembly',
     title: 'Morning Assembly & Classroom Learning',
-    caption:
+    description:
       'Students gather daily for prayer, pledges, and interactive classroom learning with dedicated teachers.',
-    image: '/images/morning-assembly.jpg?v=2',
-    badge: 'Daily Discipline & Values',
+    imageUrl: '/images/morning-assembly.jpg?v=2',
+    subtitle: 'Daily Discipline & Values',
   },
   {
-    id: 'events',
+    _id: 'events',
     title: 'Events & National Celebrations',
-    caption:
+    description:
       'Celebration of national festivals (Independence Day, Republic Day) and cultural school activities.',
-    image: '/images/events-celebrations.jpg?v=2',
-    badge: 'Cultural & National Pride',
+    imageUrl: '/images/events-celebrations.jpg?v=2',
+    subtitle: 'Cultural & National Pride',
   },
   {
-    id: 'activities',
+    _id: 'activities',
     title: 'Play, Learn & Grow',
-    caption:
+    description:
       'Activity-based learning with alphabet mats, phonetic games, and joyful group exercises.',
-    image: '/images/play-learn-grow.jpg?v=2',
-    badge: 'Experiential Learning',
+    imageUrl: '/images/play-learn-grow.jpg?v=2',
+    subtitle: 'Experiential Learning',
   },
 ];
 
 export default function CampusLifeSection() {
+  const [cards, setCards] = useState(DEFAULT_CAMPUS_CARDS);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/v1/content?section=campus_life')
+      .then((res) => res.json())
+      .then((data) => {
+        const remoteCards = data.data || data.items || [];
+        if (active && data && data.success !== false && remoteCards.length > 0) {
+          setCards(remoteCards);
+        }
+      })
+      .catch(() => {
+        // Keep DEFAULT_CAMPUS_CARDS fallback if offline
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <section id="campus-life" className="py-12 sm:py-16 bg-white border-b border-slate-200">
@@ -108,33 +127,46 @@ export default function CampusLifeSection() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {CAMPUS_CARDS.map((card) => (
-            <div
-              key={card.id}
-              className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 shadow-sm hover:shadow-md hover:border-brand-gold/50 transition group flex flex-col"
-            >
-              <button
-                type="button"
-                onClick={() => setSelectedPhoto(card)}
-                className="relative aspect-[16/10] bg-slate-100 border-b border-slate-200 overflow-hidden w-full text-left focus:outline-none"
-                aria-label={`View larger photo of ${card.title}`}
+          {cards.map((card, idx) => {
+            const imgSrc = card.imageUrl || card.image || '/images/interactive-classroom.jpg?v=2';
+            const badgeText = card.subtitle || card.badge || 'KES Khanatti Campus';
+            const descText = card.description || card.caption || '';
+
+            return (
+              <div
+                key={card._id || card.id || idx}
+                className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 shadow-sm hover:shadow-md hover:border-brand-gold/50 transition group flex flex-col"
               >
-                <img
-                  src={card.image}
-                  alt={card.title}
-                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
-                <span className="absolute top-2.5 left-2.5 bg-brand-navyDark/85 text-brand-goldSoft text-[10px] font-semibold px-2.5 py-0.5 rounded-full border border-brand-gold/40">
-                  {card.badge}
-                </span>
-              </button>
-              <div className="p-4 flex-grow">
-                <h3 className="font-bold text-sm text-brand-navy">{card.title}</h3>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">{card.caption}</p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedPhoto({
+                      title: card.title,
+                      badge: badgeText,
+                      image: imgSrc,
+                      caption: descText,
+                    })
+                  }
+                  className="relative aspect-[16/10] bg-slate-100 border-b border-slate-200 overflow-hidden w-full text-left focus:outline-none"
+                  aria-label={`View larger photo of ${card.title}`}
+                >
+                  <img
+                    src={imgSrc}
+                    alt={card.title}
+                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <span className="absolute top-2.5 left-2.5 bg-brand-navyDark/85 text-brand-goldSoft text-[10px] font-semibold px-2.5 py-0.5 rounded-full border border-brand-gold/40">
+                    {badgeText}
+                  </span>
+                </button>
+                <div className="p-4 flex-grow">
+                  <h3 className="font-bold text-sm text-brand-navy">{card.title}</h3>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">{descText}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
