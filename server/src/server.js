@@ -12,6 +12,7 @@ const attendanceRoutes = require('./routes/attendanceRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const siteContentRoutes = require('./routes/siteContentRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const birthdayRoutes = require('./routes/birthdayRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -60,6 +61,7 @@ app.use('/api/v1/attendance', attendanceRoutes);
 app.use('/api/v1/students', studentRoutes);
 app.use('/api/v1/content', siteContentRoutes);
 app.use('/api/v1/payments', paymentRoutes);
+app.use('/api/v1/birthdays', birthdayRoutes);
 
 // 404 Handler for unknown API routes
 app.use('/api/*', (req, res) => {

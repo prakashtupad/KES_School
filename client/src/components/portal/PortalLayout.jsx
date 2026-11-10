@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { SCHOOL_INFO } from '../../constants/schoolData';
+import BirthdayGreetingDesk from './BirthdayGreetingDesk';
 
 const NAV_CONFIG = [
   {
@@ -102,7 +103,7 @@ export default function PortalLayout() {
   return (
     <div className="min-h-screen bg-brand-cream flex flex-col">
       {/* Top Portal Header */}
-      <header className="sticky top-0 z-40 bg-brand-navyDark text-white border-b border-brand-gold/40 shadow-sm">
+      <header className="sticky top-0 z-50 bg-[#1A365D] text-white border-b border-brand-gold/40 shadow-md">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-2.5 min-w-0">
             <button
@@ -222,7 +223,8 @@ export default function PortalLayout() {
         </aside>
 
         {/* Active Portal View */}
-        <main className="flex-grow p-3 sm:p-5 lg:p-7 min-w-0 w-full">
+        <main className="flex-grow p-3 sm:p-5 lg:p-7 min-w-0 w-full overflow-x-auto isolate">
+          <BirthdayGreetingDesk />
           <Outlet />
         </main>
       </div>

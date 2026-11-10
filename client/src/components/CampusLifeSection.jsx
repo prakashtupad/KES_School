@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SCHOOL_INFO } from '../constants/schoolData';
+import BirthdayCelebrationCard from './BirthdayCelebrationCard';
 
 const DEFAULT_CAMPUS_CARDS = [
   {
@@ -55,6 +56,12 @@ const DEFAULT_CAMPUS_CARDS = [
 export default function CampusLifeSection() {
   const [cards, setCards] = useState(DEFAULT_CAMPUS_CARDS);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [birthdayData, setBirthdayData] = useState({
+    students: [],
+    staff: [],
+    enableCard: true,
+    customWish: 'Wishing you joy, good health, and academic excellence! 🎂✨',
+  });
 
   useEffect(() => {
     let active = true;
@@ -69,6 +76,26 @@ export default function CampusLifeSection() {
       .catch(() => {
         // Keep DEFAULT_CAMPUS_CARDS fallback if offline
       });
+
+    fetch('/api/v1/content/today-birthdays')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!active || !data || data.success === false) return;
+        const students = data.publicCelebrants?.students || data.students || [];
+        const staff = data.publicCelebrants?.staff || data.staff || [];
+        const enableCard =
+          data.settings && typeof data.settings.enableBirthdayCampusCard === 'boolean'
+            ? data.settings.enableBirthdayCampusCard
+            : true;
+        const customWish =
+          data.settings?.customBirthdayWishTemplate ||
+          'Wishing you joy, good health, and academic excellence! 🎂✨';
+        setBirthdayData({ students, staff, enableCard, customWish });
+      })
+      .catch(() => {
+        // Silent fallback
+      });
+
     return () => {
       active = false;
     };
@@ -127,6 +154,13 @@ export default function CampusLifeSection() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {birthdayData.enableCard && (
+            <BirthdayCelebrationCard
+              celebrants={birthdayData.students}
+              staffCelebrants={birthdayData.staff}
+              customWish={birthdayData.customWish}
+            />
+          )}
           {cards.map((card, idx) => {
             const imgSrc = card.imageUrl || card.image || '/images/interactive-classroom.jpg?v=2';
             const badgeText = card.subtitle || card.badge || 'KES Khanatti Campus';

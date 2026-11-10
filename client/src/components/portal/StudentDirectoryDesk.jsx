@@ -142,7 +142,7 @@ export default function StudentDirectoryDesk() {
     const headers = [
       'Admission No',
       'Roll No',
-      'Student Name (As per Aadhaar)',
+      'Student Name',
       'Gender',
       'Date of Birth',
       'Class / Grade',
@@ -454,15 +454,19 @@ export default function StudentDirectoryDesk() {
 
           {/* DESKTOP & TABLET VIEW: Clean Streamlined Table (visible md and up) */}
           <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto relative">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
-                    <th className="py-3 px-4">Adm No</th>
-                    <th className="py-3 px-4">Student (Click for Full Profile)</th>
+                    <th className="w-[120px] min-w-[120px] max-w-[120px] py-3 px-4 sticky left-0 bg-slate-50 z-30 shadow-[1px_0_3px_rgba(0,0,0,0.08)]">
+                      Adm No
+                    </th>
+                    <th className="py-3 px-4 sticky left-[120px] bg-slate-50 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.06)]">
+                      Student Name
+                    </th>
                     <th className="py-3 px-4">Class</th>
                     <th className="py-3 px-4">Parent / Guardian</th>
-                    <th className="py-3 px-4">Mobile &amp; WhatsApp</th>
+                    <th className="py-3 px-4">Mobile</th>
                     <th className="py-3 px-4">Fee Status</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4 text-right">Actions</th>
@@ -470,42 +474,26 @@ export default function StudentDirectoryDesk() {
                 </thead>
                 <tbody className="divide-y divide-slate-200 text-xs">
                   {students.map((st) => {
-                    const waUrl = getDirectStudentChatUrl(
-                      st.whatsappNumber || st.primaryPhone,
-                      st.studentName,
-                      st.grade
-                    );
                     const fatherDisplay = st.father?.name || st.fatherName || '—';
                     const rawMother = st.mother?.name || st.motherName || '';
                     const motherDisplay = String(rawMother) !== 'true' ? rawMother : '';
 
                     return (
-                      <tr key={st._id} className="hover:bg-slate-50/80 transition">
-                        <td className="py-3 px-4 whitespace-nowrap">
+                      <tr key={st._id} className="group hover:bg-slate-50/80 transition">
+                        <td className="w-[120px] min-w-[120px] max-w-[120px] py-3 px-4 whitespace-nowrap sticky left-0 bg-white group-hover:bg-slate-50 z-20 shadow-[1px_0_3px_rgba(0,0,0,0.08)]">
                           <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-slate-100 text-brand-navy border border-slate-200">
                             {st.admissionNumber}
                           </span>
-                          {st.previousStudy?.stsNumber && (
-                            <span className="block text-[10px] font-mono text-slate-400 mt-0.5">
-                              STS: {st.previousStudy.stsNumber}
-                            </span>
-                          )}
                         </td>
 
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 whitespace-nowrap sticky left-[120px] bg-white group-hover:bg-slate-50 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.06)]">
                           <button
                             type="button"
                             onClick={() => setSelectedProfileStudent(st)}
-                            className="font-bold text-brand-navy hover:text-brand-gold text-xs sm:text-sm text-left underline decoration-brand-gold/50 underline-offset-2 transition"
+                            className="font-bold text-brand-navy hover:text-brand-gold text-xs sm:text-sm text-left transition cursor-pointer"
                           >
                             {st.studentName}
                           </button>
-                          <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
-                            <span>{st.gender}</span>
-                            {st.bloodGroup && st.bloodGroup !== 'Unknown' && (
-                              <span>• {st.bloodGroup}</span>
-                            )}
-                          </div>
                         </td>
 
                         <td className="py-3 px-4 whitespace-nowrap">
@@ -524,26 +512,8 @@ export default function StudentDirectoryDesk() {
                           )}
                         </td>
 
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <a
-                              href={`tel:+91${st.primaryPhone}`}
-                              className="inline-flex items-center gap-1 font-mono font-bold text-brand-navy hover:underline"
-                            >
-                              <Phone className="w-3 h-3 text-brand-gold" />
-                              <span>{st.primaryPhone}</span>
-                            </a>
-
-                            <a
-                              href={waUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition"
-                            >
-                              <MessageCircle className="w-3 h-3" />
-                              <span>Chat</span>
-                            </a>
-                          </div>
+                        <td className="py-3 px-4 whitespace-nowrap font-mono font-semibold text-slate-800">
+                          {st.primaryPhone}
                         </td>
 
                         <td className="py-3 px-4 whitespace-nowrap">
@@ -598,22 +568,12 @@ export default function StudentDirectoryDesk() {
                               )
                             )}
 
-                            <button
-                              type="button"
-                              onClick={() => setSelectedProfileStudent(st)}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition"
-                              title="View Full Profile"
-                            >
-                              <Eye className="w-3 h-3 text-brand-navy" />
-                              <span>Profile</span>
-                            </button>
-
                             {isAdmin && (
                               <>
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditStudent(st)}
-                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-brand-navy text-xs font-semibold transition"
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-brand-navy text-xs font-semibold transition cursor-pointer"
                                 >
                                   <Pencil className="w-3 h-3 text-brand-gold" />
                                   <span>Edit</span>

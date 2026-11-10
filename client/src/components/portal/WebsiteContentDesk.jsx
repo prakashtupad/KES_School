@@ -67,6 +67,63 @@ export default function WebsiteContentDesk() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
+  // Birthday Celebration CMS Settings
+  const [birthdaySettings, setBirthdaySettings] = useState({
+    enableBirthdayTicker: true,
+    enableBirthdayCampusCard: true,
+    customBirthdayWishTemplate: 'Wishing you joy, good health, and academic excellence! 🎂✨',
+  });
+  const [savingBirthdaySettings, setSavingBirthdaySettings] = useState(false);
+
+  const fetchBirthdaySettings = useCallback(async () => {
+    try {
+      const res = await fetch('/api/v1/birthdays/settings');
+      const data = await res.json();
+      if (res.ok && data.success && data.settings) {
+        setBirthdaySettings({
+          enableBirthdayTicker: data.settings.enableBirthdayTicker !== false,
+          enableBirthdayCampusCard: data.settings.enableBirthdayCampusCard !== false,
+          customBirthdayWishTemplate:
+            data.settings.customBirthdayWishTemplate ||
+            'Wishing you joy, good health, and academic excellence! 🎂✨',
+        });
+      }
+    } catch (err) {
+      // Ignore fallback
+    }
+  }, []);
+
+  const handleToggleBirthdaySetting = async (field, nextValue) => {
+    const updated = { ...birthdaySettings, [field]: nextValue };
+    setBirthdaySettings(updated);
+    setSavingBirthdaySettings(true);
+    try {
+      const res = await fetch('/api/v1/birthdays/settings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updated),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setFeedback({
+          type: 'success',
+          message: 'Birthday Celebration CMS settings updated on the website!',
+        });
+        setTimeout(() => setFeedback({ type: '', message: '' }), 3500);
+      }
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: 'Failed to save Birthday Celebration settings.',
+      });
+    } finally {
+      setSavingBirthdaySettings(false);
+    }
+  };
+
   const fetchContent = useCallback(async () => {
     setLoading(true);
     try {
@@ -84,7 +141,8 @@ export default function WebsiteContentDesk() {
 
   useEffect(() => {
     fetchContent();
-  }, [fetchContent]);
+    fetchBirthdaySettings();
+  }, [fetchContent, fetchBirthdaySettings]);
 
   const isHeroTab = activeTab === 'hero_carousel';
   const isAboutTab = activeTab === 'about_us';
@@ -339,6 +397,70 @@ export default function WebsiteContentDesk() {
           <ImageIcon className="w-4 h-4 text-brand-gold" />
           <span>3. Student &amp; Campus Life</span>
         </button>
+      </div>
+
+      {/* Birthday Celebration Settings Card */}
+      <div className="bg-gradient-to-r from-amber-50/70 via-white to-amber-50/50 rounded-xl border border-amber-200/80 p-4 sm:p-5 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-lg flex-shrink-0">
+              🎂
+            </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">
+                Automated Birthday Celebration &amp; Announcement System
+              </span>
+              <h3 className="text-sm sm:text-base font-serif font-bold text-brand-navy">
+                Birthday Celebration Settings
+              </h3>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Control whether today&apos;s student and staff birthdays appear in the top announcement micro-ticker and the Campus Life &ldquo;Star of the Day&rdquo; card.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-shrink-0">
+            <label className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 cursor-pointer hover:border-brand-gold/60 transition">
+              <div className="text-left">
+                <div className="text-xs font-bold text-slate-800">
+                  Announcement Micro-Ticker
+                </div>
+                <div className="text-[10px] text-slate-500">
+                  Show birthday wishes in top bar
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={birthdaySettings.enableBirthdayTicker}
+                disabled={savingBirthdaySettings}
+                onChange={(e) =>
+                  handleToggleBirthdaySetting('enableBirthdayTicker', e.target.checked)
+                }
+                className="w-4 h-4 accent-brand-navy rounded cursor-pointer"
+              />
+            </label>
+
+            <label className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 cursor-pointer hover:border-brand-gold/60 transition">
+              <div className="text-left">
+                <div className="text-xs font-bold text-slate-800">
+                  Star of the Day Card
+                </div>
+                <div className="text-[10px] text-slate-500">
+                  Show Birthday Corner in Campus Life
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={birthdaySettings.enableBirthdayCampusCard}
+                disabled={savingBirthdaySettings}
+                onChange={(e) =>
+                  handleToggleBirthdaySetting('enableBirthdayCampusCard', e.target.checked)
+                }
+                className="w-4 h-4 accent-brand-navy rounded cursor-pointer"
+              />
+            </label>
+          </div>
+        </div>
       </div>
 
       {/* Feedback Banner */}

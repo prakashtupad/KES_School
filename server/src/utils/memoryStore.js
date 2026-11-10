@@ -322,6 +322,12 @@ const memoryStore = {
     createdAt: new Date(),
     updatedAt: new Date(),
   })),
+  siteSettings: {
+    _id: '672700000000000000000999',
+    enableBirthdayTicker: true,
+    enableBirthdayCampusCard: true,
+    customBirthdayWishTemplate: 'Wishing you joy, good health, and academic excellence! 🎂✨',
+  },
 };
 
 module.exports = memoryStore;

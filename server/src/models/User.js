@@ -44,6 +44,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    dateOfBirth: {
+      type: Date,
+    },
+    displayBirthdayPublicly: {
+      type: Boolean,
+      default: true,
+    },
     assignedGrades: [
       {
         type: String,

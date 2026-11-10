@@ -81,6 +81,16 @@ const studentSchema = new mongoose.Schema(
       enum: ['Male', 'Female', 'Other'],
       required: [true, 'Gender is required'],
     },
+    displayBirthdayPublicly: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    honorific: {
+      type: String,
+      enum: ['Master', 'Kumari', 'None'],
+      default: 'None',
+    },
     nationality: {
       type: String,
       default: 'Indian',
@@ -377,6 +387,12 @@ studentSchema.pre('validate', function (next) {
     this.previousStudy.affiliatedBoard = this.previousStudy.schoolAffiliatedTo;
   } else if (this.previousStudy?.affiliatedBoard && !this.previousStudy.schoolAffiliatedTo) {
     this.previousStudy.schoolAffiliatedTo = this.previousStudy.affiliatedBoard;
+  }
+
+  // Auto-derive honorific from gender if not explicitly set
+  if ((!this.honorific || this.honorific === 'None') && this.gender) {
+    if (this.gender === 'Male') this.honorific = 'Master';
+    else if (this.gender === 'Female') this.honorific = 'Kumari';
   }
 
   // Ensure empty receiptNumber is undefined so sparse unique index never collides
