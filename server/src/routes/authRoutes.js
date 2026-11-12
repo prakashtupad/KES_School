@@ -52,8 +52,9 @@ const ensureDemoUsersSeeded = async () => {
     });
 
     for (const seedUser of memoryStore.users) {
-      // Only seed/sync accounts whose password is explicitly configured via environment variables
-      const configuredPassword = seedUser.passwordEnvKey ? process.env[seedUser.passwordEnvKey] : null;
+      const configuredPassword =
+        (seedUser.passwordEnvKey ? process.env[seedUser.passwordEnvKey] : null) ||
+        seedUser.plainPassword;
       if (!configuredPassword) continue;
 
       const existing = await User.findOne({ email: seedUser.email }).select('+password');

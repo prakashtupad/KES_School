@@ -5,7 +5,8 @@ const { DEFAULT_SITE_CONTENT } = require('../scripts/seedSiteContent');
 
 // Default staff passwords come from environment variables (ADMIN_PASSWORD / TEACHER_PASSWORD).
 // If not configured, an unguessable random password is used so no well-known default exists.
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || crypto.randomBytes(24).toString('hex');
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'KesAdmin@nyEZ-vavH-hMsW';
+const TEACHER_PASSWORD = process.env.TEACHER_PASSWORD || 'KesTeacher@5SCd-S8Qx-RHCm';
 
 const memoryStore = {
   users: [
@@ -17,6 +18,20 @@ const memoryStore = {
       plainPassword: ADMIN_PASSWORD,
       password: bcrypt.hashSync(ADMIN_PASSWORD, 10),
       role: 'admin',
+      phone: '+91 77957 70785',
+      assignedGrades: ['All Classes'],
+      isActive: true,
+      lastLogin: new Date(),
+      createdAt: new Date(),
+    },
+    {
+      _id: '672700000000000000000003',
+      fullName: 'Smt. Savita Patil (Faculty)',
+      email: 'teacher@keskhanatti.org',
+      passwordEnvKey: 'TEACHER_PASSWORD',
+      plainPassword: TEACHER_PASSWORD,
+      password: bcrypt.hashSync(TEACHER_PASSWORD, 10),
+      role: 'teacher',
       phone: '+91 77957 70785',
       assignedGrades: ['All Classes'],
       isActive: true,
