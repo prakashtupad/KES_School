@@ -38,6 +38,12 @@ const GRADE_FILTERS = [
 
 const SECTIONS = ['All', 'A', 'B', 'C', 'N/A'];
 
+const isSectionApplicable = (sec) => {
+  if (!sec) return false;
+  const normalized = String(sec).trim().toUpperCase();
+  return normalized !== 'N/A' && normalized !== 'NOT APPLICABLE' && normalized !== 'NONE';
+};
+
 export default function StudentDirectoryDesk() {
   const { user, token } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -348,6 +354,18 @@ export default function StudentDirectoryDesk() {
                 st.grade
               );
               const fatherDisplay = st.father?.name || st.fatherName || '—';
+              const feeStatus = st.feeDetails?.paymentStatus || 'Pending';
+              const paidAmt = Number(st.feeDetails?.amountPaid || 0);
+              const totalFeeAmt = Math.max(
+                Number(st.feeDetails?.admissionFeeAmount || paidAmt || 500),
+                paidAmt
+              );
+              const balanceAmt = Math.max(
+                0,
+                Number(st.feeDetails?.balanceDue ?? totalFeeAmt - paidAmt)
+              );
+              const hasPaidAny =
+                paidAmt > 0 || feeStatus === 'Paid' || feeStatus === 'Partial';
 
               return (
                 <div
@@ -361,16 +379,21 @@ export default function StudentDirectoryDesk() {
                           {st.admissionNumber}
                         </span>
                         <span className="px-2 py-0.5 rounded bg-brand-navy text-white text-[10px] font-bold">
-                          {st.grade} ({st.section || 'A'})
+                          {st.grade}
+                          {isSectionApplicable(st.section) ? ` (${st.section})` : ''}
                         </span>
                         <span
                           className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                            st.feeDetails?.paymentStatus === 'Paid'
+                            hasPaidAny && balanceAmt === 0
                               ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                               : 'bg-amber-100 text-amber-800 border-amber-300'
                           }`}
                         >
-                          Fee: {st.feeDetails?.paymentStatus || 'Pending'}
+                          {hasPaidAny
+                            ? balanceAmt > 0
+                              ? `Partial: ₹${paidAmt} (Due: ₹${balanceAmt})`
+                              : `Paid: ₹${paidAmt || 500}`
+                            : 'Fee: Pending'}
                         </span>
                       </div>
                       <button
@@ -386,7 +409,7 @@ export default function StudentDirectoryDesk() {
                     </div>
 
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      {st.feeDetails?.paymentStatus === 'Paid' ? (
+                      {hasPaidAny && (
                         <button
                           type="button"
                           onClick={() => setReceiptModalStudent(st)}
@@ -395,17 +418,20 @@ export default function StudentDirectoryDesk() {
                         >
                           <Printer className="w-3.5 h-3.5" />
                         </button>
-                      ) : (
-                        isAdmin && (
-                          <button
-                            type="button"
-                            onClick={() => setPaymentModalStudent(st)}
-                            className="p-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
-                            title="Collect Admission Fee"
-                          >
-                            <IndianRupee className="w-3.5 h-3.5" />
-                          </button>
-                        )
+                      )}
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => setPaymentModalStudent(st)}
+                          className="p-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                          title={
+                            hasPaidAny
+                              ? 'Collect Remaining Fee Amount'
+                              : 'Collect Admission Fee'
+                          }
+                        >
+                          <IndianRupee className="w-3.5 h-3.5" />
+                        </button>
                       )}
                       <button
                         type="button"
@@ -477,6 +503,18 @@ export default function StudentDirectoryDesk() {
                     const fatherDisplay = st.father?.name || st.fatherName || '—';
                     const rawMother = st.mother?.name || st.motherName || '';
                     const motherDisplay = String(rawMother) !== 'true' ? rawMother : '';
+                    const feeStatus = st.feeDetails?.paymentStatus || 'Pending';
+                    const paidAmt = Number(st.feeDetails?.amountPaid || 0);
+                    const totalFeeAmt = Math.max(
+                      Number(st.feeDetails?.admissionFeeAmount || paidAmt || 500),
+                      paidAmt
+                    );
+                    const balanceAmt = Math.max(
+                      0,
+                      Number(st.feeDetails?.balanceDue ?? totalFeeAmt - paidAmt)
+                    );
+                    const hasPaidAny =
+                      paidAmt > 0 || feeStatus === 'Paid' || feeStatus === 'Partial';
 
                     return (
                       <tr key={st._id} className="group hover:bg-slate-50/80 transition">
@@ -500,9 +538,11 @@ export default function StudentDirectoryDesk() {
                           <span className="inline-flex items-center px-2 py-0.5 rounded bg-brand-navy text-white text-[11px] font-bold">
                             {st.grade}
                           </span>
-                          <span className="ml-1 px-1.5 py-0.5 rounded bg-brand-goldSoft text-brand-navyDark border border-brand-gold/40 text-[11px] font-bold">
-                            {st.section || 'A'}
-                          </span>
+                          {isSectionApplicable(st.section) && (
+                            <span className="ml-1 px-1.5 py-0.5 rounded bg-brand-goldSoft text-brand-navyDark border border-brand-gold/40 text-[11px] font-bold">
+                              {st.section}
+                            </span>
+                          )}
                         </td>
 
                         <td className="py-3 px-4">
@@ -517,21 +557,34 @@ export default function StudentDirectoryDesk() {
                         </td>
 
                         <td className="py-3 px-4 whitespace-nowrap">
-                          {st.feeDetails?.paymentStatus === 'Paid' ? (
-                            <div>
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                <span>Paid (₹{st.feeDetails.amountPaid || 500})</span>
-                              </span>
-                              {st.feeDetails.receiptNumber && (
-                                <span className="block text-[10px] font-mono text-slate-500 mt-0.5">
+                          {hasPaidAny ? (
+                            <div className="space-y-0.5">
+                              {balanceAmt > 0 ? (
+                                <>
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold">
+                                    <span>
+                                      Partial: ₹{paidAmt} / ₹{totalFeeAmt}
+                                    </span>
+                                  </span>
+                                  <span className="block text-[10px] font-mono font-bold text-red-600">
+                                    Balance Due: ₹{balanceAmt}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  <span>Paid (₹{paidAmt || 500})</span>
+                                </span>
+                              )}
+                              {st.feeDetails?.receiptNumber && (
+                                <span className="block text-[10px] font-mono text-slate-500">
                                   {st.feeDetails.receiptNumber}
                                 </span>
                               )}
                             </div>
                           ) : (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold">
-                              {st.feeDetails?.paymentStatus || 'Pending'}
+                              {feeStatus}
                             </span>
                           )}
                         </td>
@@ -544,7 +597,7 @@ export default function StudentDirectoryDesk() {
 
                         <td className="py-3 px-4 text-right whitespace-nowrap">
                           <div className="inline-flex items-center justify-end gap-1.5">
-                            {st.feeDetails?.paymentStatus === 'Paid' ? (
+                            {hasPaidAny && (
                               <button
                                 type="button"
                                 onClick={() => setReceiptModalStudent(st)}
@@ -554,18 +607,28 @@ export default function StudentDirectoryDesk() {
                                 <Printer className="w-3 h-3 text-emerald-700" />
                                 <span>Print Receipt</span>
                               </button>
-                            ) : (
-                              isAdmin && (
-                                <button
-                                  type="button"
-                                  onClick={() => setPaymentModalStudent(st)}
-                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold transition cursor-pointer"
-                                  title="Collect Admission Fee & Generate Receipt"
-                                >
-                                  <IndianRupee className="w-3 h-3 text-brand-gold" />
-                                  <span>Collect Fee</span>
-                                </button>
-                              )
+                            )}
+
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => setPaymentModalStudent(st)}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold transition cursor-pointer"
+                                title={
+                                  hasPaidAny
+                                    ? 'Collect Remaining Fee Amount & Generate Receipt'
+                                    : 'Collect Admission Fee & Generate Receipt'
+                                }
+                              >
+                                <IndianRupee className="w-3 h-3 text-brand-gold" />
+                                <span>
+                                  {hasPaidAny
+                                    ? balanceAmt > 0
+                                      ? `Pay Remaining (₹${balanceAmt})`
+                                      : '+ Remaining Fee'
+                                    : 'Collect Fee'}
+                                </span>
+                              </button>
                             )}
 
                             {isAdmin && (

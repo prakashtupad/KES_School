@@ -217,12 +217,17 @@ export async function generateReceiptImage({
     ctx.fillText(String(value || '—'), x + lblWidth + 6, y);
   };
 
+  const normSec = String(student.section || '').trim().toUpperCase();
+  const hasValidSec =
+    normSec && normSec !== 'N/A' && normSec !== 'NOT APPLICABLE' && normSec !== 'NONE';
   drawLabelValue(col1X, gridTop, 'Student Name:', student.studentName);
   drawLabelValue(
     col2X,
     gridTop,
     'Grade & Section:',
-    `${student.grade || '—'} (Sec ${student.section || 'A'})`
+    hasValidSec
+      ? `${student.grade || '—'} (Sec ${student.section})`
+      : `${student.grade || '—'}`
   );
 
   drawLabelValue(col1X, gridTop + rowGap, 'Father / Guardian:', fatherName);
@@ -308,11 +313,22 @@ export async function generateReceiptImage({
   ctx.fillStyle = '#0f172a';
   ctx.fillText(`Admission & Registration Fee (AY ${academicYear})`, xPart + 14, r1Y + 26);
 
+  const totalFeeVal = Math.max(
+    Number(student.feeDetails?.admissionFeeAmount || amountPaid),
+    amountPaid
+  );
+  const balanceDueVal = Math.max(
+    0,
+    Number(student.feeDetails?.balanceDue ?? totalFeeVal - amountPaid)
+  );
   ctx.font = '13px Arial, sans-serif';
-  ctx.fillStyle = '#64748b';
-  const remarkText = remarks
-    ? `Remarks: ${remarks}`
-    : 'Official Admission & Registration Fee Receipt';
+  ctx.fillStyle = balanceDueVal > 0 ? '#b45309' : '#64748b';
+  const remarkText =
+    balanceDueVal > 0
+      ? `Total Fee: ₹${totalFeeVal.toFixed(2)} • Balance Due: ₹${balanceDueVal.toFixed(2)}${remarks ? ` • ${remarks}` : ''}`
+      : remarks
+      ? `Remarks: ${remarks}`
+      : 'Official Admission & Registration Fee Receipt';
   ctx.fillText(remarkText.slice(0, 75), xPart + 14, r1Y + 48);
 
   ctx.font = '14px Arial, sans-serif';

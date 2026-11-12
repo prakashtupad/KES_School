@@ -262,6 +262,8 @@ const studentSchema = new mongoose.Schema(
     feeDetails: {
       admissionFeeAmount: { type: Number, default: 500 },
       amountPaid: { type: Number, default: 0 },
+      balanceDue: { type: Number, default: 0 },
+      lastPaymentAmount: { type: Number, default: 0 },
       paymentStatus: {
         type: String,
         enum: ['Pending', 'Partial', 'Paid', 'Waived / Free Ship'],
@@ -293,6 +295,16 @@ const studentSchema = new mongoose.Schema(
       collectedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
       collectedByStaff: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
       remarks: { type: String, trim: true },
+      paymentHistory: [
+        {
+          receiptNumber: { type: String, trim: true },
+          amountPaid: { type: Number, default: 0 },
+          paymentMethod: { type: String, default: 'Cash' },
+          transactionId: { type: String, trim: true },
+          paidAt: { type: Date, default: Date.now },
+          remarks: { type: String, trim: true },
+        },
+      ],
     },
 
     // Status

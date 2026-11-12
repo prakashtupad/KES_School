@@ -15,24 +15,41 @@ const generateReceiptNumber = async (academicYear = '2026-2027') => {
 
   if (dbStatus.isConnected) {
     const paidStudents = await Student.find(
-      { 'feeDetails.receiptNumber': { $regex: `^${prefix}` } },
-      { 'feeDetails.receiptNumber': 1 }
+      {
+        $or: [
+          { 'feeDetails.receiptNumber': { $regex: `^${prefix}` } },
+          { 'feeDetails.paymentHistory.receiptNumber': { $regex: `^${prefix}` } },
+        ],
+      },
+      { 'feeDetails.receiptNumber': 1, 'feeDetails.paymentHistory': 1 }
     ).lean();
 
     for (const st of paidStudents) {
-      const rec = st.feeDetails?.receiptNumber || '';
-      const numPart = parseInt(rec.replace(prefix, ''), 10);
-      if (!Number.isNaN(numPart) && numPart > maxSeq) {
-        maxSeq = numPart;
+      const candidates = [
+        st.feeDetails?.receiptNumber || '',
+        ...((st.feeDetails?.paymentHistory || []).map((h) => h.receiptNumber || '')),
+      ];
+      for (const rec of candidates) {
+        if (rec.startsWith(prefix)) {
+          const numPart = parseInt(rec.replace(prefix, ''), 10);
+          if (!Number.isNaN(numPart) && numPart > maxSeq) {
+            maxSeq = numPart;
+          }
+        }
       }
     }
   } else {
     for (const st of memoryStore.students) {
-      const rec = st.feeDetails?.receiptNumber || '';
-      if (rec.startsWith(prefix)) {
-        const numPart = parseInt(rec.replace(prefix, ''), 10);
-        if (!Number.isNaN(numPart) && numPart > maxSeq) {
-          maxSeq = numPart;
+      const candidates = [
+        st.feeDetails?.receiptNumber || '',
+        ...((st.feeDetails?.paymentHistory || []).map((h) => h.receiptNumber || '')),
+      ];
+      for (const rec of candidates) {
+        if (rec.startsWith(prefix)) {
+          const numPart = parseInt(rec.replace(prefix, ''), 10);
+          if (!Number.isNaN(numPart) && numPart > maxSeq) {
+            maxSeq = numPart;
+          }
         }
       }
     }
@@ -51,11 +68,12 @@ exports.recordFeePayment = async (req, res) => {
     const {
       studentId,
       amountPaid,
+      currentPaymentAmount,
       admissionFeeAmount,
+      isRemainingPayment = false,
       paymentMethod = 'Cash',
       transactionId = '',
       voucherNumber = '',
-      paymentStatus = 'Paid',
       remarks = '',
     } = req.body || {};
 
@@ -66,11 +84,13 @@ exports.recordFeePayment = async (req, res) => {
       });
     }
 
-    const numericPaid = Number(amountPaid);
-    if (Number.isNaN(numericPaid) || numericPaid < 0) {
+    const numericInputPaid = Number(
+      currentPaymentAmount !== undefined ? currentPaymentAmount : amountPaid
+    );
+    if (Number.isNaN(numericInputPaid) || numericInputPaid <= 0) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide a valid fee amount.',
+        message: 'Please provide a valid fee amount greater than ₹0.',
       });
     }
 
@@ -103,31 +123,72 @@ exports.recordFeePayment = async (req, res) => {
         });
       }
 
-      const receiptNo =
-        student.feeDetails?.receiptNumber ||
-        (await generateReceiptNumber(student.academicYear || '2026-2027'));
+      const previousPaid = Number(student.feeDetails?.amountPaid || 0);
+      const cumulativePaid = isRemainingPayment
+        ? previousPaid + numericInputPaid
+        : Number(amountPaid !== undefined ? amountPaid : numericInputPaid);
 
-      const totalFee =
+      const requestedTotalFee =
         admissionFeeAmount !== undefined
           ? Number(admissionFeeAmount)
-          : student.feeDetails?.admissionFeeAmount || numericPaid || 500;
+          : Number(student.feeDetails?.admissionFeeAmount || 0);
+
+      const totalFee = Math.max(requestedTotalFee || cumulativePaid, cumulativePaid);
+      const balanceDue = Math.max(0, totalFee - cumulativePaid);
+      const computedStatus =
+        cumulativePaid <= 0 ? 'Pending' : balanceDue > 0 ? 'Partial' : 'Paid';
+
+      const receiptNo =
+        !isRemainingPayment && student.feeDetails?.receiptNumber && previousPaid === 0
+          ? student.feeDetails.receiptNumber
+          : await generateReceiptNumber(student.academicYear || '2026-2027');
+
+      const resolvedRemarks =
+        String(remarks || '').trim() ||
+        (resolvedMethod === 'Cash'
+          ? 'Paid in Cash at Khanatti School Office Counter'
+          : `Paid via ${resolvedMethod.replace('_', ' ')}`);
+
+      const existingHistory = Array.isArray(student.feeDetails?.paymentHistory)
+        ? [...student.feeDetails.paymentHistory]
+        : [];
+
+      // If student already had a previous payment without history array, seed the first entry
+      if (existingHistory.length === 0 && previousPaid > 0 && isRemainingPayment) {
+        existingHistory.push({
+          receiptNumber: student.feeDetails?.receiptNumber || 'KES-REC-2026-INIT',
+          amountPaid: previousPaid,
+          paymentMethod: student.feeDetails?.paymentMethod || 'Cash',
+          transactionId: student.feeDetails?.transactionId || '',
+          paidAt: student.feeDetails?.paidAt || student.createdAt || new Date(),
+          remarks: student.feeDetails?.remarks || 'Initial Fee Payment',
+        });
+      }
+
+      existingHistory.push({
+        receiptNumber: receiptNo,
+        amountPaid: numericInputPaid,
+        paymentMethod: resolvedMethod,
+        transactionId: resolvedTxnId,
+        paidAt: new Date(),
+        remarks: resolvedRemarks,
+      });
 
       student.feeDetails = {
         ...(student.feeDetails ? student.feeDetails.toObject?.() || student.feeDetails : {}),
         admissionFeeAmount: totalFee,
-        amountPaid: numericPaid,
-        paymentStatus: paymentStatus || 'Paid',
+        amountPaid: cumulativePaid,
+        balanceDue,
+        lastPaymentAmount: numericInputPaid,
+        paymentStatus: computedStatus,
         paymentMethod: resolvedMethod,
         transactionId: resolvedTxnId,
         receiptNumber: receiptNo,
         paidAt: new Date(),
         collectedBy: req.user?._id,
         collectedByStaff: req.user?._id,
-        remarks:
-          String(remarks || '').trim() ||
-          (resolvedMethod === 'Cash'
-            ? 'Paid in Cash at Khanatti School Office Counter'
-            : `Paid via ${resolvedMethod.replace('_', ' ')}`),
+        remarks: resolvedRemarks,
+        paymentHistory: existingHistory,
       };
 
       await student.save();
@@ -154,30 +215,70 @@ exports.recordFeePayment = async (req, res) => {
       });
     }
 
-    const receiptNo =
-      memStudent.feeDetails?.receiptNumber ||
-      (await generateReceiptNumber(memStudent.academicYear || '2026-2027'));
+    const previousPaid = Number(memStudent.feeDetails?.amountPaid || 0);
+    const cumulativePaid = isRemainingPayment
+      ? previousPaid + numericInputPaid
+      : Number(amountPaid !== undefined ? amountPaid : numericInputPaid);
 
-    const totalFee =
+    const requestedTotalFee =
       admissionFeeAmount !== undefined
         ? Number(admissionFeeAmount)
-        : memStudent.feeDetails?.admissionFeeAmount || numericPaid || 500;
+        : Number(memStudent.feeDetails?.admissionFeeAmount || 0);
+
+    const totalFee = Math.max(requestedTotalFee || cumulativePaid, cumulativePaid);
+    const balanceDue = Math.max(0, totalFee - cumulativePaid);
+    const computedStatus =
+      cumulativePaid <= 0 ? 'Pending' : balanceDue > 0 ? 'Partial' : 'Paid';
+
+    const receiptNo =
+      !isRemainingPayment && memStudent.feeDetails?.receiptNumber && previousPaid === 0
+        ? memStudent.feeDetails.receiptNumber
+        : await generateReceiptNumber(memStudent.academicYear || '2026-2027');
+
+    const resolvedRemarks =
+      String(remarks || '').trim() ||
+      (resolvedMethod === 'Cash'
+        ? 'Paid in Cash at Khanatti School Office Counter'
+        : `Paid via ${resolvedMethod.replace('_', ' ')}`);
+
+    const existingHistory = Array.isArray(memStudent.feeDetails?.paymentHistory)
+      ? [...memStudent.feeDetails.paymentHistory]
+      : [];
+
+    if (existingHistory.length === 0 && previousPaid > 0 && isRemainingPayment) {
+      existingHistory.push({
+        receiptNumber: memStudent.feeDetails?.receiptNumber || 'KES-REC-2026-INIT',
+        amountPaid: previousPaid,
+        paymentMethod: memStudent.feeDetails?.paymentMethod || 'Cash',
+        transactionId: memStudent.feeDetails?.transactionId || '',
+        paidAt: memStudent.feeDetails?.paidAt || new Date(),
+        remarks: memStudent.feeDetails?.remarks || 'Initial Fee Payment',
+      });
+    }
+
+    existingHistory.push({
+      receiptNumber: receiptNo,
+      amountPaid: numericInputPaid,
+      paymentMethod: resolvedMethod,
+      transactionId: resolvedTxnId,
+      paidAt: new Date(),
+      remarks: resolvedRemarks,
+    });
 
     memStudent.feeDetails = {
       admissionFeeAmount: totalFee,
-      amountPaid: numericPaid,
-      paymentStatus: paymentStatus || 'Paid',
+      amountPaid: cumulativePaid,
+      balanceDue,
+      lastPaymentAmount: numericInputPaid,
+      paymentStatus: computedStatus,
       paymentMethod: resolvedMethod,
       transactionId: resolvedTxnId,
       receiptNumber: receiptNo,
       paidAt: new Date(),
       collectedBy: req.user?._id,
       collectedByStaff: req.user?._id,
-      remarks:
-        String(remarks || '').trim() ||
-        (resolvedMethod === 'Cash'
-          ? 'Paid in Cash at Khanatti School Office Counter'
-          : `Paid via ${resolvedMethod.replace('_', ' ')}`),
+      remarks: resolvedRemarks,
+      paymentHistory: existingHistory,
     };
 
     return res.status(200).json({

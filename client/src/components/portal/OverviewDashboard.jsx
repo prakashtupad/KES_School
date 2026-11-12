@@ -20,9 +20,9 @@ export default function OverviewDashboard() {
     totalFeeCollected: 0,
     paidStudentCount: 0,
     pendingFeeCount: 0,
-    staffCount: 2,
+    staffCount: 1,
     homeworkCount: 0,
-    noticesCount: 3,
+    noticesCount: 0,
   });
 
   useEffect(() => {

@@ -103,7 +103,7 @@ export default function PortalLayout() {
   return (
     <div className="min-h-screen bg-brand-cream flex flex-col">
       {/* Top Portal Header */}
-      <header className="sticky top-0 z-50 bg-[#1A365D] text-white border-b border-brand-gold/40 shadow-md">
+      <header className="sticky top-0 z-40 bg-[#1A365D] text-white border-b border-brand-gold/40 shadow-md">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-2.5 min-w-0">
             <button
@@ -186,7 +186,7 @@ export default function PortalLayout() {
         <aside
           className={`${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-          } fixed lg:static inset-y-0 left-0 top-14 sm:top-16 z-40 w-64 flex-shrink-0 bg-white border-r border-slate-200 p-4 flex flex-col justify-between transition-transform duration-200 ease-in-out`}
+          } fixed lg:static inset-y-0 left-0 top-14 sm:top-16 z-40 lg:z-10 w-64 flex-shrink-0 bg-white border-r border-slate-200 p-4 flex flex-col justify-between transition-transform duration-200 ease-in-out`}
         >
           <div className="space-y-4">
             <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -223,7 +223,7 @@ export default function PortalLayout() {
         </aside>
 
         {/* Active Portal View */}
-        <main className="flex-grow p-3 sm:p-5 lg:p-7 min-w-0 w-full overflow-x-auto isolate">
+        <main className="flex-grow p-3 sm:p-5 lg:p-7 min-w-0 w-full overflow-x-auto">
           <BirthdayGreetingDesk />
           <Outlet />
         </main>

@@ -13,7 +13,10 @@ export const formatHomeworkWhatsApp = (
       })
     : 'Next working day';
 
-  const sectionLabel = hw.section ? ` (Section ${hw.section})` : '';
+  const normSec = String(hw.section || '').trim().toUpperCase();
+  const hasValidSection =
+    normSec && normSec !== 'N/A' && normSec !== 'NOT APPLICABLE' && normSec !== 'NONE';
+  const sectionLabel = hasValidSection ? ` (Section ${hw.section})` : '';
 
   const text = `📚 *${schoolName}*
 🏛 *Khanatti Education Society*

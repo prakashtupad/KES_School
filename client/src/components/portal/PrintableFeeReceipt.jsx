@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Printer,
   MessageCircle,
@@ -110,10 +111,19 @@ export default function PrintableFeeReceipt({ student, onClose }) {
   const feeDetails = student.feeDetails || {};
   const receiptNo = feeDetails.receiptNumber || 'KES-REC-2026-0001';
   const amountPaid = Number(feeDetails.amountPaid ?? feeDetails.admissionFeeAmount ?? 500);
+  const totalFee = Math.max(Number(feeDetails.admissionFeeAmount ?? amountPaid), amountPaid);
+  const balanceDue = Math.max(0, Number(feeDetails.balanceDue ?? totalFee - amountPaid));
   const amountWords = numberToIndianWords(amountPaid);
   const paymentMode = formatPaymentMethodLabel(feeDetails.paymentMethod);
   const txnRef = feeDetails.transactionId || 'OFFICE-CASH-COUNTER';
   const academicYear = student.academicYear || '2026-2027';
+
+  const normSec = String(student.section || '').trim().toUpperCase();
+  const hasValidSection =
+    normSec && normSec !== 'N/A' && normSec !== 'NOT APPLICABLE' && normSec !== 'NONE';
+  const gradeAndSectionLabel = hasValidSection
+    ? `${student.grade || '—'} (Sec ${student.section})`
+    : `${student.grade || '—'}`;
 
   const paidDateObj = feeDetails.paidAt ? new Date(feeDetails.paidAt) : new Date();
   const formattedDateTime = paidDateObj.toLocaleString('en-IN', {
@@ -272,7 +282,7 @@ export default function PrintableFeeReceipt({ student, onClose }) {
 
         <div class="cf-grid">
           <div><span class="lbl">Student Name:</span> <strong>${student.studentName || '—'}</strong></div>
-          <div><span class="lbl">Class &amp; Section:</span> <strong>${student.grade || '—'} (Sec ${student.section || 'A'})</strong></div>
+          <div><span class="lbl">Class:</span> <strong>${gradeAndSectionLabel}</strong></div>
           <div><span class="lbl">Father / Guardian:</span> <strong>${fatherName}</strong></div>
           <div><span class="lbl">Parent Mobile:</span> <strong>+91 ${parentPhone || '—'}</strong></div>
           <div><span class="lbl">Village / Town:</span> <strong>${village}</strong></div>
@@ -293,13 +303,14 @@ export default function PrintableFeeReceipt({ student, onClose }) {
               <td style="text-align: center;">1</td>
               <td>
                 <strong>Admission &amp; Registration Fee (AY ${academicYear})</strong>
+                ${balanceDue > 0 ? `<div style="font-size: 10px; color: #b45309; font-weight: bold; margin-top: 2px;">Total Applicable Fee: ₹ ${totalFee.toFixed(2)} • Balance Due: ₹ ${balanceDue.toFixed(2)}</div>` : ''}
                 ${feeDetails.remarks ? `<div style="font-size: 10px; color: #475569; margin-top: 2px;">Note: ${feeDetails.remarks}</div>` : ''}
               </td>
               <td style="font-size: 10.5px;">${paymentMode}<br/><span style="font-family: monospace;">${txnRef}</span></td>
               <td style="text-align: right; font-family: monospace; font-weight: bold;">₹ ${amountPaid.toFixed(2)}</td>
             </tr>
             <tr class="total-row">
-              <td colspan="3" style="text-align: right;">TOTAL AMOUNT RECEIVED:</td>
+              <td colspan="3" style="text-align: right;">TOTAL AMOUNT RECEIVED${balanceDue > 0 ? ` (Balance Due: ₹ ${balanceDue.toFixed(2)})` : ''}:</td>
               <td style="text-align: right; font-family: monospace; font-size: 13px; color: #065f46;">₹ ${amountPaid.toFixed(2)}</td>
             </tr>
           </tbody>
@@ -620,10 +631,8 @@ export default function PrintableFeeReceipt({ student, onClose }) {
           <strong className="text-slate-900">{student.studentName}</strong>
         </div>
         <div>
-          <span className="text-slate-500">Grade &amp; Section:</span>{' '}
-          <strong className="text-slate-900">
-            {student.grade} (Sec {student.section || 'A'})
-          </strong>
+          <span className="text-slate-500">Grade / Class:</span>{' '}
+          <strong className="text-slate-900">{gradeAndSectionLabel}</strong>
         </div>
         <div>
           <span className="text-slate-500">Father / Guardian:</span>{' '}
@@ -661,6 +670,12 @@ export default function PrintableFeeReceipt({ student, onClose }) {
               <td className="border border-slate-300 p-2 text-center">1</td>
               <td className="border border-slate-300 p-2 font-medium">
                 Admission &amp; Registration Fee (AY {academicYear})
+                {balanceDue > 0 && (
+                  <span className="block text-[10.5px] text-amber-800 font-bold mt-0.5">
+                    Total Applicable Fee: ₹ {totalFee.toFixed(2)} • Remaining Balance Due: ₹{' '}
+                    {balanceDue.toFixed(2)}
+                  </span>
+                )}
                 {feeDetails.remarks && (
                   <span className="block text-[10px] text-slate-500 font-normal mt-0.5">
                     Remarks: {feeDetails.remarks}
@@ -715,9 +730,9 @@ export default function PrintableFeeReceipt({ student, onClose }) {
     </div>
   );
 
-  return (
+  const receiptModalContent = (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-xs p-3 sm:p-6 flex flex-col items-center"
+      className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-900/80 backdrop-blur-xs p-3 sm:p-6 flex flex-col items-center"
       role="dialog"
       aria-modal="true"
       aria-label="Official Printable Fee Receipt"
@@ -852,4 +867,8 @@ export default function PrintableFeeReceipt({ student, onClose }) {
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(receiptModalContent, document.body)
+    : receiptModalContent;
 }

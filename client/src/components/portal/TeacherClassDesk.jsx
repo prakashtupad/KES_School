@@ -29,7 +29,18 @@ const CLASS_GRADE_OPTIONS = [
   'Grade 5',
 ];
 
-const SECTION_OPTIONS = ['A', 'B', 'C'];
+const SECTION_OPTIONS = [
+  { value: 'A', label: 'Sec A' },
+  { value: 'B', label: 'Sec B' },
+  { value: 'C', label: 'Sec C' },
+  { value: 'N/A', label: 'N/A (Not Applicable)' },
+];
+
+const isSectionApplicable = (sec) => {
+  if (!sec) return false;
+  const normalized = String(sec).trim().toUpperCase();
+  return normalized !== 'N/A' && normalized !== 'NOT APPLICABLE' && normalized !== 'NONE';
+};
 
 export default function TeacherClassDesk() {
   const { user, token } = useAuth();
@@ -150,7 +161,7 @@ export default function TeacherClassDesk() {
       if (hw.grade && hw.grade !== 'All Classes') {
         params.set('grade', hw.grade);
       }
-      if (hw.section && hw.grade !== 'All Classes') {
+      if (isSectionApplicable(hw.section) && hw.grade !== 'All Classes') {
         params.set('section', hw.section);
       }
 
@@ -252,8 +263,8 @@ export default function TeacherClassDesk() {
                   className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:border-brand-navy bg-white"
                 >
                   {SECTION_OPTIONS.map((sec) => (
-                    <option key={sec} value={sec}>
-                      Sec {sec}
+                    <option key={sec.value} value={sec.value}>
+                      {sec.label}
                     </option>
                   ))}
                 </select>
@@ -393,7 +404,8 @@ export default function TeacherClassDesk() {
                       <div>
                         <div className="flex flex-wrap items-center gap-2 mb-1.5">
                           <span className="px-2.5 py-0.5 rounded bg-brand-navy text-white text-xs font-bold">
-                            {item.grade} {item.section ? `• Sec ${item.section}` : ''}
+                            {item.grade}
+                            {isSectionApplicable(item.section) ? ` • Sec ${item.section}` : ''}
                           </span>
                           <span className="px-2.5 py-0.5 rounded bg-brand-goldSoft text-brand-navyDark border border-brand-gold/40 text-xs font-semibold">
                             {item.subject}

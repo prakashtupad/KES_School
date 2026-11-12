@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Phone,
@@ -80,10 +81,13 @@ export default function StudentProfileDrawer({
         : '—';
   const village =
     st.residentialAddress?.villageOrTown || st.residentialVillage || 'Khanatti';
+  const normSec = String(st.section || '').trim().toUpperCase();
+  const hasValidSec =
+    normSec && normSec !== 'N/A' && normSec !== 'NOT APPLICABLE' && normSec !== 'NONE';
 
-  return (
+  const drawerContent = (
     <div
-      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-end"
+      className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-end"
       role="dialog"
       aria-modal="true"
       aria-label="Full Student Profile"
@@ -101,7 +105,8 @@ export default function StudentProfileDrawer({
                 {st.admissionNumber || '—'}
               </span>
               <span className="px-2 py-0.5 rounded bg-white/15 text-white text-[11px] font-bold">
-                {st.grade} • Sec {st.section || 'A'}
+                {st.grade}
+                {hasValidSec ? ` • Sec ${st.section}` : ''}
               </span>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 text-[10px] font-bold">
                 {st.status || 'Active'}
@@ -414,4 +419,8 @@ export default function StudentProfileDrawer({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(drawerContent, document.body)
+    : drawerContent;
 }
