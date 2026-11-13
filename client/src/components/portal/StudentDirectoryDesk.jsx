@@ -609,27 +609,38 @@ export default function StudentDirectoryDesk() {
                               </button>
                             )}
 
-                            {isAdmin && (
-                              <button
-                                type="button"
-                                onClick={() => setPaymentModalStudent(st)}
-                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold transition cursor-pointer"
-                                title={
-                                  hasPaidAny
-                                    ? 'Collect Remaining Fee Amount & Generate Receipt'
-                                    : 'Collect Admission Fee & Generate Receipt'
-                                }
-                              >
-                                <IndianRupee className="w-3 h-3 text-brand-gold" />
-                                <span>
-                                  {hasPaidAny
-                                    ? balanceAmt > 0
-                                      ? `Pay Remaining (₹${balanceAmt})`
-                                      : '+ Remaining Fee'
-                                    : 'Collect Fee'}
-                                </span>
-                              </button>
-                            )}
+                            {isAdmin &&
+                              (!hasPaidAny ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setPaymentModalStudent(st)}
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold transition cursor-pointer"
+                                  title="Collect Admission Fee & Generate Receipt"
+                                >
+                                  <IndianRupee className="w-3 h-3 text-brand-gold" />
+                                  <span>Collect Fee</span>
+                                </button>
+                              ) : balanceAmt > 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setPaymentModalStudent(st)}
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold transition cursor-pointer"
+                                  title="Collect Remaining Fee Amount & Generate Receipt"
+                                >
+                                  <IndianRupee className="w-3 h-3 text-brand-gold" />
+                                  <span>Pay Remaining (₹{balanceAmt})</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setPaymentModalStudent(st)}
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold transition cursor-pointer"
+                                  title="Update or Correct Fee Record"
+                                >
+                                  <IndianRupee className="w-3 h-3 text-brand-gold" />
+                                  <span>Fee</span>
+                                </button>
+                              ))}
 
                             {isAdmin && (
                               <>

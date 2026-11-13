@@ -264,12 +264,46 @@ export default function DirectAdmissionOnboardingModal({
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
 
+  // Step 4 Inline Fee & Payment States
+  const [step4ResetFee, setStep4ResetFee] = useState(false);
+  const [step4TotalFee, setStep4TotalFee] = useState(10000);
+  const [step4PayingNow, setStep4PayingNow] = useState(5000);
+  const [step4ClearFullPayment, setStep4ClearFullPayment] = useState(false);
+  const [step4PaymentMethod, setStep4PaymentMethod] = useState('Cash');
+  const [step4TransactionId, setStep4TransactionId] = useState('');
+
   useEffect(() => {
     if (initialStudent) {
       setFormData(mapStudentToForm(initialStudent));
       setStep(1);
       setSuccessInfo(null);
       setErrorMessage('');
+      setStep4ResetFee(false);
+
+      const prevPaid = Number(initialStudent.feeDetails?.amountPaid || 0);
+      const rawTotal = Number(initialStudent.feeDetails?.admissionFeeAmount || 0);
+      const resolvedTotal =
+        prevPaid === 0 ? (rawTotal > 500 ? rawTotal : 10000) : Math.max(rawTotal, prevPaid);
+      const remBalance = Math.max(0, resolvedTotal - prevPaid);
+
+      setStep4TotalFee(resolvedTotal);
+      if (prevPaid === 0) {
+        setStep4PayingNow(Math.round(resolvedTotal / 2));
+        setStep4ClearFullPayment(false);
+      } else if (remBalance > 0) {
+        setStep4PayingNow(0);
+        setStep4ClearFullPayment(false);
+      } else {
+        setStep4PayingNow(0);
+        setStep4ClearFullPayment(true);
+      }
+      setStep4PaymentMethod(
+        initialStudent.feeDetails?.paymentMethod &&
+          initialStudent.feeDetails.paymentMethod !== 'Not_Applicable'
+          ? initialStudent.feeDetails.paymentMethod
+          : 'Cash'
+      );
+      setStep4TransactionId('');
     } else {
       const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
       if (savedDraft) {
@@ -284,6 +318,12 @@ export default function DirectAdmissionOnboardingModal({
       setStep(1);
       setSuccessInfo(null);
       setErrorMessage('');
+      setStep4ResetFee(false);
+      setStep4TotalFee(10000);
+      setStep4PayingNow(5000);
+      setStep4ClearFullPayment(false);
+      setStep4PaymentMethod('Cash');
+      setStep4TransactionId('');
     }
   }, [initialStudent, isOpen]);
 
@@ -386,9 +426,69 @@ export default function DirectAdmissionOnboardingModal({
     }
   };
 
+  const rawExistingPaid = isEditing ? Number(initialStudent?.feeDetails?.amountPaid || 0) : 0;
+  const existingPaidInForm = step4ResetFee ? 0 : rawExistingPaid;
+  const numericStep4TotalFee = Math.max(0, Number(step4TotalFee) || 0);
+  const numericStep4PayingNow = Math.max(0, Number(step4PayingNow) || 0);
+  const step4MaxPayable = Math.max(0, numericStep4TotalFee - existingPaidInForm);
+  const step4CumulativePaid = existingPaidInForm + numericStep4PayingNow;
+  const step4BalanceAfter = Math.max(0, numericStep4TotalFee - step4CumulativePaid);
+
+  const handleStep4TotalFeeChange = (val) => {
+    setStep4TotalFee(val);
+    setErrorMessage('');
+    const numTotal = Number(val);
+    if (Number.isNaN(numTotal) || numTotal <= 0) {
+      setStep4PayingNow(0);
+      return;
+    }
+    if (existingPaidInForm > 0) {
+      const rem = Math.max(0, numTotal - existingPaidInForm);
+      if (step4ClearFullPayment) {
+        setStep4PayingNow(rem);
+      }
+    } else {
+      if (step4ClearFullPayment) {
+        setStep4PayingNow(numTotal);
+      } else {
+        setStep4PayingNow(Math.round(numTotal / 2));
+      }
+    }
+  };
+
+  const handleStep4PayingNowChange = (val) => {
+    setStep4PayingNow(val);
+    setErrorMessage('');
+    const numPay = Number(val);
+    if (!Number.isNaN(numPay)) {
+      const targetFull = Math.max(0, numericStep4TotalFee - existingPaidInForm);
+      setStep4ClearFullPayment(numPay >= targetFull && targetFull > 0);
+    }
+  };
+
+  const handleStep4ToggleClearFull = (checked) => {
+    setStep4ClearFullPayment(checked);
+    setErrorMessage('');
+    const targetFull = Math.max(0, numericStep4TotalFee - existingPaidInForm);
+    if (checked) {
+      setStep4PayingNow(targetFull);
+    } else {
+      setStep4PayingNow(
+        existingPaidInForm > 0 ? 0 : Math.round(numericStep4TotalFee / 2)
+      );
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateStep(1) || !validateStep(2) || !validateStep(4)) {
+      return;
+    }
+
+    if (existingPaidInForm + numericStep4PayingNow > numericStep4TotalFee) {
+      setErrorMessage(
+        `Remaining Paying Now (₹${numericStep4PayingNow}) cannot exceed the payable balance (₹${step4MaxPayable}).`
+      );
       return;
     }
 
@@ -447,11 +547,48 @@ export default function DirectAdmissionOnboardingModal({
         localStorage.removeItem(DRAFT_STORAGE_KEY);
       }
 
-      const enrolledStudent = data.student || data.data;
+      let enrolledStudent = data.student || data.data;
+
+      // Record fee payment immediately if admin entered/confirmed payment inside Step 4
+      if (numericStep4PayingNow > 0 && enrolledStudent?._id) {
+        try {
+          const feeRes = await fetch('/api/v1/payments/record-fee', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              studentId: enrolledStudent._id,
+              currentPaymentAmount: numericStep4PayingNow,
+              amountPaid: step4CumulativePaid,
+              admissionFeeAmount: numericStep4TotalFee,
+              isRemainingPayment: existingPaidInForm > 0,
+              paymentMethod: step4PaymentMethod,
+              transactionId:
+                step4TransactionId.trim() ||
+                (step4PaymentMethod === 'Cash'
+                  ? `CASH-${Date.now().toString().slice(-6)}`
+                  : `UPI-${Date.now().toString().slice(-8)}`),
+              remarks:
+                existingPaidInForm > 0
+                  ? 'Remaining Fee Payment recorded during profile update'
+                  : 'Admission Fee recorded during registration',
+            }),
+          });
+          const feeData = await feeRes.json();
+          if (feeRes.ok && feeData.success && feeData.student) {
+            enrolledStudent = feeData.student;
+          }
+        } catch (feeErr) {
+          console.error('Inline fee recording error:', feeErr);
+        }
+      }
+
       setSuccessInfo(enrolledStudent);
 
-      // Automatically open AdmissionPaymentModal if fee is not yet paid
-      if (enrolledStudent?.feeDetails?.paymentStatus !== 'Paid') {
+      // Only auto-open AdmissionPaymentModal if no payment has been recorded yet
+      if (Number(enrolledStudent?.feeDetails?.amountPaid || 0) === 0) {
         setShowPaymentModal(true);
       }
 
@@ -528,7 +665,7 @@ export default function DirectAdmissionOnboardingModal({
       </div>
 
       <div className="flex flex-wrap justify-center gap-2.5">
-        {successInfo.feeDetails?.paymentStatus === 'Paid' ? (
+        {Number(successInfo.feeDetails?.amountPaid || 0) > 0 && (
           <button
             type="button"
             onClick={() => setShowReceiptModal(true)}
@@ -536,17 +673,25 @@ export default function DirectAdmissionOnboardingModal({
           >
             <Printer className="w-4 h-4" />
             <span>
-              Print Official Receipt ({successInfo.feeDetails?.receiptNumber || 'Paid'})
+              Print Official Receipt ({successInfo.feeDetails?.receiptNumber || 'Receipt'})
             </span>
           </button>
-        ) : (
+        )}
+
+        {successInfo.feeDetails?.paymentStatus !== 'Paid' && (
           <button
             type="button"
             onClick={() => setShowPaymentModal(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-brand-navyDark text-xs sm:text-sm font-bold rounded-xl shadow-sm transition cursor-pointer"
           >
             <IndianRupee className="w-4 h-4" />
-            <span>Collect Admission Fee &amp; Issue Receipt</span>
+            <span>
+              {Number(successInfo.feeDetails?.amountPaid || 0) > 0
+                ? `Pay Remaining Fee (₹${Number(
+                    successInfo.feeDetails?.balanceDue || 0
+                  ).toLocaleString('en-IN')})`
+                : 'Collect Admission Fee & Issue Receipt'}
+            </span>
           </button>
         )}
 
@@ -1461,6 +1606,175 @@ export default function DirectAdmissionOnboardingModal({
                   }
                   className="w-full text-xs p-2 rounded-lg border border-slate-300"
                 />
+              </div>
+            </div>
+
+            {/* Admission Fee & Payment Collection inside Step 4 (Last Page of Registration) */}
+            <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-xl space-y-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200/80 pb-2">
+                <div className="flex items-center gap-2">
+                  <IndianRupee className="w-4 h-4 text-emerald-700" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-brand-navy">
+                    Admission Fee &amp; Payment Collection
+                  </span>
+                </div>
+                {rawExistingPaid > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-white text-emerald-800 border border-emerald-300">
+                      Previously Paid: ₹{rawExistingPaid.toLocaleString('en-IN')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextReset = !step4ResetFee;
+                        setStep4ResetFee(nextReset);
+                        if (nextReset) {
+                          setStep4TotalFee(10000);
+                          setStep4PayingNow(5000);
+                          setStep4ClearFullPayment(false);
+                        } else {
+                          const resolvedTot = Math.max(
+                            Number(initialStudent?.feeDetails?.admissionFeeAmount || 10000),
+                            rawExistingPaid
+                          );
+                          setStep4TotalFee(resolvedTot);
+                          setStep4PayingNow(0);
+                          setStep4ClearFullPayment(resolvedTot - rawExistingPaid === 0);
+                        }
+                      }}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold border transition cursor-pointer ${
+                        step4ResetFee
+                          ? 'bg-brand-navy text-white border-brand-navy'
+                          : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      {step4ResetFee ? 'Cancel Fee Reset' : 'Reset / Edit Fee From Scratch'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Total Applicable Fee (₹) */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-slate-700 mb-1">
+                    Total Applicable Fee (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-2 font-mono font-bold text-slate-500 text-xs">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      min={Math.max(1, existingPaidInForm)}
+                      step="1"
+                      value={step4TotalFee}
+                      onChange={(e) => handleStep4TotalFeeChange(e.target.value)}
+                      className="w-full pl-6 pr-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono font-bold text-xs sm:text-sm text-slate-900"
+                    />
+                  </div>
+                  <span className="text-[10px] text-slate-500 mt-0.5 block">
+                    Entering ₹10000 auto-populates 50% (₹5000)
+                  </span>
+                </div>
+
+                {/* Remaining Paying Now (₹) * */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-brand-navy mb-1">
+                    Remaining Paying Now (₹) *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-2 font-mono font-bold text-emerald-700 text-xs">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      max={step4MaxPayable > 0 ? step4MaxPayable : undefined}
+                      step="1"
+                      value={step4PayingNow}
+                      onChange={(e) => handleStep4PayingNowChange(e.target.value)}
+                      className="w-full pl-6 pr-2.5 py-1.5 rounded-lg border-2 border-emerald-500 bg-white font-mono font-bold text-xs sm:text-sm text-emerald-950"
+                    />
+                  </div>
+                  <span className="text-[10px] text-emerald-700 font-semibold mt-0.5 block">
+                    Editable installment amount
+                  </span>
+                </div>
+
+                {/* Payment Mode */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-slate-700 mb-1">
+                    Payment Mode
+                  </label>
+                  <select
+                    value={step4PaymentMethod}
+                    onChange={(e) => setStep4PaymentMethod(e.target.value)}
+                    className="w-full text-xs sm:text-sm p-1.5 rounded-lg border border-slate-300 bg-white font-semibold text-brand-navy"
+                  >
+                    <option value="Cash">Cash / Office Counter</option>
+                    <option value="Online_UPI">Online UPI / QR</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Clear Complete Payment Option inside Form */}
+              {step4MaxPayable > 0 && (
+                <div className="p-2.5 rounded-lg bg-white border border-emerald-200 flex flex-wrap items-center justify-between gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                    <input
+                      type="checkbox"
+                      checked={step4ClearFullPayment}
+                      onChange={(e) => handleStep4ToggleClearFull(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4 cursor-pointer"
+                    />
+                    <span>
+                      Clear Complete Payment Inside Form (Full ₹
+                      {step4MaxPayable.toLocaleString('en-IN')})
+                    </span>
+                  </label>
+
+                  <div className="flex items-center gap-1.5">
+                    {existingPaidInForm === 0 && numericStep4TotalFee > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handleStep4ToggleClearFull(false)}
+                        className="px-2.5 py-1 rounded-md border border-slate-300 bg-slate-50 hover:bg-slate-100 text-[11px] font-bold text-slate-700 cursor-pointer"
+                      >
+                        50% (₹{Math.round(numericStep4TotalFee / 2).toLocaleString('en-IN')})
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleStep4ToggleClearFull(true)}
+                      className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs cursor-pointer"
+                    >
+                      Clear Complete ₹{step4MaxPayable.toLocaleString('en-IN')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Live Balance Preview inside Step 4 */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1 text-slate-700">
+                <span>
+                  Total Paid After Submit:{' '}
+                  <strong className="font-mono text-emerald-700">
+                    ₹{step4CumulativePaid.toLocaleString('en-IN')}
+                  </strong>{' '}
+                  / ₹{numericStep4TotalFee.toLocaleString('en-IN')}
+                </span>
+                <span
+                  className={`font-mono font-bold px-2 py-0.5 rounded ${
+                    step4BalanceAfter > 0
+                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                      : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  }`}
+                >
+                  {step4BalanceAfter > 0
+                    ? `Remaining Balance Due: ₹${step4BalanceAfter.toLocaleString('en-IN')} (Partial)`
+                    : 'Remaining Balance Due: ₹0 (Complete Payment Cleared)'}
+                </span>
               </div>
             </div>
 

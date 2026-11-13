@@ -260,9 +260,9 @@ const studentSchema = new mongoose.Schema(
 
     // 5. Admission Fee Collection & Official Receipt Details
     feeDetails: {
-      admissionFeeAmount: { type: Number, default: 500 },
+      admissionFeeAmount: { type: Number, default: 10000 },
       amountPaid: { type: Number, default: 0 },
-      balanceDue: { type: Number, default: 0 },
+      balanceDue: { type: Number, default: 10000 },
       lastPaymentAmount: { type: Number, default: 0 },
       paymentStatus: {
         type: String,
