@@ -8,6 +8,7 @@ import AnnouncementBar from './components/AnnouncementBar';
 import Header from './components/Header';
 import HeroCarousel from './components/HeroCarousel';
 import AboutSection from './components/AboutSection';
+import OurLeadership from './components/OurLeadership';
 import CampusLifeSection from './components/CampusLifeSection';
 import AdmissionsCallout from './components/AdmissionsCallout';
 import NewsSection from './components/NewsSection';
@@ -57,6 +58,9 @@ function PublicHomePage() {
 
         {/* Welcome & About Us Section */}
         <AboutSection />
+
+        {/* Our Leadership Messages Section (Founder, Co-Founder, Chairman) */}
+        <OurLeadership />
 
         {/* Student & Campus Life Section */}
         <CampusLifeSection />

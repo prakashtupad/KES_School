@@ -4,10 +4,10 @@ const siteContentSchema = new mongoose.Schema(
   {
     section: {
       type: String,
-      enum: ['hero_carousel', 'about_us', 'campus_life'],
+      enum: ['hero_carousel', 'about_us', 'campus_life', 'leadership'],
       required: [
         true,
-        'Content section (hero_carousel, about_us, or campus_life) is required',
+        'Content section (hero_carousel, about_us, campus_life, or leadership) is required',
       ],
       index: true,
     },

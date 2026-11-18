@@ -4,7 +4,7 @@ const { getDbStatus } = require('../config/db');
 const memoryStore = require('../utils/memoryStore');
 const { DEFAULT_SITE_CONTENT } = require('../scripts/seedSiteContent');
 
-const ALLOWED_SECTIONS = ['hero_carousel', 'about_us', 'campus_life'];
+const ALLOWED_SECTIONS = ['hero_carousel', 'about_us', 'campus_life', 'leadership'];
 let hasCheckedAutoSeed = false;
 
 async function ensureSeededIfEmpty() {

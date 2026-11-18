@@ -22,6 +22,7 @@ import StudentOverviewTab from './StudentOverviewTab';
 import StudentFeesTab from './StudentFeesTab';
 import StudentCurriculumTab from './StudentCurriculumTab';
 import StudentReportCardTab from './StudentReportCardTab';
+import OurLeadership from '../OurLeadership';
 
 const PORTAL_TABS = [
   {
@@ -47,6 +48,12 @@ const PORTAL_TABS = [
     label: 'Digital Report Card',
     shortLabel: 'Report Card',
     icon: Award,
+  },
+  {
+    id: 'leadership',
+    label: 'Our Leadership',
+    shortLabel: 'Leadership',
+    icon: Users,
   },
 ];
 
@@ -312,6 +319,7 @@ export default function StudentParentPortal() {
               {activeTab === 'report-card' && (
                 <StudentReportCardTab student={currentStudent} />
               )}
+              {activeTab === 'leadership' && <OurLeadership isPortalView={true} />}
             </>
           )}
         </main>

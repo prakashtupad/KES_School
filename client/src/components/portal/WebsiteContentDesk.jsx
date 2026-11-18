@@ -13,10 +13,14 @@ import {
   Eye,
   Upload,
   ArrowUpDown,
+  Award,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const BUILTIN_IMAGES = [
+  { label: 'Founder (Sri Subhash Tuppad)', url: '/images/leadership/founder-subhash-tuppad.jpg' },
+  { label: 'Co-Founder (Sri Prakash Tuppad)', url: '/images/leadership/cofounder-prakash-tuppad.jpg' },
+  { label: 'Chairman (Sri Mahesh Tuppad)', url: '/images/leadership/chairman-mahesh-tuppad.jpg' },
   { label: 'Governance & Campus', url: '/images/governance-campus.jpg' },
   { label: 'Interactive Classroom', url: '/images/interactive-classroom.jpg' },
   { label: 'Joyful Campus Activities', url: '/images/campus-joy.jpg' },
@@ -147,6 +151,7 @@ export default function WebsiteContentDesk() {
   const isHeroTab = activeTab === 'hero_carousel';
   const isAboutTab = activeTab === 'about_us';
   const isCampusTab = activeTab === 'campus_life';
+  const isLeadershipTab = activeTab === 'leadership';
 
   const handleOpenAddModal = () => {
     setEditingItem(null);
@@ -166,6 +171,20 @@ export default function WebsiteContentDesk() {
         imageUrl: '/images/governance-campus.jpg?v=2',
         caption: 'Shri Siddharoodha English Medium School Campus & Assembly Ground',
         displayOrder: 1,
+      });
+    } else if (isLeadershipTab) {
+      setFormData({
+        ...INITIAL_FORM,
+        section: 'leadership',
+        subtitle: 'Founder',
+        title: 'Message from Our Founder',
+        governanceTitle: 'Sri Subhash Tuppad',
+        governanceSubtitle: 'Founder, Khanatti Education Society (KES)',
+        caption: 'Founder, Khanatti Education Society (KES)',
+        imageUrl: '/images/leadership/founder-subhash-tuppad.jpg',
+        description:
+          'Khanatti Education Society was established with a singular, heartfelt vision: to bring high-standard, value-rooted English medium education directly to the children of Khanatti and surrounding rural communities.',
+        displayOrder: nextOrder,
       });
     } else {
       setFormData({
@@ -315,7 +334,7 @@ export default function WebsiteContentDesk() {
             Website Content (CMS)
           </h2>
           <p className="text-xs text-slate-600 mt-0.5">
-            Customize the Hero Carousel Banner, About Us Section, and Student &amp; Campus Life cards.
+            Customize the Hero Carousel Banner, About Us Section, Student &amp; Campus Life cards, and Our Leadership messages.
           </p>
         </div>
 
@@ -350,6 +369,8 @@ export default function WebsiteContentDesk() {
                   ? '+ Add New Slide'
                   : isAboutTab
                   ? '+ Configure About Us'
+                  : isLeadershipTab
+                  ? '+ Add New Leader'
                   : '+ Add New Campus Card'}
               </span>
             </button>
@@ -357,7 +378,7 @@ export default function WebsiteContentDesk() {
         </div>
       </div>
 
-      {/* Three Tab Switcher */}
+      {/* Four Tab Switcher */}
       <div className="bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm inline-flex flex-wrap gap-1.5 w-full sm:w-auto">
         <button
           type="button"
@@ -396,6 +417,19 @@ export default function WebsiteContentDesk() {
         >
           <ImageIcon className="w-4 h-4 text-brand-gold" />
           <span>3. Student &amp; Campus Life</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('leadership')}
+          className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition ${
+            isLeadershipTab
+              ? 'bg-brand-navy text-white shadow-sm'
+              : 'text-slate-600 hover:text-brand-navy hover:bg-slate-50'
+          }`}
+        >
+          <Award className="w-4 h-4 text-brand-gold" />
+          <span>4. Our Leadership</span>
         </button>
       </div>
 
@@ -587,6 +621,75 @@ export default function WebsiteContentDesk() {
             </div>
           ))}
         </div>
+      ) : isLeadershipTab ? (
+        /* OUR LEADERSHIP SECTION CARDS */
+        <div className="space-y-4">
+          {items.map((item) => (
+            <div
+              key={item._id}
+              className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 flex flex-col md:flex-row items-start gap-5 hover:border-brand-gold/50 transition"
+            >
+              <div className="w-36 sm:w-44 flex-shrink-0 mx-auto md:mx-0">
+                <div className="aspect-[4/5] w-full rounded-xl overflow-hidden border-2 border-brand-gold/40 bg-slate-100 shadow-xs">
+                  <img
+                    src={item.imageUrl}
+                    alt={item.governanceTitle || item.title}
+                    className="w-full h-full object-cover object-top"
+                  />
+                </div>
+              </div>
+
+              <div className="flex-grow space-y-2 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded bg-brand-navy text-brand-gold text-[10px] font-mono font-bold">
+                      Order #{item.displayOrder || 1}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-brand-navyDark text-xs font-bold uppercase tracking-wider">
+                      {item.subtitle || 'Leadership'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditModal(item)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-brand-navy text-xs font-bold transition cursor-pointer"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-brand-gold" />
+                      <span>Edit Leader</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteItem(item)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 bg-white hover:bg-red-50 text-red-600 text-xs font-bold transition cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                </div>
+
+                <h3 className="text-base sm:text-lg font-serif font-bold text-brand-navy">
+                  {item.title}
+                </h3>
+
+                <p className="text-xs sm:text-sm text-slate-600 whitespace-pre-line line-clamp-3 leading-relaxed">
+                  {item.description}
+                </p>
+
+                <div className="pt-2 border-t border-slate-100">
+                  <div className="font-serif font-bold text-sm text-brand-navy">
+                    {item.governanceTitle || 'Leadership Member'}
+                  </div>
+                  <div className="text-xs font-semibold text-brand-gold">
+                    {item.governanceSubtitle || item.caption}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         /* HERO CAROUSEL SLIDES & CAMPUS LIFE CARDS GRID */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -700,6 +803,8 @@ export default function WebsiteContentDesk() {
                     ? 'Hero Carousel Slide Editor'
                     : isAboutTab
                     ? 'About Us Section Editor'
+                    : isLeadershipTab
+                    ? 'Our Leadership Profile & Message Editor'
                     : 'Student & Campus Life Card Editor'}
                 </span>
                 <h3 id="cmsModalTitle" className="text-base font-serif font-bold">
@@ -709,6 +814,8 @@ export default function WebsiteContentDesk() {
                           ? 'Hero Slide'
                           : isAboutTab
                           ? 'About Us Section'
+                          : isLeadershipTab
+                          ? 'Leadership Message'
                           : 'Campus Card'
                       }`
                     : `Add New ${
@@ -716,6 +823,8 @@ export default function WebsiteContentDesk() {
                           ? 'Hero Carousel Slide'
                           : isAboutTab
                           ? 'About Us Content'
+                          : isLeadershipTab
+                          ? 'Leadership Profile'
                           : 'Campus Life Card'
                       }`}
                 </h3>
@@ -750,6 +859,8 @@ export default function WebsiteContentDesk() {
                         ? 'Badge Tag (Subtitle) *'
                         : isAboutTab
                         ? 'Section Badge Tag *'
+                        : isLeadershipTab
+                        ? 'Leader Role Badge (e.g. Founder / Co-Founder / Chairman) *'
                         : 'Card Category Tag *'}
                     </label>
                     <input
@@ -764,6 +875,8 @@ export default function WebsiteContentDesk() {
                           ? 'e.g. WELCOME TO KHANATTI'
                           : isAboutTab
                           ? 'e.g. Welcome to Our School'
+                          : isLeadershipTab
+                          ? 'e.g. Founder, Co-Founder, or Chairman'
                           : 'e.g. School Infrastructure'
                       }
                       className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm focus:border-brand-navy"
@@ -789,12 +902,56 @@ export default function WebsiteContentDesk() {
                   </div>
                 </div>
 
+                {isLeadershipTab && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-brand-navy mb-1">
+                        Leader Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.governanceTitle}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            governanceTitle: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g. Sri Subhash Tuppad"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm bg-white focus:border-brand-navy"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-brand-navy mb-1">
+                        Official Designation *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.governanceSubtitle}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            governanceSubtitle: e.target.value,
+                            caption: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g. Founder, Khanatti Education Society (KES)"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm bg-white focus:border-brand-navy"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-[11px] font-bold uppercase text-slate-700 mb-1">
                     {isHeroTab
                       ? 'Slide Heading (Title) *'
                       : isAboutTab
                       ? 'About Us Main Heading *'
+                      : isLeadershipTab
+                      ? 'Message Heading (Title) *'
                       : 'Card Title *'}
                   </label>
                   <input
@@ -809,6 +966,8 @@ export default function WebsiteContentDesk() {
                         ? 'e.g. Inspiring with Values & Quality Education'
                         : isAboutTab
                         ? 'e.g. Khanatti Education Society’s Shri Siddharoodha English Medium School'
+                        : isLeadershipTab
+                        ? 'e.g. Message from Our Founder'
                         : 'e.g. School Building & Play Area'
                     }
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm focus:border-brand-navy"
@@ -817,10 +976,14 @@ export default function WebsiteContentDesk() {
 
                 <div>
                   <label className="block text-[11px] font-bold uppercase text-slate-700 mb-1">
-                    {isAboutTab ? 'Introduction Paragraph 1 *' : 'Description *'}
+                    {isAboutTab
+                      ? 'Introduction Paragraph 1 *'
+                      : isLeadershipTab
+                      ? 'Leadership Message Paragraphs (Separate paragraphs with a new line) *'
+                      : 'Description *'}
                   </label>
                   <textarea
-                    rows={3}
+                    rows={isLeadershipTab ? 6 : 3}
                     required
                     value={formData.description}
                     onChange={(e) =>
@@ -1157,6 +1320,38 @@ export default function WebsiteContentDesk() {
                         </div>
                         <div className="text-[10px] text-slate-500">
                           {formData.caption}
+                        </div>
+                      </div>
+                    </div>
+                  ) : isLeadershipTab ? (
+                    /* Leadership Message Live Preview */
+                    <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-md space-y-3">
+                      <div className="w-36 mx-auto">
+                        <div className="aspect-[4/5] w-full rounded-xl overflow-hidden border-2 border-brand-gold/40 bg-slate-100 shadow-xs">
+                          <img
+                            src={formData.imageUrl}
+                            alt="Leader preview"
+                            className="w-full h-full object-cover object-top"
+                          />
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <span className="inline-block px-2.5 py-0.5 rounded bg-brand-navy text-amber-300 text-[10px] font-bold uppercase tracking-wider">
+                          {formData.subtitle || 'Founder'}
+                        </span>
+                        <h4 className="font-serif font-bold text-sm text-brand-navy mt-1.5">
+                          {formData.title || 'Message from Our Leader'}
+                        </h4>
+                      </div>
+                      <p className="text-xs text-slate-600 line-clamp-4 whitespace-pre-line leading-relaxed">
+                        {formData.description}
+                      </p>
+                      <div className="pt-2 border-t border-slate-100">
+                        <div className="font-serif font-bold text-xs text-brand-navy">
+                          {formData.governanceTitle || 'Leader Name'}
+                        </div>
+                        <div className="text-[11px] font-semibold text-brand-gold">
+                          {formData.governanceSubtitle || formData.caption}
                         </div>
                       </div>
                     </div>
