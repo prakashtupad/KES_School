@@ -24,7 +24,12 @@ export default function ProtectedRoute({ allowedRoles, children }) {
   }
 
   if (Array.isArray(allowedRoles) && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    const fallbackPath = user.role === 'teacher' ? '/portal/teacher' : '/portal/admin';
+    const fallbackPath =
+      user.role === 'parent'
+        ? '/portal/student'
+        : user.role === 'teacher'
+          ? '/portal/teacher'
+          : '/portal/admin';
 
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-6">

@@ -9,6 +9,10 @@ export default function PortalDashboard() {
     return <Navigate to="/portal/login" replace />;
   }
 
+  if (user.role === 'parent') {
+    return <Navigate to="/portal/student" replace />;
+  }
+
   if (user.role === 'teacher') {
     return <Navigate to="/portal/teacher" replace />;
   }

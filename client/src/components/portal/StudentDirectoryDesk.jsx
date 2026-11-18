@@ -12,6 +12,7 @@ import {
   Eye,
   Printer,
   IndianRupee,
+  Award,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getDirectStudentChatUrl } from '../../utils/whatsappFormatter';
@@ -23,6 +24,7 @@ import DirectAdmissionOnboardingModal from './DirectAdmissionOnboardingModal';
 import StudentProfileDrawer from './StudentProfileDrawer';
 import AdmissionPaymentModal from './AdmissionPaymentModal';
 import PrintableFeeReceipt from './PrintableFeeReceipt';
+import StudentExamMarksModal from './StudentExamMarksModal';
 
 const GRADE_FILTERS = [
   'All Classes',
@@ -62,6 +64,7 @@ export default function StudentDirectoryDesk() {
   const [selectedProfileStudent, setSelectedProfileStudent] = useState(null);
   const [paymentModalStudent, setPaymentModalStudent] = useState(null);
   const [receiptModalStudent, setReceiptModalStudent] = useState(null);
+  const [marksModalStudent, setMarksModalStudent] = useState(null);
   const [feedback, setFeedback] = useState('');
 
   const fetchStudents = useCallback(async () => {
@@ -642,6 +645,16 @@ export default function StudentDirectoryDesk() {
                                 </button>
                               ))}
 
+                            <button
+                              type="button"
+                              onClick={() => setMarksModalStudent(st)}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-brand-navy text-xs font-semibold transition cursor-pointer"
+                              title="Publish / Update Digital Report Card Marks"
+                            >
+                              <Award className="w-3 h-3 text-brand-gold" />
+                              <span>Marks</span>
+                            </button>
+
                             {isAdmin && (
                               <>
                                 <button
@@ -723,6 +736,22 @@ export default function StudentDirectoryDesk() {
         <PrintableFeeReceipt
           student={receiptModalStudent}
           onClose={() => setReceiptModalStudent(null)}
+        />
+      )}
+
+      {/* Term Exam Marks & Digital Report Card Publisher Modal */}
+      {marksModalStudent && (
+        <StudentExamMarksModal
+          isOpen={Boolean(marksModalStudent)}
+          student={marksModalStudent}
+          onClose={() => setMarksModalStudent(null)}
+          onMarksSaved={(updatedStudent) => {
+            setFeedback(
+              `Digital Report Card marks saved for ${updatedStudent.studentName}.`
+            );
+            setTimeout(() => setFeedback(''), 5000);
+            fetchStudents();
+          }}
         />
       )}
     </div>

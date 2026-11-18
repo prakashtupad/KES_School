@@ -169,7 +169,7 @@ const studentSchema = new mongoose.Schema(
       profession: { type: String, trim: true, default: '' },
       officeAddress: { type: String, trim: true, default: '' },
       mobile: { type: String, trim: true, default: '' },
-      mobileNumber: { type: String, trim: true, default: '' },
+      mobileNumber: { type: String, trim: true, default: '', index: true },
       email: { type: String, lowercase: true, trim: true, default: '' },
       emailId: { type: String, lowercase: true, trim: true, default: '' },
       aadhaarNo: { type: String, trim: true, default: '' },
@@ -181,7 +181,7 @@ const studentSchema = new mongoose.Schema(
       profession: { type: String, trim: true, default: '' },
       officeAddress: { type: String, trim: true, default: '' },
       mobile: { type: String, trim: true, default: '' },
-      mobileNumber: { type: String, trim: true, default: '' },
+      mobileNumber: { type: String, trim: true, default: '', index: true },
       email: { type: String, lowercase: true, trim: true, default: '' },
       emailId: { type: String, lowercase: true, trim: true, default: '' },
       aadhaarNo: { type: String, trim: true, default: '' },
@@ -306,6 +306,37 @@ const studentSchema = new mongoose.Schema(
         },
       ],
     },
+
+    // 6. Term-Wise Exam Results & Digital Report Cards
+    examResults: [
+      {
+        term: {
+          type: String,
+          enum: [
+            'FA-1',
+            'FA-2',
+            'Mid-Term (SA-1)',
+            'FA-3',
+            'FA-4',
+            'Annual Exam (SA-2)',
+          ],
+          required: true,
+        },
+        academicYear: { type: String, default: '2026-2027' },
+        subjects: [
+          {
+            subjectName: { type: String, required: true, trim: true },
+            maxMarks: { type: Number, default: 100 },
+            marksObtained: { type: Number, required: true },
+            grade: { type: String, trim: true, default: '' },
+            remarks: { type: String, trim: true, default: '' },
+          },
+        ],
+        attendancePercentage: { type: Number, default: 100 },
+        classTeacherRemarks: { type: String, trim: true, default: '' },
+        publishedAt: { type: Date, default: Date.now },
+      },
+    ],
 
     // Status
     status: {

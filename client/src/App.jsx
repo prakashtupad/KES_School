@@ -29,6 +29,7 @@ import StaffTimesheetDesk from './components/portal/StaffTimesheetDesk';
 import AdminStaffAttendanceRegister from './components/portal/AdminStaffAttendanceRegister';
 import StudentDirectoryDesk from './components/portal/StudentDirectoryDesk';
 import WebsiteContentDesk from './components/portal/WebsiteContentDesk';
+import StudentParentPortal from './components/portal/StudentParentPortal';
 
 function PublicHomePage() {
   const { isAuthenticated, logout } = useAuth();
@@ -92,6 +93,16 @@ export default function App() {
 
           {/* Portal Authentication */}
           <Route path="/portal/login" element={<PortalLogin />} />
+
+          {/* Unified Student & Parent Multi-Sibling Portal */}
+          <Route
+            path="/portal/student"
+            element={
+              <ProtectedRoute allowedRoles={['parent', 'admin', 'teacher']}>
+                <StudentParentPortal />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Protected Role-Based Portal Shell */}
           <Route
