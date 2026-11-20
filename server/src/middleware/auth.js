@@ -69,6 +69,50 @@ exports.protect = async (req, res, next) => {
 };
 
 /**
+ * Middleware: Allows either an authenticated Staff/Teacher/Admin OR an authenticated Parent Portal JWT.
+ */
+exports.protectStaffOrParent = async (req, res, next) => {
+  try {
+    let token;
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer ')
+    ) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authenticated. Please log in to view attendance records.',
+      });
+    }
+
+    const decoded = jwt.verify(token, getJwtSecret());
+
+    // Parent Portal JWT (issued by POST /api/v1/student-portal/login)
+    if (decoded.role === 'parent') {
+      req.user = {
+        role: 'parent',
+        mobileNumber: decoded.mobileNumber || '',
+        siblingIds: Array.isArray(decoded.siblingIds)
+          ? decoded.siblingIds.map((id) => String(id))
+          : [],
+      };
+      return next();
+    }
+
+    // Staff / Teacher / Admin JWT -> delegate to standard staff protect logic
+    return exports.protect(req, res, next);
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid or expired session token. Please log in again.',
+    });
+  }
+};
+
+/**
  * Middleware factory: Enforces role permissions with 403 Forbidden on failure.
  */
 exports.restrictTo = (...roles) => {

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   User,
   IndianRupee,
   BookOpen,
   Award,
+  CalendarCheck,
   LogOut,
   ExternalLink,
   Menu,
@@ -22,6 +23,7 @@ import StudentOverviewTab from './StudentOverviewTab';
 import StudentFeesTab from './StudentFeesTab';
 import StudentCurriculumTab from './StudentCurriculumTab';
 import StudentReportCardTab from './StudentReportCardTab';
+import StudentAttendanceTab from './StudentAttendanceTab';
 import OurLeadership from '../OurLeadership';
 
 const PORTAL_TABS = [
@@ -30,6 +32,12 @@ const PORTAL_TABS = [
     label: 'Student Overview & Profile',
     shortLabel: 'Overview',
     icon: User,
+  },
+  {
+    id: 'attendance',
+    label: 'Daily Attendance',
+    shortLabel: 'Attendance',
+    icon: CalendarCheck,
   },
   {
     id: 'fees',
@@ -57,13 +65,19 @@ const PORTAL_TABS = [
   },
 ];
 
+function getCurrentMonthStr() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export default function StudentParentPortal() {
-  const { user, parentSession, logout } = useAuth();
+  const { user, token, parentSession, logout } = useAuth();
   const navigate = useNavigate();
 
-  const siblings = Array.isArray(parentSession?.siblings)
-    ? parentSession.siblings
-    : [];
+  const siblings = useMemo(
+    () => (Array.isArray(parentSession?.siblings) ? parentSession.siblings : []),
+    [parentSession]
+  );
   const homeworkList = Array.isArray(parentSession?.homeworkList)
     ? parentSession.homeworkList
     : [];
@@ -71,6 +85,51 @@ export default function StudentParentPortal() {
   const [activeSiblingIndex, setActiveSiblingIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Batch-cached monthly attendance across ALL siblings for zero-reload sibling switching
+  const [attendanceMonth, setAttendanceMonth] = useState(getCurrentMonthStr);
+  const [attendanceCacheByMonth, setAttendanceCacheByMonth] = useState({});
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+
+  const siblingIdsKey = useMemo(
+    () => siblings.map((s) => String(s._id)).join(','),
+    [siblings]
+  );
+
+  useEffect(() => {
+    if (!token || !siblingIdsKey) return;
+    if (attendanceCacheByMonth[attendanceMonth]) return;
+
+    let cancelled = false;
+    const fetchAllSiblingsAttendance = async () => {
+      setAttendanceLoading(true);
+      try {
+        const params = new URLSearchParams({
+          studentIds: siblingIdsKey,
+          month: attendanceMonth,
+        });
+        const res = await fetch(`/api/v1/attendance/siblings-summary?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!cancelled && res.ok && data.success) {
+          setAttendanceCacheByMonth((prev) => ({
+            ...prev,
+            [attendanceMonth]: data.byStudentId || {},
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load siblings attendance:', err);
+      } finally {
+        if (!cancelled) setAttendanceLoading(false);
+      }
+    };
+
+    fetchAllSiblingsAttendance();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, siblingIdsKey, attendanceMonth, attendanceCacheByMonth]);
 
   const safeIndex =
     activeSiblingIndex >= 0 && activeSiblingIndex < siblings.length
@@ -308,6 +367,18 @@ export default function StudentParentPortal() {
               {/* Active Tab Content */}
               {activeTab === 'overview' && (
                 <StudentOverviewTab student={currentStudent} />
+              )}
+              {activeTab === 'attendance' && (
+                <StudentAttendanceTab
+                  student={currentStudent}
+                  selectedMonth={attendanceMonth}
+                  onMonthChange={setAttendanceMonth}
+                  attendanceData={
+                    attendanceCacheByMonth[attendanceMonth]?.[String(currentStudent._id)] ||
+                    null
+                  }
+                  loading={attendanceLoading && !attendanceCacheByMonth[attendanceMonth]}
+                />
               )}
               {activeTab === 'fees' && <StudentFeesTab student={currentStudent} />}
               {activeTab === 'homework' && (

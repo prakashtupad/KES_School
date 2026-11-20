@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
 import {
   ClipboardList,
+  ClipboardCheck,
   BookOpen,
   Users,
   Bell,
@@ -37,6 +38,12 @@ const NAV_CONFIG = [
     to: '/portal/students',
     icon: GraduationCap,
     roles: ['admin', 'teacher'],
+  },
+  {
+    label: 'Daily Attendance',
+    to: '/portal/daily-attendance',
+    icon: ClipboardCheck,
+    roles: ['admin', 'teacher', 'super_admin'],
   },
   {
     label: 'Classroom & Homework',

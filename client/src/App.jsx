@@ -30,6 +30,7 @@ import StaffTimesheetDesk from './components/portal/StaffTimesheetDesk';
 import AdminStaffAttendanceRegister from './components/portal/AdminStaffAttendanceRegister';
 import StudentDirectoryDesk from './components/portal/StudentDirectoryDesk';
 import WebsiteContentDesk from './components/portal/WebsiteContentDesk';
+import DailyAttendanceDesk from './components/portal/DailyAttendanceDesk';
 import StudentParentPortal from './components/portal/StudentParentPortal';
 
 function PublicHomePage() {
@@ -196,6 +197,16 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <StaffManagement />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Daily Student Attendance & Instant Absentee Alert Desk (Teacher & Admin) */}
+            <Route
+              path="daily-attendance"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'teacher', 'super_admin']}>
+                  <DailyAttendanceDesk />
                 </ProtectedRoute>
               }
             />
