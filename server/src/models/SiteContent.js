@@ -16,7 +16,17 @@ const siteContentSchema = new mongoose.Schema(
       required: [true, 'Title is required'],
       trim: true,
     },
+    titleKn: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     subtitle: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    subtitleKn: {
       type: String,
       trim: true,
       default: '',
@@ -25,6 +35,11 @@ const siteContentSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Description is required'],
       trim: true,
+    },
+    descriptionKn: {
+      type: String,
+      trim: true,
+      default: '',
     },
     secondaryDescription: {
       type: String,

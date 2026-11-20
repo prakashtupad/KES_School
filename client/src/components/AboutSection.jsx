@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SCHOOL_INFO } from '../constants/schoolData';
+import { useLanguage } from '../context/LanguageContext';
 
 const DEFAULT_ABOUT_CONTENT = {
   subtitle: 'Welcome to Our School',
@@ -22,6 +23,7 @@ const DEFAULT_ABOUT_CONTENT = {
 };
 
 export default function AboutSection() {
+  const { language, t, tContent } = useLanguage();
   const [about, setAbout] = useState(DEFAULT_ABOUT_CONTENT);
 
   useEffect(() => {
@@ -50,17 +52,25 @@ export default function AboutSection() {
           <div className="lg:col-span-7">
             <div className="inline-flex items-center gap-1.5 text-brand-gold font-semibold text-xs tracking-wider uppercase mb-2">
               <span className="w-2 h-2 rounded-full bg-brand-gold" />
-              {about.subtitle || DEFAULT_ABOUT_CONTENT.subtitle}
+              {language === 'kn' && !about.subtitleKn
+                ? t('about.badge')
+                : tContent(about, 'subtitle') || t('about.badge')}
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold font-serif text-brand-navy leading-tight mb-4">
-              {about.title || DEFAULT_ABOUT_CONTENT.title}
+              {language === 'kn' && !about.titleKn
+                ? t('about.heading')
+                : tContent(about, 'title') || t('about.heading')}
             </h2>
             <p className="text-slate-600 leading-relaxed text-sm sm:text-base mb-4">
-              {about.description || DEFAULT_ABOUT_CONTENT.description}
+              {language === 'kn' && !about.descriptionKn
+                ? t('about.intro1')
+                : tContent(about, 'description') || t('about.intro1')}
             </p>
             {(about.secondaryDescription ?? DEFAULT_ABOUT_CONTENT.secondaryDescription) && (
               <p className="text-slate-600 leading-relaxed text-sm sm:text-base mb-6">
-                {about.secondaryDescription || DEFAULT_ABOUT_CONTENT.secondaryDescription}
+                {language === 'kn'
+                  ? t('about.intro2')
+                  : about.secondaryDescription || t('about.intro2')}
               </p>
             )}
 
@@ -71,10 +81,14 @@ export default function AboutSection() {
                   1
                 </div>
                 <h3 className="font-bold text-slate-800 text-sm mb-1">
-                  {about.pillar1Title || DEFAULT_ABOUT_CONTENT.pillar1Title}
+                  {language === 'kn'
+                    ? t('about.visionTitle')
+                    : about.pillar1Title || t('about.visionTitle')}
                 </h3>
                 <p className="text-xs text-slate-600 leading-normal">
-                  {about.pillar1Description || DEFAULT_ABOUT_CONTENT.pillar1Description}
+                  {language === 'kn'
+                    ? t('about.visionDesc')
+                    : about.pillar1Description || t('about.visionDesc')}
                 </p>
               </div>
 
@@ -83,10 +97,14 @@ export default function AboutSection() {
                   2
                 </div>
                 <h3 className="font-bold text-slate-800 text-sm mb-1">
-                  {about.pillar2Title || DEFAULT_ABOUT_CONTENT.pillar2Title}
+                  {language === 'kn'
+                    ? t('about.approachTitle')
+                    : about.pillar2Title || t('about.approachTitle')}
                 </h3>
                 <p className="text-xs text-slate-600 leading-normal">
-                  {about.pillar2Description || DEFAULT_ABOUT_CONTENT.pillar2Description}
+                  {language === 'kn'
+                    ? t('about.approachDesc')
+                    : about.pillar2Description || t('about.approachDesc')}
                 </p>
               </div>
             </div>
@@ -102,21 +120,27 @@ export default function AboutSection() {
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute bottom-0 inset-x-0 bg-brand-navyDark/85 text-white text-[11px] py-1.5 px-3 font-medium">
-                  {about.caption || DEFAULT_ABOUT_CONTENT.caption}
+                  {language === 'kn'
+                    ? t('about.campusCaption')
+                    : about.caption || t('about.campusCaption')}
                 </div>
               </div>
               <h3 className="font-bold text-slate-800 text-sm mb-1">
-                {about.governanceTitle || DEFAULT_ABOUT_CONTENT.governanceTitle}
+                {language === 'kn'
+                  ? t('about.governanceTitle')
+                  : about.governanceTitle || t('about.governanceTitle')}
               </h3>
               <p className="text-xs font-mono font-semibold text-brand-navy mb-2">
                 {SCHOOL_INFO.registrationNo}
               </p>
               <p className="text-xs text-slate-500 mb-3">
-                {about.governanceSubtitle || DEFAULT_ABOUT_CONTENT.governanceSubtitle}
+                {language === 'kn'
+                  ? t('about.governanceSubtitle')
+                  : about.governanceSubtitle || t('about.governanceSubtitle')}
               </p>
               <div className="inline-block px-3 py-1 bg-white rounded border border-slate-200 text-xs text-slate-600 font-mono">
-                Affiliation:{' '}
-                <span className="placeholder-badge">{SCHOOL_INFO.curriculumBoard}</span>
+                {t('about.affiliation')}{' '}
+                <span className="placeholder-badge">{t('about.boardName')}</span>
               </div>
             </div>
           </div>

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { SCHOOL_INFO } from '../../constants/schoolData';
 import { isSectionApplicable } from './SiblingSwitcherHeader';
+import { useLanguage } from '../../context/LanguageContext';
 import { generateProgressReportImage } from '../../utils/progressReportImageGenerator';
 
 const EXAM_TERMS = [
@@ -33,6 +34,7 @@ function computeLetterGrade(pct) {
 }
 
 export default function StudentReportCardTab({ student }) {
+  const { t } = useLanguage();
   const examResults = useMemo(
     () => (Array.isArray(student?.examResults) ? student.examResults : []),
     [student]
@@ -526,10 +528,10 @@ export default function StudentReportCardTab({ student }) {
           </div>
           <div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-[#D97706] block">
-              Academic Assessment &amp; Scholastic Progress ({academicYear})
+              {t('studentPortal.reportCard.eyebrow')} ({academicYear})
             </span>
             <h3 className="text-base sm:text-lg font-serif font-bold text-[#1A365D]">
-              Official Digital Marks Card — {student.studentName}
+              {t('studentPortal.reportCard.heading')} — {student.studentName}
             </h3>
           </div>
         </div>
@@ -554,7 +556,7 @@ export default function StudentReportCardTab({ student }) {
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1A365D] hover:bg-brand-navyDark text-white font-bold text-xs sm:text-sm shadow-sm transition cursor-pointer"
           >
             <Printer className="w-4 h-4 text-[#D97706]" />
-            <span>🖨️ Print Progress Report</span>
+            <span>🖨️ {t('studentPortal.reportCard.printProgressReport')}</span>
           </button>
 
           {/* Download Progress Report Button with format dropdown */}

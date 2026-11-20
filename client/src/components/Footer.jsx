@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { SCHOOL_INFO } from '../constants/schoolData';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Footer() {
+  const { t } = useLanguage();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -19,10 +21,10 @@ export default function Footer() {
               />
               <div>
                 <span className="block text-[10px] text-slate-400 uppercase font-semibold">
-                  {SCHOOL_INFO.societyName} ({SCHOOL_INFO.registrationNo})
+                  {t('common.societyName')} ({SCHOOL_INFO.registrationNo})
                 </span>
                 <h4 className="font-bold text-sm text-white font-serif">
-                  {SCHOOL_INFO.schoolName}
+                  {t('common.schoolName')}
                 </h4>
               </div>
             </div>
@@ -41,37 +43,42 @@ export default function Footer() {
           {/* Quick Links */}
           <div className="md:col-span-3 space-y-2">
             <h5 className="text-white font-bold text-xs uppercase tracking-wider mb-2">
-              Quick Navigation
+              {t('footer.quickLinks')}
             </h5>
             <ul className="space-y-1.5">
               <li>
                 <a href="#home" className="hover:text-brand-gold transition">
-                  Home
+                  {t('nav.home')}
                 </a>
               </li>
               <li>
                 <a href="#about" className="hover:text-brand-gold transition">
-                  About Us &amp; Society
+                  {t('nav.about')}
+                </a>
+              </li>
+              <li>
+                <a href="#leadership" className="hover:text-brand-gold transition">
+                  {t('nav.leadership')}
                 </a>
               </li>
               <li>
                 <a href="#admissions" className="hover:text-brand-gold transition">
-                  Admissions
+                  {t('nav.admissions')}
                 </a>
               </li>
               <li>
                 <a href="#campus-life" className="hover:text-brand-gold transition">
-                  Campus Life
+                  {t('nav.campusLife')}
                 </a>
               </li>
               <li>
                 <a href="#news" className="hover:text-brand-gold transition">
-                  News &amp; Events
+                  {t('nav.news')}
                 </a>
               </li>
               <li>
                 <a href="#contact" className="hover:text-brand-gold transition">
-                  Contact Us
+                  {t('nav.contact')}
                 </a>
               </li>
               <li className="pt-1">
@@ -79,7 +86,7 @@ export default function Footer() {
                   to="/portal/login"
                   className="inline-flex items-center gap-1.5 text-brand-goldSoft hover:text-brand-gold font-semibold transition"
                 >
-                  <span>🔒 Staff &amp; Teacher Portal</span>
+                  <span>🔒 {t('nav.portalLogin')}</span>
                 </Link>
               </li>
             </ul>
@@ -88,7 +95,7 @@ export default function Footer() {
           {/* Verified Contacts in footer */}
           <div className="md:col-span-4 space-y-2">
             <h5 className="text-white font-bold text-xs uppercase tracking-wider mb-2">
-              School Contact Info
+              {t('footer.contactInfo')}
             </h5>
             <p className="text-xs text-slate-300">
               Phone:{' '}

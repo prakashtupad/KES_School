@@ -17,66 +17,68 @@ import {
   Layers,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { SCHOOL_INFO } from '../../constants/schoolData';
 import BirthdayGreetingDesk from './BirthdayGreetingDesk';
+import LanguageToggle from '../LanguageToggle';
 
 const NAV_CONFIG = [
   {
-    label: 'Overview',
+    key: 'portal.overview',
     to: '/portal/overview',
     icon: LayoutDashboard,
     roles: ['admin'],
   },
   {
-    label: 'Admissions Desk',
+    key: 'portal.admissionsDesk',
     to: '/portal/admin',
     icon: ClipboardList,
     roles: ['admin'],
   },
   {
-    label: 'Student Directory',
+    key: 'portal.studentDirectory',
     to: '/portal/students',
     icon: GraduationCap,
     roles: ['admin', 'teacher'],
   },
   {
-    label: 'Daily Attendance',
+    key: 'portal.dailyAttendance',
     to: '/portal/daily-attendance',
     icon: ClipboardCheck,
     roles: ['admin', 'teacher', 'super_admin'],
   },
   {
-    label: 'Classroom & Homework',
+    key: 'portal.classroomHomework',
     to: '/portal/teacher',
     icon: BookOpen,
     roles: ['teacher', 'admin'],
   },
   {
-    label: 'Timesheet & Attendance',
+    key: 'portal.timesheetAttendance',
     to: '/portal/attendance-register',
     icon: Clock,
     roles: ['admin'],
   },
   {
-    label: 'Timesheet & Attendance',
+    key: 'portal.timesheetAttendance',
     to: '/portal/timesheet',
     icon: Clock,
     roles: ['teacher'],
   },
   {
-    label: 'Staff Management',
+    key: 'portal.staffManagement',
     to: '/portal/staff',
     icon: Users,
     roles: ['admin'],
   },
   {
-    label: 'Notices & Circulars',
+    key: 'portal.noticesCirculars',
     to: '/portal/notices',
     icon: Bell,
     roles: ['admin', 'teacher'],
   },
   {
-    label: 'Website Content (CMS)',
+    key: 'portal.websiteCms',
     to: '/portal/cms',
     icon: Layers,
     roles: ['admin'],
@@ -90,6 +92,7 @@ const ROLE_LABELS = {
 
 export default function PortalLayout() {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -131,24 +134,26 @@ export default function PortalLayout() {
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] uppercase tracking-wider text-brand-gold font-bold truncate">
-                    KES Staff Portal
+                    {t('portal.staffPortalTitle')}
                   </span>
                 </div>
                 <h1 className="text-xs sm:text-sm md:text-base font-serif font-bold text-white truncate">
-                  {SCHOOL_INFO.schoolName}
+                  {t('common.schoolName')}
                 </h1>
               </div>
             </Link>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <LanguageToggle variant="dark" compact />
+
             <button
               type="button"
               onClick={handleGoPublicSite}
               className="inline-flex items-center gap-1 text-xs font-medium text-slate-300 hover:text-brand-goldSoft transition px-2.5 py-1.5 rounded-lg border border-white/10 hover:border-brand-gold/40"
               title="Visit Public Website (Logs out of active portal session)"
             >
-              <span className="hidden sm:inline">Website</span>
+              <span className="hidden sm:inline">{t('common.website')}</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </button>
 
@@ -172,7 +177,7 @@ export default function PortalLayout() {
               title="Sign out of Staff Portal"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Logout</span>
+              <span className="hidden sm:inline">{t('auth.logout')}</span>
             </button>
           </div>
         </div>
@@ -197,7 +202,7 @@ export default function PortalLayout() {
         >
           <div className="space-y-4">
             <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Menu
+              {t('portal.menu')}
             </div>
             <nav className="space-y-1" aria-label="Portal Sidebar Navigation">
               {allowedNavItems.map((item) => {
@@ -216,7 +221,7 @@ export default function PortalLayout() {
                     }
                   >
                     <IconComponent className="w-4 h-4 text-brand-gold flex-shrink-0" />
-                    <span>{item.label}</span>
+                    <span>{t(item.key)}</span>
                   </NavLink>
                 );
               })}
@@ -224,7 +229,7 @@ export default function PortalLayout() {
           </div>
 
           <div className="p-3 rounded-xl bg-brand-navy/5 border border-brand-navy/10 text-[11px] text-slate-600 space-y-0.5 mt-6">
-            <div className="font-bold text-brand-navy">Office Helpdesk</div>
+            <div className="font-bold text-brand-navy">{t('portal.officeHelpdesk')}</div>
             <div>📞 {SCHOOL_INFO.phoneDisplay}</div>
           </div>
         </aside>

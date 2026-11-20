@@ -9,8 +9,10 @@ import {
   Calendar,
 } from 'lucide-react';
 import PrintableFeeReceipt from './PrintableFeeReceipt';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function StudentFeesTab({ student }) {
+  const { t } = useLanguage();
   const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   if (!student) return null;
@@ -66,7 +68,7 @@ export default function StudentFeesTab({ student }) {
                 Academic Year {student.academicYear || '2026-2027'}
               </span>
               <h3 className="text-base sm:text-lg font-serif font-bold">
-                Student Fee Ledger &amp; Official Receipts
+                {t('studentPortal.fees.heading')}
               </h3>
             </div>
           </div>
@@ -78,7 +80,9 @@ export default function StudentFeesTab({ student }) {
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>Print Official Receipt ({fee.receiptNumber || 'Receipt'})</span>
+              <span>
+                {t('studentPortal.fees.printOfficialReceipt')} ({fee.receiptNumber || 'Receipt'})
+              </span>
             </button>
           )}
         </div>
@@ -87,7 +91,7 @@ export default function StudentFeesTab({ student }) {
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-4 rounded-xl bg-[#F8FAFC] border border-slate-200">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-              Total Applicable Fee
+              {t('studentPortal.fees.totalFee')}
             </span>
             <div className="text-xl font-mono font-bold text-[#1A365D] mt-1">
               ₹{admissionFeeAmount.toLocaleString('en-IN')}
@@ -99,13 +103,13 @@ export default function StudentFeesTab({ student }) {
 
           <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200">
             <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">
-              Total Amount Paid
+              {t('studentPortal.fees.totalPaid')}
             </span>
             <div className="text-xl font-mono font-bold text-emerald-700 mt-1">
               ₹{amountPaid.toLocaleString('en-IN')}
             </div>
             <span className="text-[11px] text-emerald-700">
-              {fee.receiptNumber ? `Receipt: ${fee.receiptNumber}` : 'No receipt yet'}
+              {fee.receiptNumber ? `${t('studentPortal.fees.receiptNo')}: ${fee.receiptNumber}` : '—'}
             </span>
           </div>
 
@@ -117,7 +121,7 @@ export default function StudentFeesTab({ student }) {
             }`}
           >
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 block">
-              Remaining Balance Due
+              {t('studentPortal.fees.balanceDue')}
             </span>
             <div
               className={`text-xl font-mono font-bold mt-1 ${
@@ -127,13 +131,15 @@ export default function StudentFeesTab({ student }) {
               ₹{balanceDue.toLocaleString('en-IN')}
             </div>
             <span className="text-[11px] text-slate-500">
-              {balanceDue > 0 ? 'Payable at Khanatti Office Desk' : 'Complete Fee Cleared'}
+              {balanceDue > 0
+                ? t('studentPortal.fees.payableAtDesk')
+                : t('studentPortal.fees.completeCleared')}
             </span>
           </div>
 
           <div className="p-4 rounded-xl bg-[#F8FAFC] border border-slate-200 flex flex-col justify-between">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-              Fee Payment Status
+              {t('studentPortal.fees.paymentStatus')}
             </span>
             <div className="mt-1">
               <span

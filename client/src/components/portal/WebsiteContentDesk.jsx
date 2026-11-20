@@ -16,6 +16,7 @@ import {
   Award,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const BUILTIN_IMAGES = [
   { label: 'Founder (Sri Subhash Tuppad)', url: '/images/leadership/founder-subhash-tuppad.jpg' },
@@ -34,8 +35,11 @@ const BUILTIN_IMAGES = [
 const INITIAL_FORM = {
   section: 'hero_carousel',
   title: '',
+  titleKn: '',
   subtitle: '',
+  subtitleKn: '',
   description: '',
+  descriptionKn: '',
   secondaryDescription: '',
   imageUrl: '/images/governance-campus.jpg',
   caption: 'Guided by Moral Values & Community Excellence',
@@ -58,6 +62,7 @@ const INITIAL_FORM = {
 
 export default function WebsiteContentDesk() {
   const { token } = useAuth();
+  const { t } = useLanguage();
 
   const [activeTab, setActiveTab] = useState('hero_carousel');
   const [items, setItems] = useState([]);
@@ -210,8 +215,11 @@ export default function WebsiteContentDesk() {
       ...INITIAL_FORM,
       section: item.section || activeTab,
       title: item.title || '',
+      titleKn: item.titleKn || '',
       subtitle: item.subtitle || '',
+      subtitleKn: item.subtitleKn || '',
       description: item.description || '',
+      descriptionKn: item.descriptionKn || '',
       secondaryDescription: item.secondaryDescription || '',
       imageUrl: item.imageUrl || '',
       caption: item.caption || '',
@@ -328,13 +336,13 @@ export default function WebsiteContentDesk() {
       <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-brand-gold block">
-            Dynamic Website Content Management (CMS)
+            {t('cms.eyebrow')}
           </span>
           <h2 className="text-lg sm:text-xl font-serif font-bold text-brand-navy">
-            Website Content (CMS)
+            {t('cms.heading')}
           </h2>
           <p className="text-xs text-slate-600 mt-0.5">
-            Customize the Hero Carousel Banner, About Us Section, Student &amp; Campus Life cards, and Our Leadership messages.
+            {t('cms.subheading')}
           </p>
         </div>
 
@@ -390,7 +398,7 @@ export default function WebsiteContentDesk() {
           }`}
         >
           <Layers className="w-4 h-4 text-brand-gold" />
-          <span>1. Hero Carousel Slides</span>
+          <span>{t('cms.tabHero')}</span>
         </button>
 
         <button
@@ -403,7 +411,7 @@ export default function WebsiteContentDesk() {
           }`}
         >
           <BookOpen className="w-4 h-4 text-brand-gold" />
-          <span>2. About Us Section</span>
+          <span>{t('cms.tabAbout')}</span>
         </button>
 
         <button
@@ -416,7 +424,7 @@ export default function WebsiteContentDesk() {
           }`}
         >
           <ImageIcon className="w-4 h-4 text-brand-gold" />
-          <span>3. Student &amp; Campus Life</span>
+          <span>{t('cms.tabCampus')}</span>
         </button>
 
         <button
@@ -429,7 +437,7 @@ export default function WebsiteContentDesk() {
           }`}
         >
           <Award className="w-4 h-4 text-brand-gold" />
-          <span>4. Our Leadership</span>
+          <span>{t('cms.tabLeadership')}</span>
         </button>
       </div>
 
@@ -992,6 +1000,57 @@ export default function WebsiteContentDesk() {
                     placeholder="Enter description text..."
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm focus:border-brand-navy"
                   />
+                </div>
+
+                {/* Optional Kannada Bilingual Fields (ಕನ್ನಡ ಅನುವಾದ - ಐಚ್ಛಿಕ) */}
+                <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200/80 space-y-2.5">
+                  <span className="block text-[11px] font-bold uppercase tracking-wider text-brand-navy">
+                    {t('cms.kannadaOptionalHeading')}
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                        {t('cms.subtitleKnLabel')}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.subtitleKn || ''}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, subtitleKn: e.target.value }))
+                        }
+                        placeholder="ಉದಾ: ಖಾನಟ್ಟಿಗೆ ಸುಸ್ವಾಗತ"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white font-kannada"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                        {t('cms.titleKnLabel')}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.titleKn || ''}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, titleKn: e.target.value }))
+                        }
+                        placeholder="ಕನ್ನಡದಲ್ಲಿ ಶೀರ್ಷಿಕೆ ನಮೂದಿಸಿ..."
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white font-kannada"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                      {t('cms.descriptionKnLabel')}
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={formData.descriptionKn || ''}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, descriptionKn: e.target.value }))
+                      }
+                      placeholder="ಕನ್ನಡದಲ್ಲಿ ವಿವರಣೆ ಅಥವಾ ಸಂದೇಶ ನಮೂದಿಸಿ (ಖಾಲಿ ಬಿಟ್ಟರೆ ಇಂಗ್ಲಿಷ್ ಪಠ್ಯ ಕಾಣಿಸುತ್ತದೆ)..."
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white font-kannada"
+                    />
+                  </div>
                 </div>
 
                 {isAboutTab && (

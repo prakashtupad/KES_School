@@ -2,18 +2,21 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { SCHOOL_INFO } from '../constants/schoolData';
+import { useLanguage } from '../context/LanguageContext';
+import LanguageToggle from './LanguageToggle';
 
 const NAV_ITEMS = [
-  { label: 'Home', href: '#home', isPrimary: true },
-  { label: 'About Us', href: '#about' },
-  { label: 'Our Leadership', href: '#leadership' },
-  { label: 'Admissions', href: '#admissions' },
-  { label: 'Campus Life', href: '#campus-life' },
-  { label: 'News & Events', href: '#news' },
-  { label: 'Contact Us', href: '#contact' },
+  { key: 'nav.home', href: '#home', isPrimary: true },
+  { key: 'nav.about', href: '#about' },
+  { key: 'nav.leadership', href: '#leadership' },
+  { key: 'nav.admissions', href: '#admissions' },
+  { key: 'nav.campusLife', href: '#campus-life' },
+  { key: 'nav.news', href: '#news' },
+  { key: 'nav.contact', href: '#contact' },
 ];
 
 export default function Header() {
+  const { t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleToggleMenu = () => {
@@ -41,24 +44,24 @@ export default function Header() {
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 whitespace-nowrap">
               <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">
-                {SCHOOL_INFO.societyName}
+                {t('common.societyName')}
               </span>
               <span className="hidden sm:inline-block text-[9px] font-mono font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 whitespace-nowrap">
                 {SCHOOL_INFO.registrationNo}
               </span>
             </div>
             <h1 className="text-xs sm:text-sm md:text-base xl:text-[17px] font-bold text-brand-navy leading-snug font-serif group-hover:text-brand-navyLight transition truncate sm:whitespace-nowrap">
-              {SCHOOL_INFO.schoolName}
+              {t('common.schoolName')}
             </h1>
             <span className="text-[11px] sm:text-xs font-semibold text-brand-gold flex items-center gap-1 whitespace-nowrap">
-              {SCHOOL_INFO.shortLocation}
+              {t('common.locationShort')}
             </span>
           </div>
         </a>
 
         {/* Desktop Nav - Visible on xl+ screens */}
         <nav
-          className="hidden xl:flex items-center gap-4 2xl:gap-6 text-[13px] 2xl:text-sm font-medium text-slate-700 flex-shrink-0"
+          className="hidden xl:flex items-center gap-3.5 2xl:gap-5 text-[13px] 2xl:text-sm font-medium text-slate-700 flex-shrink-0"
           aria-label="Main Navigation"
         >
           {NAV_ITEMS.map((item) => (
@@ -71,29 +74,31 @@ export default function Header() {
                   : 'border-transparent hover:text-brand-navy hover:border-brand-gold/60'
               }`}
             >
-              {item.label}
+              {t(item.key)}
             </a>
           ))}
         </nav>
 
-        {/* Right Side Controls (Stacked vertically on xl desktop: Staff Portal above Enquire About Admission) */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Tablet (Side-by-Side) & Desktop (Stacked: Enquire just below Staff Portal) */}
-          <div className="hidden md:flex md:flex-row xl:flex-col items-stretch justify-center gap-1.5">
+        {/* Right Side Controls (Desktop: All 3 stacked neatly in 1 vertical column so header never overflows) */}
+        <div className="flex items-center gap-2 xl:ml-2 flex-shrink-0">
+          {/* Tablet (Side-by-Side) & Desktop (Single Vertical Column: Language Toggle -> Staff/Student Portal -> Enquire About Admission) */}
+          <div className="hidden md:flex md:flex-row xl:flex-col items-center xl:items-stretch justify-center gap-1.5 xl:gap-1">
+            <LanguageToggle compact className="xl:w-full" />
+
             <Link
               to="/portal/login"
-              title="Staff, Student & Parent Portal Login"
-              className="whitespace-nowrap inline-flex items-center justify-center gap-1.5 px-3 py-1.5 xl:py-1 rounded-lg border border-slate-200 text-[11px] xl:text-[11px] font-semibold text-slate-700 hover:text-brand-navy hover:border-brand-gold/50 hover:bg-slate-50 transition"
+              title={t('nav.portalLogin')}
+              className="whitespace-nowrap inline-flex items-center justify-center gap-1.5 px-2.5 py-1 xl:py-0.5 rounded-lg border border-slate-200 text-[11px] font-semibold text-slate-700 hover:text-brand-navy hover:border-brand-gold/50 hover:bg-slate-50 transition"
             >
               <Lock className="w-3 h-3 text-brand-gold flex-shrink-0" />
-              <span>Staff / Student Portal</span>
+              <span>{t('nav.portalLogin')}</span>
             </Link>
 
             <a
               href="#enquiry"
-              className="whitespace-nowrap bg-brand-navy hover:bg-brand-navyDark text-white text-[11px] font-semibold px-3 py-1.5 xl:py-1 rounded-lg shadow-sm border border-brand-gold/40 hover:border-brand-gold transition duration-150 inline-flex items-center justify-center gap-1.5"
+              className="whitespace-nowrap bg-brand-navy hover:bg-brand-navyDark text-white text-[11px] font-semibold px-2.5 py-1 xl:py-0.5 rounded-lg shadow-sm border border-brand-gold/40 hover:border-brand-gold transition duration-150 inline-flex items-center justify-center gap-1.5"
             >
-              <span>Enquire About Admission</span>
+              <span>{t('nav.enquireAdmission')}</span>
               <svg
                 className="w-3 h-3 text-brand-gold flex-shrink-0"
                 fill="none"
@@ -110,6 +115,9 @@ export default function Header() {
               </svg>
             </a>
           </div>
+
+          {/* Mobile Compact Language Toggle (visible below md, next to hamburger) */}
+          <LanguageToggle compact className="hidden sm:inline-flex md:hidden" />
 
           {/* Hamburger Menu Button (Visible below xl) */}
           <button
@@ -164,6 +172,9 @@ export default function Header() {
           id="mobileMenu"
           className="xl:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-5 space-y-3 shadow-lg transition-all duration-200"
         >
+          <div className="sm:hidden pb-2 border-b border-slate-100 flex justify-end">
+            <LanguageToggle variant="light" />
+          </div>
           <nav
             className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm sm:text-base font-medium text-slate-700"
             aria-label="Mobile Navigation"
@@ -177,7 +188,7 @@ export default function Header() {
                   item.isPrimary ? 'text-brand-navy font-semibold bg-slate-50/80' : ''
                 }`}
               >
-                {item.label}
+                {t(item.key)}
               </a>
             ))}
           </nav>
@@ -188,14 +199,14 @@ export default function Header() {
               className="flex-1 text-center bg-slate-100 hover:bg-slate-200 text-brand-navy font-semibold py-2.5 px-4 rounded-lg border border-slate-200 flex items-center justify-center gap-2 text-xs sm:text-sm"
             >
               <Lock className="w-4 h-4 text-brand-gold" />
-              <span>Staff &amp; Teacher Portal</span>
+              <span>{t('nav.portalLogin')}</span>
             </Link>
             <a
               href="#enquiry"
               onClick={handleCloseMenu}
               className="mobile-nav-link flex-1 text-center bg-brand-navy hover:bg-brand-navyDark text-white font-semibold py-2.5 px-4 rounded-lg shadow flex items-center justify-center gap-2 text-xs sm:text-sm"
             >
-              <span>Enquire About Admission</span>
+              <span>{t('nav.enquireAdmission')}</span>
               <svg
                 className="w-4 h-4 text-brand-gold"
                 fill="none"

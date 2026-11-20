@@ -99,8 +99,11 @@ exports.createSiteContent = async (req, res) => {
     const {
       section,
       title,
+      titleKn = '',
       subtitle = '',
+      subtitleKn = '',
       description,
+      descriptionKn = '',
       secondaryDescription = '',
       imageUrl,
       caption = '',
@@ -137,8 +140,11 @@ exports.createSiteContent = async (req, res) => {
     const payload = {
       section,
       title: String(title).trim(),
+      titleKn: String(titleKn || '').trim(),
       subtitle: String(subtitle || '').trim(),
+      subtitleKn: String(subtitleKn || '').trim(),
       description: String(description).trim(),
+      descriptionKn: String(descriptionKn || '').trim(),
       secondaryDescription: String(secondaryDescription || '').trim(),
       imageUrl: String(imageUrl).trim(),
       caption: String(caption || '').trim(),

@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { getDirectStudentChatUrl } from '../../utils/whatsappFormatter';
 import {
   printStudentAdmissionSummary,
@@ -52,6 +53,7 @@ const isSectionApplicable = (sec) => {
 
 export default function StudentDirectoryDesk() {
   const { user, token } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   const [students, setStudents] = useState([]);
@@ -227,13 +229,13 @@ export default function StudentDirectoryDesk() {
       <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-brand-gold block">
-            Student Information System &amp; Pathway 2 Onboarding
+            {t('portal.sisSubheading')}
           </span>
           <h2 className="text-lg sm:text-xl font-serif font-bold text-brand-navy">
-            Student Directory ({students.length})
+            {t('portal.studentDirectory')} ({students.length})
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Click any student&apos;s name to view their full profile, Aadhaar, and Karnataka STS / PEN / APAAR IDs.
+            {t('portal.sisHelper')}
           </p>
         </div>
 
@@ -254,7 +256,7 @@ export default function StudentDirectoryDesk() {
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-50 text-brand-navy font-bold text-xs shadow-sm transition"
           >
             <Printer className="w-3.5 h-3.5 text-brand-gold" />
-            <span>Print Directory</span>
+            <span>{t('portal.printDirectory')}</span>
           </button>
 
           <button
@@ -264,7 +266,7 @@ export default function StudentDirectoryDesk() {
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-50 text-brand-navy font-bold text-xs shadow-sm transition"
           >
             <Download className="w-3.5 h-3.5 text-brand-gold" />
-            <span>Export CSV</span>
+            <span>{t('portal.exportCsv')}</span>
           </button>
 
           {isAdmin && (
@@ -274,7 +276,7 @@ export default function StudentDirectoryDesk() {
               className="inline-flex items-center gap-1.5 bg-brand-navy hover:bg-brand-navyDark text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow-sm border border-brand-gold/40 transition"
             >
               <UserPlus className="w-3.5 h-3.5 text-brand-gold" />
-              <span>+ New Student Admission</span>
+              <span>{t('portal.newStudentAdmission')}</span>
             </button>
           )}
         </div>
@@ -511,17 +513,17 @@ export default function StudentDirectoryDesk() {
                 <thead>
                   <tr className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
                     <th className="w-[120px] min-w-[120px] max-w-[120px] py-3 px-4 sticky left-0 bg-slate-50 z-30 shadow-[1px_0_3px_rgba(0,0,0,0.08)]">
-                      Adm No
+                      {t('table.admNo')}
                     </th>
                     <th className="py-3 px-4 sticky left-[120px] bg-slate-50 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.06)]">
-                      Student Name
+                      {t('table.studentName')}
                     </th>
-                    <th className="py-3 px-4">Class</th>
-                    <th className="py-3 px-4">Parent / Guardian</th>
-                    <th className="py-3 px-4">Mobile</th>
-                    <th className="py-3 px-4">Fee Status</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <th className="py-3 px-4">{t('table.classCol')}</th>
+                    <th className="py-3 px-4">{t('table.parentGuardian')}</th>
+                    <th className="py-3 px-4">{t('table.mobile')}</th>
+                    <th className="py-3 px-4">{t('table.feeStatus')}</th>
+                    <th className="py-3 px-4">{t('table.status')}</th>
+                    <th className="py-3 px-4 text-right">{t('table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 text-xs">

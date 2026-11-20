@@ -14,7 +14,9 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { SCHOOL_INFO } from '../../constants/schoolData';
+import LanguageToggle from '../LanguageToggle';
 import SiblingSwitcherHeader, {
   getStudentInitials,
   isSectionApplicable,
@@ -29,38 +31,38 @@ import OurLeadership from '../OurLeadership';
 const PORTAL_TABS = [
   {
     id: 'overview',
-    label: 'Student Overview & Profile',
-    shortLabel: 'Overview',
+    labelKey: 'studentPortal.tabs.overview',
+    shortKey: 'studentPortal.tabs.overviewShort',
     icon: User,
   },
   {
     id: 'attendance',
-    label: 'Daily Attendance',
-    shortLabel: 'Attendance',
+    labelKey: 'studentPortal.tabs.attendance',
+    shortKey: 'studentPortal.tabs.attendanceShort',
     icon: CalendarCheck,
   },
   {
     id: 'fees',
-    label: 'Fee Ledger & Receipts',
-    shortLabel: 'Fees & Receipts',
+    labelKey: 'studentPortal.tabs.fees',
+    shortKey: 'studentPortal.tabs.feesShort',
     icon: IndianRupee,
   },
   {
     id: 'homework',
-    label: 'Curriculum & Daily Homework',
-    shortLabel: 'Homework',
+    labelKey: 'studentPortal.tabs.homework',
+    shortKey: 'studentPortal.tabs.homeworkShort',
     icon: BookOpen,
   },
   {
     id: 'report-card',
-    label: 'Digital Report Card',
-    shortLabel: 'Report Card',
+    labelKey: 'studentPortal.tabs.reportCard',
+    shortKey: 'studentPortal.tabs.reportCardShort',
     icon: Award,
   },
   {
     id: 'leadership',
-    label: 'Our Leadership',
-    shortLabel: 'Leadership',
+    labelKey: 'studentPortal.tabs.leadership',
+    shortKey: 'studentPortal.tabs.leadershipShort',
     icon: Users,
   },
 ];
@@ -72,6 +74,7 @@ function getCurrentMonthStr() {
 
 export default function StudentParentPortal() {
   const { user, token, parentSession, logout } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const siblings = useMemo(
@@ -170,23 +173,25 @@ export default function StudentParentPortal() {
               />
               <div className="min-w-0">
                 <span className="text-[10px] uppercase tracking-wider text-[#D97706] font-bold block truncate">
-                  KES Student &amp; Parent Portal
+                  {t('studentPortal.headerTitle')}
                 </span>
                 <h1 className="text-xs sm:text-sm md:text-base font-serif font-bold text-white truncate">
-                  {SCHOOL_INFO.schoolName}
+                  {t('common.schoolName')}
                 </h1>
               </div>
             </Link>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <LanguageToggle variant="dark" compact />
+
             <button
               type="button"
               onClick={handleGoPublicSite}
               className="inline-flex items-center gap-1 text-xs font-medium text-slate-300 hover:text-amber-200 transition px-2.5 py-1.5 rounded-lg border border-white/10 hover:border-[#D97706]/40 cursor-pointer"
               title="Return to Public School Website"
             >
-              <span className="hidden sm:inline">Website</span>
+              <span className="hidden sm:inline">{t('common.website')}</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </button>
 
@@ -203,8 +208,11 @@ export default function StudentParentPortal() {
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#D97706]/20 border border-[#D97706]/50 text-amber-200 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
                   <Users className="w-3 h-3 text-[#D97706]" />
                   <span>
-                    Parent ({siblings.length}{' '}
-                    {siblings.length === 1 ? 'Child' : 'Siblings'})
+                    {t('studentPortal.parentBadge')} ({siblings.length}{' '}
+                    {siblings.length === 1
+                      ? t('studentPortal.childSingular')
+                      : t('studentPortal.siblingsPlural')}
+                    )
                   </span>
                 </span>
               </div>
@@ -217,7 +225,7 @@ export default function StudentParentPortal() {
               title="Sign out of Student & Parent Portal"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Logout</span>
+              <span className="hidden sm:inline">{t('auth.logout')}</span>
             </button>
           </div>
         </div>
@@ -274,10 +282,10 @@ export default function StudentParentPortal() {
               </div>
             )}
 
-            {/* 4 Dashboard Section Tabs */}
+            {/* 5 Dashboard Section Tabs */}
             <div className="space-y-1">
               <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                Student Dashboard
+                {t('studentPortal.dashboardMenu')}
               </div>
               <nav className="space-y-1" aria-label="Student Portal Tabs">
                 {PORTAL_TABS.map((tab) => {
@@ -291,14 +299,14 @@ export default function StudentParentPortal() {
                         setActiveTab(tab.id);
                         setSidebarOpen(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer ${
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-left whitespace-nowrap transition cursor-pointer ${
                         isActive
                           ? 'bg-[#1A365D] text-white shadow-sm'
                           : 'text-slate-700 hover:bg-slate-100 hover:text-[#1A365D]'
                       }`}
                     >
                       <IconComponent className="w-4 h-4 text-[#D97706] flex-shrink-0" />
-                      <span>{tab.label}</span>
+                      <span className="truncate">{t(tab.labelKey)}</span>
                     </button>
                   );
                 })}
@@ -307,7 +315,7 @@ export default function StudentParentPortal() {
           </div>
 
           <div className="p-3 rounded-xl bg-[#1A365D]/5 border border-[#1A365D]/10 text-[11px] text-slate-600 space-y-0.5 mt-6">
-            <div className="font-bold text-[#1A365D]">Khanatti Office Helpdesk</div>
+            <div className="font-bold text-[#1A365D]">{t('studentPortal.officeHelpdesk')}</div>
             <div>📞 {SCHOOL_INFO.phoneDisplay}</div>
           </div>
         </aside>
@@ -358,7 +366,7 @@ export default function StudentParentPortal() {
                       }`}
                     >
                       <IconComponent className="w-3.5 h-3.5 text-[#D97706]" />
-                      <span>{tab.shortLabel}</span>
+                      <span>{t(tab.shortKey)}</span>
                     </button>
                   );
                 })}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SCHOOL_INFO } from '../constants/schoolData';
 import BirthdayCelebrationCard from './BirthdayCelebrationCard';
+import { useLanguage } from '../context/LanguageContext';
 
 const DEFAULT_CAMPUS_CARDS = [
   {
@@ -54,6 +55,7 @@ const DEFAULT_CAMPUS_CARDS = [
 ];
 
 export default function CampusLifeSection() {
+  const { t, tContent } = useLanguage();
   const [cards, setCards] = useState(DEFAULT_CAMPUS_CARDS);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [birthdayData, setBirthdayData] = useState({
@@ -107,14 +109,13 @@ export default function CampusLifeSection() {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
             <span className="text-xs font-semibold text-brand-gold uppercase tracking-wider">
-              Campus Environment
+              {t('campus.badge')}
             </span>
             <h2 className="text-2xl sm:text-3xl font-bold font-serif text-brand-navy mt-1">
-              Student &amp; Campus Life
+              {t('campus.heading')}
             </h2>
             <p className="text-sm text-slate-600 mt-1 max-w-xl">
-              Authentic glimpses of our school campus, daily life, co-curricular learning, and
-              community events at Khanatti.
+              {t('campus.subheading')}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
@@ -163,8 +164,10 @@ export default function CampusLifeSection() {
           )}
           {cards.map((card, idx) => {
             const imgSrc = card.imageUrl || card.image || '/images/interactive-classroom.jpg?v=2';
-            const badgeText = card.subtitle || card.badge || 'KES Khanatti Campus';
-            const descText = card.description || card.caption || '';
+            const badgeText =
+              tContent(card, 'subtitle') || card.badge || 'KES Khanatti Campus';
+            const titleText = tContent(card, 'title') || card.title;
+            const descText = tContent(card, 'description') || card.caption || '';
 
             return (
               <div
@@ -175,18 +178,18 @@ export default function CampusLifeSection() {
                   type="button"
                   onClick={() =>
                     setSelectedPhoto({
-                      title: card.title,
+                      title: titleText,
                       badge: badgeText,
                       image: imgSrc,
                       caption: descText,
                     })
                   }
                   className="relative aspect-[16/10] bg-slate-100 border-b border-slate-200 overflow-hidden w-full text-left focus:outline-none"
-                  aria-label={`View larger photo of ${card.title}`}
+                  aria-label={`View larger photo of ${titleText}`}
                 >
                   <img
                     src={imgSrc}
-                    alt={card.title}
+                    alt={titleText}
                     className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
@@ -195,7 +198,7 @@ export default function CampusLifeSection() {
                   </span>
                 </button>
                 <div className="p-4 flex-grow">
-                  <h3 className="font-bold text-sm text-brand-navy">{card.title}</h3>
+                  <h3 className="font-bold text-sm text-brand-navy">{titleText}</h3>
                   <p className="text-xs text-slate-600 mt-1 leading-relaxed">{descText}</p>
                 </div>
               </div>

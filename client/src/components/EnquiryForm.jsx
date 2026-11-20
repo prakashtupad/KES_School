@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { SCHOOL_INFO } from '../constants/schoolData';
+import { useLanguage } from '../context/LanguageContext';
 
 const INITIAL_FORM_STATE = {
   guardianName: '',
@@ -16,6 +17,7 @@ const INITIAL_FORM_STATE = {
 const INDIAN_PHONE_REGEX = /^[6-9]\d{9}$/;
 
 export default function EnquiryForm() {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -155,14 +157,13 @@ export default function EnquiryForm() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-8">
           <span className="text-xs font-semibold text-brand-gold uppercase tracking-wider">
-            Direct Enquiries
+            {t('enquiry.badge')}
           </span>
           <h2 className="text-2xl sm:text-3xl font-bold font-serif text-brand-navy mt-1">
-            Admissions Enquiry Form
+            {t('enquiry.heading')}
           </h2>
           <p className="text-sm text-slate-600 mt-2">
-            Please fill out this form to register your interest. Submissions are delivered directly
-            to the school administrative team at Khanatti.
+            {t('enquiry.subheading')}
           </p>
           <div className="mt-3 inline-block bg-slate-100 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-600">
             Enquiries are addressed to:{' '}
@@ -262,7 +263,7 @@ export default function EnquiryForm() {
                 htmlFor="parentName"
                 className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1"
               >
-                Parent / Guardian Name <span className="text-red-500" aria-hidden="true">*</span>
+                {t('enquiry.parentName')} <span className="text-red-500" aria-hidden="true">*</span>
               </label>
               <input
                 type="text"
@@ -271,7 +272,7 @@ export default function EnquiryForm() {
                 required
                 value={formData.guardianName}
                 onChange={handleChange}
-                placeholder="e.g. Ramesh Patil"
+                placeholder={t('enquiry.parentNamePlaceholder')}
                 aria-invalid={Boolean(errors.guardianName)}
                 aria-describedby={errors.guardianName ? 'parentNameError' : undefined}
                 className={`w-full px-3.5 py-2.5 rounded-lg border text-sm focus:border-brand-navy bg-white transition ${
@@ -291,7 +292,7 @@ export default function EnquiryForm() {
                 htmlFor="studentName"
                 className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1"
               >
-                Student Name <span className="text-red-500" aria-hidden="true">*</span>
+                {t('enquiry.studentName')} <span className="text-red-500" aria-hidden="true">*</span>
               </label>
               <input
                 type="text"
@@ -300,7 +301,7 @@ export default function EnquiryForm() {
                 required
                 value={formData.studentName}
                 onChange={handleChange}
-                placeholder="e.g. Anand Patil"
+                placeholder={t('enquiry.studentNamePlaceholder')}
                 aria-invalid={Boolean(errors.studentName)}
                 aria-describedby={errors.studentName ? 'studentNameError' : undefined}
                 className={`w-full px-3.5 py-2.5 rounded-lg border text-sm focus:border-brand-navy bg-white transition ${
@@ -322,7 +323,7 @@ export default function EnquiryForm() {
                 htmlFor="classInterest"
                 className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1"
               >
-                Class of Interest <span className="text-red-500" aria-hidden="true">*</span>
+                {t('enquiry.gradeApplying')} <span className="text-red-500" aria-hidden="true">*</span>
               </label>
               <select
                 id="classInterest"
@@ -336,11 +337,11 @@ export default function EnquiryForm() {
                   errors.classOfInterest ? 'border-red-500 bg-red-50/30' : 'border-slate-300'
                 }`}
               >
-                <option value="">-- Select Class / Grade --</option>
-                <option value="Nursery / LKG / UKG">Pre-Primary (Nursery / LKG / UKG)</option>
-                <option value="Class 1st to 5th">Primary (Class 1st to 5th)</option>
-                <option value="Class 6th to 10th">Upper Primary / High School</option>
-                <option value="Other">Other / General Admission Query</option>
+                <option value="">{t('enquiry.selectClass')}</option>
+                <option value="Nursery / LKG / UKG">{t('enquiry.prePrimaryOpt')}</option>
+                <option value="Class 1st to 5th">{t('enquiry.primaryOpt')}</option>
+                <option value="Class 6th to 10th">{t('enquiry.upperPrimaryOpt')}</option>
+                <option value="Other">{t('enquiry.otherOpt')}</option>
               </select>
               {errors.classOfInterest && (
                 <span
@@ -358,7 +359,7 @@ export default function EnquiryForm() {
                 htmlFor="phoneNumber"
                 className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1"
               >
-                Phone Number <span className="text-red-500" aria-hidden="true">*</span>
+                {t('enquiry.mobileNumber')} <span className="text-red-500" aria-hidden="true">*</span>
               </label>
               <input
                 type="tel"
@@ -369,7 +370,7 @@ export default function EnquiryForm() {
                 pattern="[6-9][0-9]{9}"
                 value={formData.phone}
                 onChange={handleChange}
-                placeholder="10-digit mobile number"
+                placeholder={t('enquiry.mobilePlaceholder')}
                 aria-invalid={Boolean(errors.phone)}
                 aria-describedby={errors.phone ? 'phoneNumberError' : undefined}
                 className={`w-full px-3.5 py-2.5 rounded-lg border text-sm focus:border-brand-navy bg-white transition ${
@@ -394,7 +395,7 @@ export default function EnquiryForm() {
                 htmlFor="villageTown"
                 className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1"
               >
-                Village / Town <span className="text-red-500" aria-hidden="true">*</span>
+                {t('enquiry.village')} <span className="text-red-500" aria-hidden="true">*</span>
               </label>
               <input
                 type="text"
@@ -403,7 +404,7 @@ export default function EnquiryForm() {
                 required
                 value={formData.location}
                 onChange={handleChange}
-                placeholder="e.g. Khanatti / Gokak / Surrounding village"
+                placeholder={t('enquiry.villagePlaceholder')}
                 aria-invalid={Boolean(errors.location)}
                 aria-describedby={errors.location ? 'villageTownError' : undefined}
                 className={`w-full px-3.5 py-2.5 rounded-lg border text-sm focus:border-brand-navy bg-white transition ${
@@ -423,7 +424,7 @@ export default function EnquiryForm() {
                 id="needSchoolVanLabel"
                 className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1"
               >
-                Do you need School Van? <span className="text-red-500" aria-hidden="true">*</span>
+                {t('enquiry.needVan')} <span className="text-red-500" aria-hidden="true">*</span>
               </span>
               <div
                 role="radiogroup"
@@ -452,7 +453,9 @@ export default function EnquiryForm() {
                         onChange={handleChange}
                         className="sr-only"
                       />
-                      <span>{option === 'Yes' ? '🚐 Yes' : 'No'}</span>
+                      <span>
+                        {option === 'Yes' ? `🚐 ${t('enquiry.yes')}` : t('enquiry.no')}
+                      </span>
                     </label>
                   );
                 })}
@@ -474,7 +477,7 @@ export default function EnquiryForm() {
               htmlFor="optionalMessage"
               className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1"
             >
-              Optional Message or Query
+              {t('enquiry.notes')}
             </label>
             <textarea
               id="optionalMessage"
@@ -482,7 +485,7 @@ export default function EnquiryForm() {
               rows={3}
               value={formData.message}
               onChange={handleChange}
-              placeholder="Any specific questions regarding transportation, documents, or admission timelines..."
+              placeholder={t('enquiry.notesPlaceholder')}
               className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:border-brand-navy bg-white transition"
             />
           </div>
@@ -502,8 +505,7 @@ export default function EnquiryForm() {
                 className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-navy focus:ring-brand-gold"
               />
               <span className="text-xs text-slate-600 leading-normal">
-                I give consent for Shri Siddharoodha English Medium School, Khanatti to contact me
-                regarding this admission enquiry using the details provided above.
+                {t('enquiry.consentText')}
               </span>
             </label>
             {errors.consentToContact && (
@@ -515,9 +517,7 @@ export default function EnquiryForm() {
 
           {/* Information & Privacy Note */}
           <div className="p-3 bg-white rounded border border-slate-200 text-[11px] text-slate-500 leading-relaxed">
-            <strong>Information Note:</strong> Enquiries sent through this interface are securely
-            logged with a unique reference number and forwarded to the school’s administrative desk
-            at Khanatti.
+            <strong>{t('enquiry.infoNoteLabel')}</strong> {t('enquiry.infoNoteText')}
           </div>
 
           {/* Submit Button */}
@@ -527,7 +527,7 @@ export default function EnquiryForm() {
               disabled={submitting}
               className="w-full bg-brand-navy hover:bg-brand-navyDark disabled:opacity-60 text-white font-bold py-3 px-6 rounded-lg shadow transition flex items-center justify-center gap-2"
             >
-              <span>{submitting ? 'Submitting Enquiry...' : 'Submit Admission Enquiry'}</span>
+              <span>{submitting ? t('enquiry.submitting') : t('enquiry.submitBtn')}</span>
               <svg
                 className="w-4 h-4 text-brand-gold"
                 fill="none"

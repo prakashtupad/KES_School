@@ -7,6 +7,16 @@
     scroll-behavior: smooth;
   }
 
+  .font-kannada,
+  html[lang="kn"] body {
+    font-family: 'Inter', 'Noto Sans Kannada', sans-serif;
+    line-height: 1.6;
+  }
+
+  html[lang="kn"] .font-serif {
+    font-family: 'Merriweather', 'Noto Sans Kannada', serif;
+  }
+
   /* Focus outline for WCAG 2.1 AA accessibility */
   a:focus-visible,
   button:focus-visible,

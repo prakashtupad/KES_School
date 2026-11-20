@@ -1,19 +1,21 @@
 import React from 'react';
 import { SCHOOL_INFO } from '../constants/schoolData';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ContactSection() {
+  const { t } = useLanguage();
   return (
     <section id="contact" className="py-12 sm:py-16 bg-brand-cream">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center max-w-xl mx-auto mb-10">
           <span className="text-xs font-semibold text-brand-gold uppercase tracking-wider">
-            Reach Out
+            {t('contact.badge')}
           </span>
           <h2 className="text-2xl sm:text-3xl font-bold font-serif text-brand-navy mt-1">
-            Contact &amp; Location
+            {t('contact.heading')}
           </h2>
           <p className="text-sm text-slate-600 mt-2">
-            Visiting the campus or reaching the office desk for queries.
+            {t('contact.subheading')}
           </p>
         </div>
 

@@ -14,7 +14,9 @@ import {
   Award,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { SCHOOL_INFO } from '../constants/schoolData';
+import LanguageToggle from '../components/LanguageToggle';
 
 const DEMO_ACCOUNTS = [
   {
@@ -54,6 +56,7 @@ const PARENT_PORTAL_CARDS = [
 
 export default function PortalLogin() {
   const { login, parentLogin, isAuthenticated, user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   // Login Mode: 'staff' | 'parent'
@@ -141,18 +144,21 @@ export default function PortalLogin() {
 
   return (
     <div className="min-h-screen bg-brand-navyDark flex flex-col justify-between py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Top Return Bar */}
-      <div className="max-w-5xl w-full mx-auto flex items-center justify-between text-xs text-slate-300 z-10">
+      {/* Top Return Bar + Language Toggle */}
+      <div className="max-w-5xl w-full mx-auto flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300 z-10">
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-brand-goldSoft hover:text-white font-semibold transition"
         >
           <Home className="w-4 h-4 text-brand-gold" />
-          <span>← Back to Public School Website</span>
+          <span>← {t('common.backToWebsite')}</span>
         </Link>
-        <span className="font-mono text-[11px] text-slate-400">
-          {SCHOOL_INFO.registrationNo}
-        </span>
+        <div className="flex items-center gap-3">
+          <LanguageToggle variant="dark" />
+          <span className="hidden sm:inline font-mono text-[11px] text-slate-400">
+            {SCHOOL_INFO.registrationNo}
+          </span>
+        </div>
       </div>
 
       {/* Main Login & Demo Container */}
@@ -167,35 +173,29 @@ export default function PortalLogin() {
             />
             <div>
               <span className="text-xs uppercase tracking-widest text-brand-gold font-bold block">
-                {SCHOOL_INFO.societyName}
+                {t('common.societyName')}
               </span>
               <h1 className="text-xl sm:text-2xl font-serif font-bold text-white leading-snug">
-                {SCHOOL_INFO.schoolName}
+                {t('common.schoolName')}
               </h1>
               <span className="text-xs text-slate-300">
-                {loginMode === 'parent'
-                  ? 'Student & Parent Multi-Sibling Portal • Khanatti'
-                  : 'Staff, Administration & Faculty Portal • Khanatti'}
+                {loginMode === 'parent' ? t('auth.parentHeroSub') : t('auth.staffHeroSub')}
               </span>
             </div>
           </div>
 
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            {loginMode === 'parent'
-              ? 'Unified family portal to switch between enrolled siblings, print official fee receipts, view daily classroom homework, and download report cards.'
-              : 'Unified role-based portal for managing online admission enquiries, student follow-ups, staff accounts, public circulars, and daily classroom homework.'}
+            {loginMode === 'parent' ? t('auth.parentHeroDesc') : t('auth.staffHeroDesc')}
           </p>
 
           {/* Left Info Box — Identical 2-Row Card Layout & Height in Both Modes */}
           <div className="bg-white/5 border border-brand-gold/30 rounded-xl p-4 sm:p-5 space-y-3 backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-brand-gold">
-                {loginMode === 'parent'
-                  ? 'Student & Parent Portal Access Guide'
-                  : 'Quick Demo Credentials (Click to Autofill)'}
+                {loginMode === 'parent' ? t('auth.parentGuideHeading') : t('auth.demoHeading')}
               </span>
               <span className="text-[11px] font-mono text-slate-300">
-                {loginMode === 'parent' ? 'Multi-Sibling Login' : 'Role-based Login'}
+                {loginMode === 'parent' ? t('auth.multiSiblingLogin') : t('auth.roleBasedLogin')}
               </span>
             </div>
 
@@ -294,7 +294,7 @@ export default function PortalLogin() {
                     loginMode === 'staff' ? 'text-[#D97706]' : 'text-slate-400'
                   }`}
                 />
-                <span>Staff / Admin Login</span>
+                <span>{t('auth.staffTab')}</span>
               </button>
 
               <button
@@ -316,25 +316,19 @@ export default function PortalLogin() {
                     loginMode === 'parent' ? 'text-[#D97706]' : 'text-slate-400'
                   }`}
                 />
-                <span>Student / Parent Login</span>
+                <span>{t('auth.parentTab')}</span>
               </button>
             </div>
 
             <div className="mb-6">
               <span className="inline-block px-2.5 py-1 rounded bg-brand-goldSoft text-brand-gold font-bold text-xs uppercase tracking-wider mb-2">
-                {loginMode === 'parent'
-                  ? 'Student & Parent Sign-In'
-                  : 'Authorized Staff Sign-In'}
+                {loginMode === 'parent' ? t('auth.parentBadge') : t('auth.staffBadge')}
               </span>
               <h2 className="text-2xl font-serif font-bold text-brand-navy">
-                {loginMode === 'parent'
-                  ? 'Student & Parent Portal'
-                  : 'Portal Authentication'}
+                {loginMode === 'parent' ? t('auth.parentTitle') : t('auth.staffTitle')}
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 truncate">
-                {loginMode === 'parent'
-                  ? 'Sign in with your registered mobile number and Admission No / DOB.'
-                  : 'Sign in with your official school email to access your role workspace.'}
+                {loginMode === 'parent' ? t('auth.parentSubtitle') : t('auth.staffSubtitle')}
               </p>
             </div>
 
@@ -354,7 +348,7 @@ export default function PortalLogin() {
                     htmlFor="portalEmail"
                     className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
                   >
-                    Official Email Address
+                    {t('auth.email')}
                   </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -364,7 +358,7 @@ export default function PortalLogin() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. admin@keskhanatti.org"
+                      placeholder={t('auth.emailPlaceholder')}
                       className="w-full pl-10 pr-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:border-brand-navy bg-white transition"
                     />
                   </div>
@@ -375,7 +369,7 @@ export default function PortalLogin() {
                     htmlFor="portalPassword"
                     className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
                   >
-                    Password
+                    {t('auth.password')}
                   </label>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -385,7 +379,7 @@ export default function PortalLogin() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your password"
+                      placeholder={t('auth.passwordPlaceholder')}
                       className="w-full pl-10 pr-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:border-brand-navy bg-white transition"
                     />
                   </div>
@@ -397,7 +391,7 @@ export default function PortalLogin() {
                     disabled={submitting}
                     className="w-full bg-brand-navy hover:bg-brand-navyDark disabled:opacity-60 text-white font-bold py-3 px-6 rounded-lg shadow-md transition flex items-center justify-center gap-2 text-sm cursor-pointer"
                   >
-                    <span>{submitting ? 'Signing In...' : 'Sign In to Staff Portal'}</span>
+                    <span>{submitting ? t('auth.signingIn') : t('auth.signInStaff')}</span>
                     <ArrowRight className="w-4 h-4 text-brand-gold" />
                   </button>
                 </div>
@@ -409,7 +403,7 @@ export default function PortalLogin() {
                     htmlFor="parentMobileNumber"
                     className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
                   >
-                    Registered Parent Mobile Number (10 Digits)
+                    {t('auth.parentMobile')}
                   </label>
                   <div className="relative">
                     <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -422,7 +416,7 @@ export default function PortalLogin() {
                       onChange={(e) =>
                         setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))
                       }
-                      placeholder="e.g. 9845012345"
+                      placeholder={t('auth.parentMobilePlaceholder')}
                       className="w-full pl-10 pr-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:border-brand-navy bg-white transition"
                     />
                   </div>
@@ -433,7 +427,7 @@ export default function PortalLogin() {
                     htmlFor="studentAccessCode"
                     className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
                   >
-                    Access Code (Admission No or DOB DDMMYYYY)
+                    {t('auth.accessCode')}
                   </label>
                   <div className="relative">
                     <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -443,7 +437,7 @@ export default function PortalLogin() {
                       required
                       value={accessCode}
                       onChange={(e) => setAccessCode(e.target.value)}
-                      placeholder="e.g. KES_01 or 01062019"
+                      placeholder={t('auth.accessCodePlaceholder')}
                       className="w-full pl-10 pr-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:border-brand-navy bg-white transition"
                     />
                   </div>
@@ -455,11 +449,7 @@ export default function PortalLogin() {
                     disabled={submitting}
                     className="w-full bg-brand-navy hover:bg-brand-navyDark disabled:opacity-60 text-white font-bold py-3 px-6 rounded-lg shadow-md transition flex items-center justify-center gap-2 text-sm cursor-pointer"
                   >
-                    <span>
-                      {submitting
-                        ? 'Signing In...'
-                        : 'Sign In to Student & Parent Portal'}
-                    </span>
+                    <span>{submitting ? t('auth.signingIn') : t('auth.signInParent')}</span>
                     <ArrowRight className="w-4 h-4 text-brand-gold" />
                   </button>
                 </div>
@@ -467,9 +457,9 @@ export default function PortalLogin() {
             )}
 
             <div className="mt-6 pt-4 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
-              <span>Protected by RBAC JWT Session</span>
+              <span>{t('auth.rbacNote')}</span>
               <a href={SCHOOL_INFO.phoneHref} className="text-brand-navy font-semibold">
-                Desk: {SCHOOL_INFO.phoneDisplay}
+                {t('common.desk')}: {SCHOOL_INFO.phoneDisplay}
               </a>
             </div>
           </div>

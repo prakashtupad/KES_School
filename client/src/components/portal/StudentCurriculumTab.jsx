@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { BookOpen, Calendar, Clock, User, CheckCircle2 } from 'lucide-react';
 import { isSectionApplicable } from './SiblingSwitcherHeader';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function StudentCurriculumTab({ student, homeworkList = [] }) {
+  const { t } = useLanguage();
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
 
   // Filter homework client-side for the selected sibling's grade & section with zero server requests
@@ -53,10 +55,10 @@ export default function StudentCurriculumTab({ student, homeworkList = [] }) {
               {isSectionApplicable(student.section) ? ` (Section ${student.section})` : ''}
             </span>
             <h3 className="text-base sm:text-lg font-serif font-bold text-[#1A365D]">
-              Curriculum &amp; Daily Homework Assignments ({filteredAssignments.length})
+              {t('studentPortal.homework.heading')} ({filteredAssignments.length})
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Showing homework published by class teachers for{' '}
+              {t('studentPortal.homework.showingFor')}{' '}
               <strong className="text-[#1A365D]">{student.studentName}</strong>.
             </p>
           </div>

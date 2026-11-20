@@ -1,5 +1,6 @@
 import React from 'react';
 import { Users, CheckCircle2, GraduationCap } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function getStudentInitials(name = '') {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
@@ -19,6 +20,7 @@ export default function SiblingSwitcherHeader({
   activeSiblingIndex = 0,
   onSelectSibling,
 }) {
+  const { t } = useLanguage();
   if (!Array.isArray(siblings) || siblings.length === 0) return null;
 
   return (
@@ -31,12 +33,12 @@ export default function SiblingSwitcherHeader({
           <div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-[#D97706] block">
               {siblings.length > 1
-                ? `Multi-Sibling Family Account (${siblings.length} Enrolled Children)`
-                : 'Active Student Profile'}
+                ? `${t('studentPortal.multiSiblingBadge')} (${siblings.length})`
+                : t('studentPortal.activeStudentProfile')}
             </span>
             <h2 className="text-sm sm:text-base font-serif font-bold text-[#1A365D]">
               {siblings.length > 1
-                ? 'Select Child to Switch Dashboard Instantly'
+                ? t('studentPortal.selectChildTitle')
                 : siblings[0]?.studentName}
             </h2>
           </div>
@@ -45,7 +47,7 @@ export default function SiblingSwitcherHeader({
         {siblings.length > 1 && (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-[#D97706]/30 text-[#1A365D] text-[11px] font-bold">
             <GraduationCap className="w-3.5 h-3.5 text-[#D97706]" />
-            <span>Instant Client-Side Switcher • Zero Reload</span>
+            <span>{t('studentPortal.instantSwitchBadge')}</span>
           </span>
         )}
       </div>
@@ -132,11 +134,11 @@ export default function SiblingSwitcherHeader({
                 {isSelected ? (
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 text-[10px] font-bold">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
-                    <span>Active</span>
+                    <span>{t('studentPortal.activePill')}</span>
                   </span>
                 ) : (
                   <span className="text-[11px] font-bold text-[#D97706] hover:underline">
-                    Switch →
+                    {t('studentPortal.switchBtn')}
                   </span>
                 )}
               </div>

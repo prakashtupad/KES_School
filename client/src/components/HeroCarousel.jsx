@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SCHOOL_INFO } from '../constants/schoolData';
+import { useLanguage } from '../context/LanguageContext';
 
 const DEFAULT_SLIDES = [
   {
@@ -56,6 +57,7 @@ const DEFAULT_SLIDES = [
 ];
 
 export default function HeroCarousel() {
+  const { t, tContent } = useLanguage();
   const [slides, setSlides] = useState(DEFAULT_SLIDES);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -138,9 +140,12 @@ export default function HeroCarousel() {
         >
           {slides.map((slide, index) => {
             const isActive = index === currentSlide;
-            const badgeText = slide.subtitle || slide.tag || 'WELCOME TO KHANATTI';
+            const badgeText =
+              tContent(slide, 'subtitle') || slide.tag || t('hero.badgeDefault');
+            const slideTitle = tContent(slide, 'title') || t('hero.titleDefault');
+            const slideDesc = tContent(slide, 'description') || t('hero.descDefault');
             const primaryText =
-              slide.primaryButtonText || slide.primaryCta?.label || 'Enquire for 2026–27';
+              slide.primaryButtonText || slide.primaryCta?.label || t('hero.enquireCta');
             const primaryLink =
               slide.primaryButtonLink || slide.primaryCta?.href || '#enquiry';
             const secondaryText =
@@ -171,10 +176,10 @@ export default function HeroCarousel() {
                       </span>
                     )}
                     <h2 className="text-xl sm:text-2xl md:text-3xl font-bold font-serif leading-tight tracking-tight text-white mb-3">
-                      {slide.title}
+                      {slideTitle}
                     </h2>
                     <p className="text-slate-200 text-xs sm:text-sm md:text-base leading-relaxed mb-5">
-                      {slide.description}
+                      {slideDesc}
                     </p>
                     <div className="flex flex-wrap items-center gap-3">
                       {primaryText && (

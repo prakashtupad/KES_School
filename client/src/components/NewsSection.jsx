@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { SCHOOL_INFO } from '../constants/schoolData';
 import { fetchSchoolNotices } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 const FALLBACK_NOTICES = [
   {
@@ -46,6 +47,7 @@ const FALLBACK_NOTICES = [
 ];
 
 export default function NewsSection() {
+  const { t, tContent } = useLanguage();
   const [notices, setNotices] = useState(FALLBACK_NOTICES);
 
   useEffect(() => {
@@ -76,10 +78,10 @@ export default function NewsSection() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <span className="text-xs font-semibold text-brand-gold uppercase tracking-wider">
-              Official Notices
+              {t('news.badge')}
             </span>
             <h2 className="text-2xl sm:text-3xl font-bold font-serif text-brand-navy mt-1">
-              News &amp; School Updates
+              {t('news.heading')}
             </h2>
           </div>
         </div>
@@ -106,9 +108,13 @@ export default function NewsSection() {
                     {item.category || 'Notice'} •{' '}
                     <span className="placeholder-badge">{formattedDate}</span>
                   </div>
-                  <h3 className="font-bold text-brand-navy text-base mb-2">{item.title}</h3>
+                  <h3 className="font-bold text-brand-navy text-base mb-2">
+                    {tContent(item, 'title')}
+                  </h3>
                   <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-3">
-                    {item.content}
+                    {typeof item.content === 'string'
+                      ? tContent(item, 'content')
+                      : item.content}
                   </p>
                 </div>
                 <div className="text-xs text-slate-500 pt-2 border-t border-slate-100 flex items-center justify-between">

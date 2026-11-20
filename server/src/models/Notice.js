@@ -8,6 +8,11 @@ const NoticeSchema = new mongoose.Schema(
       trim: true,
       maxlength: 200,
     },
+    titleKn: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     category: {
       type: String,
       enum: ['Notice', 'Event', 'Academic'],
@@ -16,6 +21,11 @@ const NoticeSchema = new mongoose.Schema(
     content: {
       type: String,
       required: true,
+    },
+    contentKn: {
+      type: String,
+      trim: true,
+      default: '',
     },
     targetAudience: {
       type: String,
