@@ -1,5 +1,32 @@
 const mongoose = require('mongoose');
 
+const paymentLogSchema = new mongoose.Schema({
+  actionType: {
+    type: String,
+    enum: ['INITIAL_PAYMENT', 'INSTALLMENT_ADDED', 'AMOUNT_CORRECTED', 'TOTAL_FEE_UPDATED'],
+    required: true,
+  },
+  previousPaidAmount: { type: Number, required: true, default: 0 },
+  newPaidAmount: { type: Number, required: true },
+  deltaAmount: { type: Number, required: true }, // Positive for additions, negative for downward corrections
+  previousTotalFee: { type: Number },
+  newTotalFee: { type: Number },
+  paymentMethod: {
+    type: String,
+    enum: ['Cash', 'Online_UPI', 'Online_Card', 'Bank_Transfer', 'Cheque_DD', 'Adjustment'],
+    default: 'Cash',
+  },
+  transactionId: { type: String, trim: true },
+  receiptNumber: { type: String, trim: true },
+  reason: { type: String, required: true, trim: true },
+  editedBy: {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    name: { type: String, required: true },
+    role: { type: String },
+  },
+  timestamp: { type: Date, default: Date.now },
+});
+
 const studentSchema = new mongoose.Schema(
   {
     // Institutional Identifiers
@@ -278,6 +305,7 @@ const studentSchema = new mongoose.Schema(
           'Online_Card',
           'Bank_Transfer',
           'Cheque_DD',
+          'Adjustment',
           'Not_Applicable',
         ],
         default: 'Not_Applicable',
@@ -305,6 +333,7 @@ const studentSchema = new mongoose.Schema(
           remarks: { type: String, trim: true },
         },
       ],
+      paymentLogs: [paymentLogSchema],
     },
 
     // 6. Term-Wise Exam Results & Digital Report Cards

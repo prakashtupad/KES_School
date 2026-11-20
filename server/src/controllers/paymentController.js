@@ -3,6 +3,15 @@ const { getDbStatus } = require('../config/db');
 const memoryStore = require('../utils/memoryStore');
 
 /**
+ * Snapshot the authenticated staff/admin identity for immutable audit logs.
+ */
+const buildEditedBy = (user) => ({
+  userId: user?._id || undefined,
+  name: user?.fullName || user?.name || user?.email || 'Admin Office',
+  role: user?.role || 'admin',
+});
+
+/**
  * Generate sequential institutional receipt number: KES-REC-2026-XXXX
  * Scans existing receipt numbers to ensure no collisions.
  */
@@ -124,6 +133,7 @@ exports.recordFeePayment = async (req, res) => {
       }
 
       const previousPaid = Number(student.feeDetails?.amountPaid || 0);
+      const previousTotalFee = Number(student.feeDetails?.admissionFeeAmount || 0);
       const cumulativePaid = isRemainingPayment
         ? previousPaid + numericInputPaid
         : Number(amountPaid !== undefined ? amountPaid : numericInputPaid);
@@ -131,7 +141,7 @@ exports.recordFeePayment = async (req, res) => {
       const requestedTotalFee =
         admissionFeeAmount !== undefined
           ? Number(admissionFeeAmount)
-          : Number(student.feeDetails?.admissionFeeAmount || 0);
+          : previousTotalFee;
 
       const totalFee = Math.max(requestedTotalFee || cumulativePaid, cumulativePaid);
       const balanceDue = Math.max(0, totalFee - cumulativePaid);
@@ -165,13 +175,36 @@ exports.recordFeePayment = async (req, res) => {
         });
       }
 
+      const now = new Date();
       existingHistory.push({
         receiptNumber: receiptNo,
         amountPaid: numericInputPaid,
         paymentMethod: resolvedMethod,
         transactionId: resolvedTxnId,
-        paidAt: new Date(),
+        paidAt: now,
         remarks: resolvedRemarks,
+      });
+
+      const existingLogs = Array.isArray(student.feeDetails?.paymentLogs)
+        ? [...student.feeDetails.paymentLogs]
+        : [];
+
+      const logPaymentMethod =
+        resolvedMethod === 'Not_Applicable' ? 'Cash' : resolvedMethod;
+
+      existingLogs.push({
+        actionType: previousPaid === 0 ? 'INITIAL_PAYMENT' : 'INSTALLMENT_ADDED',
+        previousPaidAmount: previousPaid,
+        newPaidAmount: cumulativePaid,
+        deltaAmount: cumulativePaid - previousPaid,
+        previousTotalFee,
+        newTotalFee: totalFee,
+        paymentMethod: logPaymentMethod,
+        transactionId: resolvedTxnId,
+        receiptNumber: receiptNo,
+        reason: resolvedRemarks,
+        editedBy: buildEditedBy(req.user),
+        timestamp: now,
       });
 
       student.feeDetails = {
@@ -184,11 +217,12 @@ exports.recordFeePayment = async (req, res) => {
         paymentMethod: resolvedMethod,
         transactionId: resolvedTxnId,
         receiptNumber: receiptNo,
-        paidAt: new Date(),
+        paidAt: now,
         collectedBy: req.user?._id,
         collectedByStaff: req.user?._id,
         remarks: resolvedRemarks,
         paymentHistory: existingHistory,
+        paymentLogs: existingLogs,
       };
 
       await student.save();
@@ -216,6 +250,7 @@ exports.recordFeePayment = async (req, res) => {
     }
 
     const previousPaid = Number(memStudent.feeDetails?.amountPaid || 0);
+    const previousTotalFee = Number(memStudent.feeDetails?.admissionFeeAmount || 0);
     const cumulativePaid = isRemainingPayment
       ? previousPaid + numericInputPaid
       : Number(amountPaid !== undefined ? amountPaid : numericInputPaid);
@@ -223,7 +258,7 @@ exports.recordFeePayment = async (req, res) => {
     const requestedTotalFee =
       admissionFeeAmount !== undefined
         ? Number(admissionFeeAmount)
-        : Number(memStudent.feeDetails?.admissionFeeAmount || 0);
+        : previousTotalFee;
 
     const totalFee = Math.max(requestedTotalFee || cumulativePaid, cumulativePaid);
     const balanceDue = Math.max(0, totalFee - cumulativePaid);
@@ -256,13 +291,37 @@ exports.recordFeePayment = async (req, res) => {
       });
     }
 
+    const now = new Date();
     existingHistory.push({
       receiptNumber: receiptNo,
       amountPaid: numericInputPaid,
       paymentMethod: resolvedMethod,
       transactionId: resolvedTxnId,
-      paidAt: new Date(),
+      paidAt: now,
       remarks: resolvedRemarks,
+    });
+
+    const existingLogs = Array.isArray(memStudent.feeDetails?.paymentLogs)
+      ? [...memStudent.feeDetails.paymentLogs]
+      : [];
+
+    const logPaymentMethod =
+      resolvedMethod === 'Not_Applicable' ? 'Cash' : resolvedMethod;
+
+    existingLogs.push({
+      _id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      actionType: previousPaid === 0 ? 'INITIAL_PAYMENT' : 'INSTALLMENT_ADDED',
+      previousPaidAmount: previousPaid,
+      newPaidAmount: cumulativePaid,
+      deltaAmount: cumulativePaid - previousPaid,
+      previousTotalFee,
+      newTotalFee: totalFee,
+      paymentMethod: logPaymentMethod,
+      transactionId: resolvedTxnId,
+      receiptNumber: receiptNo,
+      reason: resolvedRemarks,
+      editedBy: buildEditedBy(req.user),
+      timestamp: now,
     });
 
     memStudent.feeDetails = {
@@ -274,11 +333,12 @@ exports.recordFeePayment = async (req, res) => {
       paymentMethod: resolvedMethod,
       transactionId: resolvedTxnId,
       receiptNumber: receiptNo,
-      paidAt: new Date(),
+      paidAt: now,
       collectedBy: req.user?._id,
       collectedByStaff: req.user?._id,
       remarks: resolvedRemarks,
       paymentHistory: existingHistory,
+      paymentLogs: existingLogs,
     };
 
     return res.status(200).json({
@@ -293,6 +353,266 @@ exports.recordFeePayment = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || 'Failed to record admission fee payment.',
+    });
+  }
+};
+
+/**
+ * PUT /api/v1/payments/correct-fee/:studentId
+ * Protected (admin, super_admin) endpoint to edit/correct a previously recorded paid amount
+ * or total fee while recording an immutable AMOUNT_CORRECTED audit entry in paymentLogs.
+ */
+exports.correctFeePayment = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const {
+      correctedTotalFee,
+      correctedPaidAmount,
+      paymentMethod,
+      transactionId,
+      correctionReason,
+    } = req.body || {};
+
+    if (!studentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Student ID is required to correct fee details.',
+      });
+    }
+
+    const trimmedReason = String(correctionReason || '').trim();
+    if (trimmedReason.length < 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'A correction reason of at least 5 characters is mandatory for audit compliance.',
+      });
+    }
+
+    const validLogMethods = [
+      'Cash',
+      'Online_UPI',
+      'Online_Card',
+      'Bank_Transfer',
+      'Cheque_DD',
+      'Adjustment',
+    ];
+
+    const dbStatus = getDbStatus();
+
+    if (dbStatus.isConnected) {
+      const student = await Student.findById(studentId);
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: 'Student record not found.',
+        });
+      }
+
+      const oldPaid = Number(student.feeDetails?.amountPaid || 0);
+      const oldTotal = Number(student.feeDetails?.admissionFeeAmount || 0);
+
+      const newTotal =
+        correctedTotalFee !== undefined && correctedTotalFee !== ''
+          ? Number(correctedTotalFee)
+          : oldTotal;
+      const newPaid =
+        correctedPaidAmount !== undefined && correctedPaidAmount !== ''
+          ? Number(correctedPaidAmount)
+          : oldPaid;
+
+      if (Number.isNaN(newTotal) || newTotal < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Corrected Total Fee must be a valid non-negative number.',
+        });
+      }
+
+      if (Number.isNaN(newPaid) || newPaid < 0 || newPaid > newTotal) {
+        return res.status(400).json({
+          success: false,
+          message: `Corrected Paid Amount (₹${newPaid}) must be between ₹0 and Total Fee (₹${newTotal}).`,
+        });
+      }
+
+      const balanceDue = Math.max(0, newTotal - newPaid);
+      const paymentStatus =
+        newPaid === 0 ? 'Pending' : newPaid < newTotal ? 'Partial' : 'Paid';
+
+      const existingMethod =
+        student.feeDetails?.paymentMethod &&
+        student.feeDetails.paymentMethod !== 'Not_Applicable'
+          ? student.feeDetails.paymentMethod
+          : 'Cash';
+      const resolvedMethod = validLogMethods.includes(paymentMethod)
+        ? paymentMethod
+        : existingMethod;
+
+      const resolvedTxnId =
+        String(transactionId || '').trim() || student.feeDetails?.transactionId || '';
+
+      let receiptNo = student.feeDetails?.receiptNumber || undefined;
+      if (newPaid > 0 && !receiptNo) {
+        receiptNo = await generateReceiptNumber(student.academicYear || '2026-2027');
+      }
+
+      const now = new Date();
+      const existingLogs = Array.isArray(student.feeDetails?.paymentLogs)
+        ? [...student.feeDetails.paymentLogs]
+        : [];
+
+      existingLogs.push({
+        actionType: 'AMOUNT_CORRECTED',
+        previousPaidAmount: oldPaid,
+        newPaidAmount: newPaid,
+        deltaAmount: newPaid - oldPaid,
+        previousTotalFee: oldTotal,
+        newTotalFee: newTotal,
+        paymentMethod: resolvedMethod,
+        transactionId: resolvedTxnId,
+        receiptNumber: receiptNo || '',
+        reason: trimmedReason,
+        editedBy: buildEditedBy(req.user),
+        timestamp: now,
+      });
+
+      student.feeDetails = {
+        ...(student.feeDetails ? student.feeDetails.toObject?.() || student.feeDetails : {}),
+        admissionFeeAmount: newTotal,
+        amountPaid: newPaid,
+        balanceDue,
+        lastPaymentAmount: newPaid,
+        paymentStatus,
+        paymentMethod: newPaid > 0 ? resolvedMethod : 'Not_Applicable',
+        transactionId: resolvedTxnId,
+        receiptNumber: receiptNo,
+        paidAt: newPaid > 0 ? student.feeDetails?.paidAt || now : undefined,
+        collectedBy: req.user?._id,
+        collectedByStaff: req.user?._id,
+        remarks: trimmedReason,
+        paymentLogs: existingLogs,
+      };
+
+      await student.save();
+
+      const populatedStudent = await Student.findById(student._id)
+        .populate('feeDetails.collectedBy', 'fullName email role')
+        .lean();
+
+      return res.status(200).json({
+        success: true,
+        message: `Fee corrected from ₹${oldPaid.toLocaleString('en-IN')} to ₹${newPaid.toLocaleString('en-IN')} and logged in audit trail.`,
+        receiptNumber: receiptNo || '',
+        student: populatedStudent || student,
+        feeDetails: (populatedStudent || student).feeDetails,
+      });
+    }
+
+    // Fallback to memoryStore
+    const memStudent = memoryStore.students.find((s) => String(s._id) === String(studentId));
+    if (!memStudent) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student record not found.',
+      });
+    }
+
+    const oldPaid = Number(memStudent.feeDetails?.amountPaid || 0);
+    const oldTotal = Number(memStudent.feeDetails?.admissionFeeAmount || 0);
+
+    const newTotal =
+      correctedTotalFee !== undefined && correctedTotalFee !== ''
+        ? Number(correctedTotalFee)
+        : oldTotal;
+    const newPaid =
+      correctedPaidAmount !== undefined && correctedPaidAmount !== ''
+        ? Number(correctedPaidAmount)
+        : oldPaid;
+
+    if (Number.isNaN(newTotal) || newTotal < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Corrected Total Fee must be a valid non-negative number.',
+      });
+    }
+
+    if (Number.isNaN(newPaid) || newPaid < 0 || newPaid > newTotal) {
+      return res.status(400).json({
+        success: false,
+        message: `Corrected Paid Amount (₹${newPaid}) must be between ₹0 and Total Fee (₹${newTotal}).`,
+      });
+    }
+
+    const balanceDue = Math.max(0, newTotal - newPaid);
+    const paymentStatus =
+      newPaid === 0 ? 'Pending' : newPaid < newTotal ? 'Partial' : 'Paid';
+
+    const existingMethod =
+      memStudent.feeDetails?.paymentMethod &&
+      memStudent.feeDetails.paymentMethod !== 'Not_Applicable'
+        ? memStudent.feeDetails.paymentMethod
+        : 'Cash';
+    const resolvedMethod = validLogMethods.includes(paymentMethod)
+      ? paymentMethod
+      : existingMethod;
+
+    const resolvedTxnId =
+      String(transactionId || '').trim() || memStudent.feeDetails?.transactionId || '';
+
+    let receiptNo = memStudent.feeDetails?.receiptNumber || undefined;
+    if (newPaid > 0 && !receiptNo) {
+      receiptNo = await generateReceiptNumber(memStudent.academicYear || '2026-2027');
+    }
+
+    const now = new Date();
+    const existingLogs = Array.isArray(memStudent.feeDetails?.paymentLogs)
+      ? [...memStudent.feeDetails.paymentLogs]
+      : [];
+
+    existingLogs.push({
+      _id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      actionType: 'AMOUNT_CORRECTED',
+      previousPaidAmount: oldPaid,
+      newPaidAmount: newPaid,
+      deltaAmount: newPaid - oldPaid,
+      previousTotalFee: oldTotal,
+      newTotalFee: newTotal,
+      paymentMethod: resolvedMethod,
+      transactionId: resolvedTxnId,
+      receiptNumber: receiptNo || '',
+      reason: trimmedReason,
+      editedBy: buildEditedBy(req.user),
+      timestamp: now,
+    });
+
+    memStudent.feeDetails = {
+      ...(memStudent.feeDetails || {}),
+      admissionFeeAmount: newTotal,
+      amountPaid: newPaid,
+      balanceDue,
+      lastPaymentAmount: newPaid,
+      paymentStatus,
+      paymentMethod: newPaid > 0 ? resolvedMethod : 'Not_Applicable',
+      transactionId: resolvedTxnId,
+      receiptNumber: receiptNo,
+      paidAt: newPaid > 0 ? memStudent.feeDetails?.paidAt || now : undefined,
+      collectedBy: req.user?._id,
+      collectedByStaff: req.user?._id,
+      remarks: trimmedReason,
+      paymentLogs: existingLogs,
+    };
+
+    return res.status(200).json({
+      success: true,
+      message: `Fee corrected from ₹${oldPaid.toLocaleString('en-IN')} to ₹${newPaid.toLocaleString('en-IN')} and logged in audit trail.`,
+      receiptNumber: receiptNo || '',
+      student: memStudent,
+      feeDetails: memStudent.feeDetails,
+    });
+  } catch (error) {
+    console.error('[Correct Fee Payment Error]', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to correct fee payment.',
     });
   }
 };

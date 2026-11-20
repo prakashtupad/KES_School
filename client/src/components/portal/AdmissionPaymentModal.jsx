@@ -9,14 +9,13 @@ import {
   X,
   FileText,
   History,
-  RotateCcw,
+  PencilLine,
+  ShieldAlert,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import PrintableFeeReceipt, { numberToIndianWords } from './PrintableFeeReceipt';
+import PaymentAuditLogTimeline from './PaymentAuditLogTimeline';
 import { printStudentAdmissionSummary } from '../../utils/printStudentSummary';
-
-const TOTAL_FEE_PRESETS = [5000, 10000, 15000, 20000];
-const INSTALLMENT_PRESETS = [2000, 5000, 7500, 10000];
 
 const isSectionApplicable = (sec) => {
   if (!sec) return false;
@@ -39,14 +38,22 @@ export default function AdmissionPaymentModal({
     Number(student?.feeDetails?.balanceDue ?? existingTotal - existingPaid)
   );
 
-  // Determine whether this student already has a prior payment and is paying remaining balance
   const hasPreviousPayment = existingPaid > 0;
 
-  // 'remaining' = add this installment to existingPaid; 'fresh' = set/override from scratch
-  const [collectionMode, setCollectionMode] = useState('remaining');
+  // Modes:
+  // - 'initial'   : Brand new student (existingPaid === 0) -> POST /record-fee
+  // - 'remaining' : Add new installment on top of existingPaid -> POST /record-fee
+  // - 'correct'   : Edit/Correct previously recorded paid amount or total fee -> PUT /correct-fee/:studentId
+  const [collectionMode, setCollectionMode] = useState('initial');
   const [totalFeeAmount, setTotalFeeAmount] = useState(10000);
   const [payingNow, setPayingNow] = useState(5000);
   const [clearFullPayment, setClearFullPayment] = useState(false);
+
+  // Correction mode fields
+  const [correctedTotalFee, setCorrectedTotalFee] = useState(10000);
+  const [correctedPaidAmount, setCorrectedPaidAmount] = useState(0);
+  const [correctionReason, setCorrectionReason] = useState('');
+
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [transactionId, setTransactionId] = useState('');
   const [remarks, setRemarks] = useState('');
@@ -58,7 +65,6 @@ export default function AdmissionPaymentModal({
     if (student) {
       const prevPaid = Number(student.feeDetails?.amountPaid || 0);
       const rawPrevTotal = Number(student.feeDetails?.admissionFeeAmount || 0);
-      // Default total applicable fee to 10000 when registering a new student (or if previously 0/500 default)
       const resolvedTotal =
         prevPaid === 0
           ? rawPrevTotal > 500
@@ -67,8 +73,11 @@ export default function AdmissionPaymentModal({
           : Math.max(rawPrevTotal, prevPaid);
       const prevBalance = Math.max(0, resolvedTotal - prevPaid);
 
+      setCorrectedTotalFee(resolvedTotal);
+      setCorrectedPaidAmount(prevPaid);
+      setCorrectionReason('');
+
       if (prevPaid > 0 && prevBalance > 0) {
-        // Student has a partial payment and a remaining balance due
         setCollectionMode('remaining');
         setTotalFeeAmount(resolvedTotal);
         setPayingNow(prevBalance);
@@ -77,17 +86,15 @@ export default function AdmissionPaymentModal({
           `Remaining Fee Installment collected by ${user?.fullName || 'Office Admin'}`
         );
       } else if (prevPaid > 0 && prevBalance === 0) {
-        // Student already cleared full fee; open in override/correction mode or additional fee mode
-        setCollectionMode('fresh');
+        // Already fully paid -> open directly in Edit / Correct Previous Amount mode
+        setCollectionMode('correct');
         setTotalFeeAmount(resolvedTotal);
-        setPayingNow(Math.round(resolvedTotal / 2));
+        setPayingNow(0);
         setClearFullPayment(false);
-        setRemarks(
-          `Updated Fee Receipt recorded by ${user?.fullName || 'Office Admin'}`
-        );
+        setRemarks('');
       } else {
-        // Brand new registration / Pending fee: Total = 10000, Paying Now = 5000 (50% default)
-        setCollectionMode('fresh');
+        // Brand new registration / Pending fee
+        setCollectionMode('initial');
         setTotalFeeAmount(resolvedTotal);
         setPayingNow(Math.round(resolvedTotal / 2));
         setClearFullPayment(false);
@@ -98,11 +105,14 @@ export default function AdmissionPaymentModal({
 
       setPaymentMethod(
         student.feeDetails?.paymentMethod &&
-          student.feeDetails.paymentMethod !== 'Not_Applicable'
+          student.feeDetails.paymentMethod !== 'Not_Applicable' &&
+          student.feeDetails.paymentMethod !== 'Adjustment'
           ? student.feeDetails.paymentMethod
           : 'Cash'
       );
-      setTransactionId('');
+      setTransactionId(
+        prevPaid > 0 && prevBalance === 0 ? student.feeDetails?.transactionId || '' : ''
+      );
       setErrorMsg('');
       setPaidStudentRecord(null);
     }
@@ -110,7 +120,7 @@ export default function AdmissionPaymentModal({
 
   if (!isOpen || !student) return null;
 
-  // If fee has just been recorded in this session, immediately render the PrintableFeeReceipt dialog
+  // Immediately render the PrintableFeeReceipt dialog after recording or correcting a non-zero payment
   if (paidStudentRecord) {
     return (
       <PrintableFeeReceipt
@@ -123,25 +133,24 @@ export default function AdmissionPaymentModal({
     );
   }
 
+  const isCorrectionMode = hasPreviousPayment && collectionMode === 'correct';
   const isRemainingMode = hasPreviousPayment && collectionMode === 'remaining';
   const baseAlreadyPaid = isRemainingMode ? existingPaid : 0;
 
+  // Calculations for Collect / Installment mode
   const numericTotalFee = Math.max(0, Number(totalFeeAmount) || 0);
   const numericPayingNow = Math.max(0, Number(payingNow) || 0);
   const maxPayableNow = Math.max(0, numericTotalFee - baseAlreadyPaid);
-
   const cumulativePaidAfter = baseAlreadyPaid + numericPayingNow;
   const effectiveTotalFee = Math.max(numericTotalFee, cumulativePaidAfter);
   const balanceAfterPayment = Math.max(0, effectiveTotalFee - cumulativePaidAfter);
 
-  /**
-   * When Admin enters/changes Total Applicable Fee (₹):
-   * - On new registration / fresh mode (baseAlreadyPaid === 0):
-   *   - If "Clear Complete Payment" is checked, set Paying Now = 100% of Total Fee.
-   *   - Otherwise automatically populate Paying Now = 50% of Total Fee (e.g., 10000 -> 5000)!
-   * - On remaining payment mode (baseAlreadyPaid > 0):
-   *   - Automatically populate Paying Now = remaining balance (Total Fee - Already Paid).
-   */
+  // Calculations for Edit / Correct Previous Amount mode
+  const numericCorrectedTotal = Math.max(0, Number(correctedTotalFee) || 0);
+  const numericCorrectedPaid = Math.max(0, Number(correctedPaidAmount) || 0);
+  const correctionDelta = numericCorrectedPaid - existingPaid;
+  const correctedBalanceDue = Math.max(0, numericCorrectedTotal - numericCorrectedPaid);
+
   const handleTotalFeeChange = (val) => {
     setTotalFeeAmount(val);
     setErrorMsg('');
@@ -155,20 +164,13 @@ export default function AdmissionPaymentModal({
       const rem = Math.max(0, numTotal - baseAlreadyPaid);
       setPayingNow(rem);
       setClearFullPayment(true);
+    } else if (clearFullPayment) {
+      setPayingNow(numTotal);
     } else {
-      if (clearFullPayment) {
-        setPayingNow(numTotal);
-      } else {
-        setPayingNow(Math.round(numTotal / 2));
-      }
+      setPayingNow(Math.round(numTotal / 2));
     }
   };
 
-  /**
-   * When Admin edits "Remaining Paying Now (₹) *":
-   * - Keep Total Applicable Fee untouched unless the user explicitly enters more than Total Fee
-   * - Automatically update the "Clear Complete Payment" checkbox state to reflect whether full balance is being cleared
-   */
   const handlePayingNowChange = (val) => {
     setPayingNow(val);
     setErrorMsg('');
@@ -179,43 +181,113 @@ export default function AdmissionPaymentModal({
     }
   };
 
-  /**
-   * Toggle "Clear Complete Payment" inside the form
-   */
   const handleToggleClearFullPayment = (checked) => {
     setClearFullPayment(checked);
     setErrorMsg('');
     const targetFull = Math.max(0, numericTotalFee - baseAlreadyPaid);
     if (checked) {
-      // Populate the entire payable amount so Remaining Balance Due becomes ₹0
       setPayingNow(targetFull);
     } else {
-      // Populate 50% installment
       setPayingNow(
         isRemainingMode ? Math.round(targetFull / 2) : Math.round(numericTotalFee / 2)
       );
     }
   };
 
-  const handleSwitchCollectionMode = (mode) => {
+  const handleSwitchMode = (mode) => {
     setCollectionMode(mode);
     setErrorMsg('');
     if (mode === 'remaining') {
-      const rem = Math.max(0, numericTotalFee - existingPaid);
+      const rem = Math.max(0, existingTotal - existingPaid);
+      setTotalFeeAmount(existingTotal);
       setPayingNow(rem > 0 ? rem : 0);
       setClearFullPayment(true);
-    } else {
-      const defaultTotal = numericTotalFee > 0 ? numericTotalFee : 10000;
-      setTotalFeeAmount(defaultTotal);
-      setPayingNow(Math.round(defaultTotal / 2));
-      setClearFullPayment(false);
+      setTransactionId('');
+      setRemarks(
+        `Remaining Fee Installment collected by ${user?.fullName || 'Office Admin'}`
+      );
+    } else if (mode === 'correct') {
+      setCorrectedTotalFee(existingTotal);
+      setCorrectedPaidAmount(existingPaid);
+      setCorrectionReason('');
+      setTransactionId(student.feeDetails?.transactionId || '');
     }
   };
 
-  const handleConfirmPayment = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
+    // Branch A: Edit / Correct Previous Amount -> PUT /api/v1/payments/correct-fee/:studentId
+    if (isCorrectionMode) {
+      if (Number.isNaN(Number(correctedTotalFee)) || Number(correctedTotalFee) < 0) {
+        setErrorMsg('Please enter a valid Corrected Total Fee (₹0 or more).');
+        return;
+      }
+      if (
+        Number.isNaN(Number(correctedPaidAmount)) ||
+        Number(correctedPaidAmount) < 0 ||
+        Number(correctedPaidAmount) > numericCorrectedTotal
+      ) {
+        setErrorMsg(
+          `Corrected Paid Amount must be between ₹0 and Total Fee (₹${numericCorrectedTotal.toLocaleString('en-IN')}).`
+        );
+        return;
+      }
+      if (correctionReason.trim().length < 5) {
+        setErrorMsg(
+          'Please enter a clear correction reason (at least 5 characters) for the audit log.'
+        );
+        return;
+      }
+
+      setSubmitting(true);
+      try {
+        const response = await fetch(`/api/v1/payments/correct-fee/${student._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            correctedTotalFee: numericCorrectedTotal,
+            correctedPaidAmount: numericCorrectedPaid,
+            paymentMethod,
+            transactionId: transactionId.trim(),
+            correctionReason: correctionReason.trim(),
+          }),
+        });
+
+        const rawText = await response.text();
+        const data = rawText ? JSON.parse(rawText) : {};
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'Failed to save fee correction.');
+        }
+
+        const updatedStudent = data.student || {
+          ...student,
+          feeDetails: data.feeDetails,
+        };
+
+        if (onPaymentRecorded) {
+          onPaymentRecorded(updatedStudent, { isCorrection: true });
+        }
+
+        if (Number(updatedStudent.feeDetails?.amountPaid || 0) > 0) {
+          setPaidStudentRecord(updatedStudent);
+        } else if (onClose) {
+          onClose();
+        }
+      } catch (err) {
+        setErrorMsg(err.message || 'Could not save corrected amount. Please try again.');
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // Branch B: Collect Initial Payment or Remaining Installment -> POST /api/v1/payments/record-fee
     if (Number.isNaN(numericPayingNow) || numericPayingNow <= 0) {
       setErrorMsg('Please enter a valid payment amount greater than ₹0.');
       return;
@@ -274,10 +346,9 @@ export default function AdmissionPaymentModal({
       };
 
       if (onPaymentRecorded) {
-        onPaymentRecorded(updatedStudent);
+        onPaymentRecorded(updatedStudent, { isCorrection: false });
       }
 
-      // Immediately switch to Official Printable Receipt view
       setPaidStudentRecord(updatedStudent);
     } catch (err) {
       setErrorMsg(err.message || 'Could not record fee payment. Please try again.');
@@ -292,6 +363,9 @@ export default function AdmissionPaymentModal({
   };
 
   const fatherName = student.father?.name || student.fatherName || '—';
+  const auditLogs = Array.isArray(student.feeDetails?.paymentLogs)
+    ? student.feeDetails.paymentLogs
+    : [];
 
   const modalContent = (
     <div
@@ -300,23 +374,31 @@ export default function AdmissionPaymentModal({
       aria-modal="true"
       aria-label="Admission Fee Collection Desk"
     >
-      <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto">
+      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[94vh] flex flex-col">
         {/* Top Navy Header */}
-        <div className="bg-brand-navy text-white px-5 py-4 flex items-center justify-between border-b border-brand-gold/40">
+        <div className="bg-[#1A365D] text-white px-5 py-4 flex items-center justify-between border-b border-[#D97706]/40 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-gold/20 border border-brand-gold flex items-center justify-center text-brand-gold font-bold">
-              <IndianRupee className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-[#D97706]/20 border border-[#D97706] flex items-center justify-center text-[#D97706] font-bold">
+              {isCorrectionMode ? (
+                <PencilLine className="w-5 h-5" />
+              ) : (
+                <IndianRupee className="w-5 h-5" />
+              )}
             </div>
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gold block">
-                {isRemainingMode
-                  ? 'Remaining / Balance Fee Collection Desk'
-                  : 'Final Step • Fee Collection & Receipt Desk'}
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#D97706] block">
+                {isCorrectionMode
+                  ? 'Audit-Logged Fee Amount Correction'
+                  : isRemainingMode
+                    ? 'Remaining / Installment Fee Collection Desk'
+                    : 'Final Step • Fee Collection & Receipt Desk'}
               </span>
               <h3 className="text-base sm:text-lg font-serif font-bold">
-                {isRemainingMode
-                  ? 'Collect Remaining Fee & Issue Receipt'
-                  : 'Collect Admission Fee & Issue Receipt'}
+                {isCorrectionMode
+                  ? 'Edit / Correct Previous Paid Amount'
+                  : isRemainingMode
+                    ? 'Collect Remaining Fee & Issue Receipt'
+                    : 'Collect Admission Fee & Issue Receipt'}
               </h3>
             </div>
           </div>
@@ -333,412 +415,552 @@ export default function AdmissionPaymentModal({
           )}
         </div>
 
-        {/* Student Summary Banner */}
-        <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-          <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 block">
-              Student Name
-            </span>
-            <strong className="text-brand-navy truncate block">{student.studentName}</strong>
-          </div>
-          <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 block">
-              Admission No
-            </span>
-            <span className="font-mono font-bold text-brand-navy bg-brand-goldSoft px-1.5 py-0.5 rounded border border-brand-gold/40 inline-block">
-              {student.admissionNumber}
-            </span>
-          </div>
-          <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 block">
-              Class
-            </span>
-            <strong className="text-slate-800">
-              {student.grade}
-              {isSectionApplicable(student.section) ? ` (${student.section})` : ''}
-            </strong>
-          </div>
-          <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 block">
-              Parent Phone
-            </span>
-            <strong className="font-mono text-slate-800">+91 {student.primaryPhone}</strong>
-          </div>
-        </div>
-
-        {/* Previous Payment Banner (when student already has a payment recorded) */}
-        {hasPreviousPayment && (
-          <div className="bg-amber-50/90 border-b border-amber-200 px-5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-1.5 text-amber-900 font-semibold">
-              <History className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
-              <span>
-                Previously Paid:{' '}
-                <strong className="font-mono">
-                  ₹{existingPaid.toLocaleString('en-IN')}
-                </strong>{' '}
-                / ₹{existingTotal.toLocaleString('en-IN')}
+        {/* Scrollable Body */}
+        <div className="overflow-y-auto flex-1">
+          {/* Student Summary Banner */}
+          <div className="bg-[#F8FAFC] px-5 py-3 border-b border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                Student Name
               </span>
-              { existingBalance > 0 && (
-                <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-mono font-bold text-[10px]">
-                  Due: ₹{existingBalance.toLocaleString('en-IN')}
-                </span>
-              )}
+              <strong className="text-[#1A365D] truncate block">{student.studentName}</strong>
             </div>
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                Admission No
+              </span>
+              <span className="font-mono font-bold text-[#1A365D] bg-amber-50 px-1.5 py-0.5 rounded border border-[#D97706]/40 inline-block">
+                {student.admissionNumber}
+              </span>
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                Class
+              </span>
+              <strong className="text-slate-800">
+                {student.grade}
+                {isSectionApplicable(student.section) ? ` (${student.section})` : ''}
+              </strong>
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                Parent Phone
+              </span>
+              <strong className="font-mono text-slate-800">+91 {student.primaryPhone}</strong>
+            </div>
+          </div>
 
-            <div className="flex items-center gap-1">
-              {existingBalance > 0 && (
+          {/* Previous Payment Summary & Two-Mode Toggle Strip */}
+          {hasPreviousPayment && (
+            <div className="bg-amber-50/90 border-b border-amber-200 px-5 py-3 space-y-2.5 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-amber-950 font-semibold flex-wrap">
+                  <History className="w-3.5 h-3.5 text-[#D97706] flex-shrink-0" />
+                  <span>
+                    Previously Paid:{' '}
+                    <strong className="font-mono">
+                      ₹{existingPaid.toLocaleString('en-IN')}
+                    </strong>{' '}
+                    / ₹{existingTotal.toLocaleString('en-IN')}
+                  </span>
+                  {existingBalance > 0 ? (
+                    <span className="px-2 py-0.5 rounded bg-red-100 text-red-700 font-mono font-bold text-[10px]">
+                      Due: ₹{existingBalance.toLocaleString('en-IN')}
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono font-bold text-[10px]">
+                      Fully Paid
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Clean Two-Mode Segmented Switch */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => handleSwitchCollectionMode('remaining')}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold border transition cursor-pointer ${
-                    collectionMode === 'remaining'
-                      ? 'bg-brand-navy text-white border-brand-navy'
-                      : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'
+                  disabled={existingBalance === 0}
+                  onClick={() => handleSwitchMode('remaining')}
+                  className={`px-3 py-2 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1.5 ${
+                    existingBalance === 0
+                      ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                      : collectionMode === 'remaining'
+                        ? 'bg-[#1A365D] text-white border-[#1A365D] shadow-sm cursor-pointer'
+                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50 cursor-pointer'
                   }`}
                 >
-                  Collect Remaining
+                  <IndianRupee className="w-3.5 h-3.5 text-[#D97706]" />
+                  <span>Collect Remaining / Installment</span>
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={() => handleSwitchCollectionMode('fresh')}
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border transition cursor-pointer ${
-                  collectionMode === 'fresh'
-                    ? 'bg-brand-navy text-white border-brand-navy'
-                    : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'
-                }`}
-                title="Reset and enter Total Fee & Paid Amount from scratch"
-              >
-                <RotateCcw className="w-2.5 h-2.5" />
-                <span>Reset / Edit Fee</span>
-              </button>
-            </div>
-          </div>
-        )}
 
-        {/* Form Body */}
-        <form onSubmit={handleConfirmPayment} className="p-5 sm:p-6 space-y-4">
-          {errorMsg && (
-            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{errorMsg}</span>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchMode('correct')}
+                  className={`px-3 py-2 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    collectionMode === 'correct'
+                      ? 'bg-[#D97706] text-white border-[#D97706] shadow-sm'
+                      : 'bg-white text-amber-900 border-amber-300 hover:bg-amber-100/70'
+                  }`}
+                >
+                  <PencilLine className="w-3.5 h-3.5" />
+                  <span>Edit / Correct Previous Amount</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* 1. Payment Method Toggle */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-              1. Select Payment Mode
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('Cash')}
-                className={`p-3 rounded-xl border text-left transition flex items-start gap-2.5 cursor-pointer ${
-                  paymentMethod === 'Cash'
-                    ? 'bg-brand-navy text-white border-brand-navy shadow-sm'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                <Banknote
-                  className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                    paymentMethod === 'Cash' ? 'text-brand-gold' : 'text-slate-400'
-                  }`}
-                />
-                <div>
-                  <div className="text-xs font-bold">Cash / Counter</div>
-                  <div
-                    className={`text-[10px] mt-0.5 ${
-                      paymentMethod === 'Cash' ? 'text-slate-300' : 'text-slate-400'
-                    }`}
-                  >
-                    Manual cash book / slip entry
-                  </div>
-                </div>
-              </button>
+          {/* Form Body */}
+          <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
+            {errorMsg && (
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
 
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('Online_UPI')}
-                className={`p-3 rounded-xl border text-left transition flex items-start gap-2.5 cursor-pointer ${
-                  paymentMethod === 'Online_UPI'
-                    ? 'bg-brand-navy text-white border-brand-navy shadow-sm'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                <QrCode
-                  className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                    paymentMethod === 'Online_UPI' ? 'text-brand-gold' : 'text-slate-400'
+            {/* 1. Payment Method Toggle */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                1. Select Payment Mode
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('Cash')}
+                  className={`p-3 rounded-xl border text-left transition flex items-start gap-2.5 cursor-pointer ${
+                    paymentMethod === 'Cash'
+                      ? 'bg-[#1A365D] text-white border-[#1A365D] shadow-sm'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                   }`}
-                />
-                <div>
-                  <div className="text-xs font-bold">Online UPI / Gateway</div>
-                  <div
-                    className={`text-[10px] mt-0.5 ${
-                      paymentMethod === 'Online_UPI' ? 'text-slate-300' : 'text-slate-400'
+                >
+                  <Banknote
+                    className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                      paymentMethod === 'Cash' ? 'text-[#D97706]' : 'text-slate-400'
                     }`}
-                  >
-                    PhonePe / GPay UTR or Gateway
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* 2. Total Fee & Remaining Paying Now Inputs */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3.5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {/* Total Applicable Fee (₹) */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label
-                    htmlFor="totalFeeInput"
-                    className="text-[11px] font-bold uppercase tracking-wider text-slate-700"
-                  >
-                    Total Applicable Fee (₹) *
-                  </label>
-                  <span className="text-[10px] text-slate-400 font-semibold">
-                    Annual / Course Fee
-                  </span>
-                </div>
-                <div className="relative">
-                  <span className="absolute left-3 top-2 font-mono font-bold text-slate-500 text-xs">
-                    ₹
-                  </span>
-                  <input
-                    id="totalFeeInput"
-                    type="number"
-                    min={Math.max(1, baseAlreadyPaid)}
-                    step="1"
-                    required
-                    value={totalFeeAmount}
-                    onChange={(e) => handleTotalFeeChange(e.target.value)}
-                    className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-slate-300 font-mono font-bold text-sm text-slate-900 bg-white focus:border-brand-navy"
                   />
-                </div>
-                <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                  {TOTAL_FEE_PRESETS.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => handleTotalFeeChange(preset)}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition cursor-pointer ${
-                        Number(totalFeeAmount) === preset
-                          ? 'bg-brand-navy text-white border-brand-navy'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                  <div>
+                    <div className="text-xs font-bold">Cash / Counter</div>
+                    <div
+                      className={`text-[10px] mt-0.5 ${
+                        paymentMethod === 'Cash' ? 'text-slate-300' : 'text-slate-400'
                       }`}
                     >
-                      ₹{preset.toLocaleString('en-IN')}
-                    </button>
-                  ))}
+                      Manual cash book / slip entry
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('Online_UPI')}
+                  className={`p-3 rounded-xl border text-left transition flex items-start gap-2.5 cursor-pointer ${
+                    paymentMethod === 'Online_UPI'
+                      ? 'bg-[#1A365D] text-white border-[#1A365D] shadow-sm'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <QrCode
+                    className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                      paymentMethod === 'Online_UPI' ? 'text-[#D97706]' : 'text-slate-400'
+                    }`}
+                  />
+                  <div>
+                    <div className="text-xs font-bold">Online UPI / Gateway</div>
+                    <div
+                      className={`text-[10px] mt-0.5 ${
+                        paymentMethod === 'Online_UPI' ? 'text-slate-300' : 'text-slate-400'
+                      }`}
+                    >
+                      PhonePe / GPay UTR or Gateway
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Numeric Fee Inputs (Clean inputs with NO preset pill buttons) */}
+            {isCorrectionMode ? (
+              <div className="p-4 rounded-xl bg-amber-50/60 border border-amber-300 space-y-3.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-950">
+                  <ShieldAlert className="w-4 h-4 text-[#D97706] flex-shrink-0" />
+                  <span>
+                    Directly edit the recorded fee figures below. Every correction is permanently logged with your admin name &amp; timestamp.
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {/* Corrected Total Fee */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label
+                        htmlFor="correctedTotalFeeInput"
+                        className="text-[11px] font-bold uppercase tracking-wider text-slate-700"
+                      >
+                        Corrected Total Fee (₹) *
+                      </label>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        Prev: ₹{existingTotal.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 font-mono font-bold text-slate-500 text-xs">
+                        ₹
+                      </span>
+                      <input
+                        id="correctedTotalFeeInput"
+                        type="number"
+                        min="0"
+                        step="1"
+                        required
+                        value={correctedTotalFee}
+                        onChange={(e) => {
+                          setCorrectedTotalFee(e.target.value);
+                          setErrorMsg('');
+                        }}
+                        className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-slate-300 font-mono font-bold text-sm text-slate-900 bg-white focus:border-[#1A365D]"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      In Words:{' '}
+                      <strong className="text-[#1A365D]">
+                        {numberToIndianWords(numericCorrectedTotal)}
+                      </strong>
+                    </p>
+                  </div>
+
+                  {/* Corrected Paid Amount */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label
+                        htmlFor="correctedPaidInput"
+                        className="text-[11px] font-bold uppercase tracking-wider text-[#1A365D]"
+                      >
+                        Corrected Paid Amount (₹) *
+                      </label>
+                      <span className="text-[10px] text-amber-800 font-mono font-semibold">
+                        Prev: ₹{existingPaid.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 font-mono font-bold text-[#D97706] text-xs">
+                        ₹
+                      </span>
+                      <input
+                        id="correctedPaidInput"
+                        type="number"
+                        min="0"
+                        max={numericCorrectedTotal}
+                        step="1"
+                        required
+                        value={correctedPaidAmount}
+                        onChange={(e) => {
+                          setCorrectedPaidAmount(e.target.value);
+                          setErrorMsg('');
+                        }}
+                        className="w-full pl-7 pr-3 py-1.5 rounded-lg border-2 border-[#D97706] font-mono font-bold text-sm text-[#1A365D] bg-white focus:border-amber-600"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      In Words:{' '}
+                      <strong className="text-[#1A365D]">
+                        {numberToIndianWords(numericCorrectedPaid)}
+                      </strong>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Live Recalculation Banner */}
+                <div className="p-3 rounded-lg bg-white border border-amber-300 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                  <span
+                    className={`font-bold px-2 py-0.5 rounded ${
+                      correctionDelta < 0
+                        ? 'bg-red-100 text-red-700'
+                        : correctionDelta > 0
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    Adjustment: {correctionDelta > 0 ? '+' : correctionDelta < 0 ? '-' : ''}₹
+                    {Math.abs(correctionDelta).toLocaleString('en-IN')}
+                  </span>
+                  <span className="font-bold text-[#1A365D]">
+                    New Paid Total: ₹{numericCorrectedPaid.toLocaleString('en-IN')}
+                  </span>
+                  <span
+                    className={`font-bold px-2 py-0.5 rounded ${
+                      correctedBalanceDue > 0
+                        ? 'bg-amber-100 text-amber-900'
+                        : 'bg-emerald-100 text-emerald-800'
+                    }`}
+                  >
+                    New Balance Due: ₹{correctedBalanceDue.toLocaleString('en-IN')}
+                  </span>
+                </div>
+
+                {/* Mandatory Reason for Amount Correction */}
+                <div>
+                  <label
+                    htmlFor="correctionReasonInput"
+                    className="block text-xs font-bold uppercase tracking-wider text-red-800 mb-1"
+                  >
+                    Reason for Amount Correction * (Mandatory)
+                  </label>
+                  <textarea
+                    id="correctionReasonInput"
+                    rows={2}
+                    required
+                    value={correctionReason}
+                    onChange={(e) => {
+                      setCorrectionReason(e.target.value);
+                      setErrorMsg('');
+                    }}
+                    placeholder="e.g. Entered 5000 by mistake during walk-in; actual cash received was 4000."
+                    className="w-full px-3 py-2 rounded-lg border border-amber-400 bg-white text-xs sm:text-sm focus:border-[#1A365D]"
+                  />
                 </div>
               </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-[#F8FAFC] border border-slate-200 space-y-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {/* Total Applicable Fee (₹) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label
+                        htmlFor="totalFeeInput"
+                        className="text-[11px] font-bold uppercase tracking-wider text-slate-700"
+                      >
+                        Total Applicable Fee (₹) *
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-semibold">
+                        Annual / Course Fee
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 font-mono font-bold text-slate-500 text-xs">
+                        ₹
+                      </span>
+                      <input
+                        id="totalFeeInput"
+                        type="number"
+                        min={Math.max(1, baseAlreadyPaid)}
+                        step="1"
+                        required
+                        value={totalFeeAmount}
+                        onChange={(e) => handleTotalFeeChange(e.target.value)}
+                        className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-slate-300 font-mono font-bold text-sm text-slate-900 bg-white focus:border-[#1A365D]"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      In Words:{' '}
+                      <strong className="text-[#1A365D]">
+                        {numberToIndianWords(numericTotalFee)}
+                      </strong>
+                    </p>
+                  </div>
 
-              {/* Remaining Paying Now (₹) * */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label
-                    htmlFor="payingNowInput"
-                    className="text-[11px] font-bold uppercase tracking-wider text-brand-navy"
-                  >
-                    Remaining Paying Now (₹) *
+                  {/* Paying Now (₹) * */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label
+                        htmlFor="payingNowInput"
+                        className="text-[11px] font-bold uppercase tracking-wider text-[#1A365D]"
+                      >
+                        {isRemainingMode ? 'Remaining Paying Now (₹) *' : 'Paying Now (₹) *'}
+                      </label>
+                      <span className="text-[10px] text-emerald-700 font-semibold">
+                        Editable Installment
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 font-mono font-bold text-emerald-700 text-xs">
+                        ₹
+                      </span>
+                      <input
+                        id="payingNowInput"
+                        type="number"
+                        min="1"
+                        max={maxPayableNow > 0 ? maxPayableNow : undefined}
+                        step="1"
+                        required
+                        value={payingNow}
+                        onChange={(e) => handlePayingNowChange(e.target.value)}
+                        className="w-full pl-7 pr-3 py-1.5 rounded-lg border-2 border-emerald-500 font-mono font-bold text-sm text-emerald-950 bg-white focus:border-emerald-600"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      In Words:{' '}
+                      <strong className="text-[#1A365D]">
+                        {numberToIndianWords(numericPayingNow)}
+                      </strong>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Option to Clear Complete Payment Inside Form */}
+                <div className="p-2.5 rounded-lg bg-emerald-50/90 border border-emerald-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-emerald-950">
+                    <input
+                      type="checkbox"
+                      checked={
+                        clearFullPayment ||
+                        (maxPayableNow > 0 && numericPayingNow === maxPayableNow)
+                      }
+                      onChange={(e) => handleToggleClearFullPayment(e.target.checked)}
+                      className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                    />
+                    <span>
+                      {isRemainingMode
+                        ? `Clear Complete Remaining Payment (₹${maxPayableNow.toLocaleString('en-IN')})`
+                        : `Clear Complete Payment Now (Full ₹${numericTotalFee.toLocaleString('en-IN')})`}
+                    </span>
                   </label>
-                  <span className="text-[10px] text-emerald-700 font-semibold">
-                    Editable Installment
-                  </span>
-                </div>
-                <div className="relative">
-                  <span className="absolute left-3 top-2 font-mono font-bold text-emerald-700 text-xs">
-                    ₹
-                  </span>
-                  <input
-                    id="payingNowInput"
-                    type="number"
-                    min="1"
-                    max={maxPayableNow > 0 ? maxPayableNow : undefined}
-                    step="1"
-                    required
-                    value={payingNow}
-                    onChange={(e) => handlePayingNowChange(e.target.value)}
-                    className="w-full pl-7 pr-3 py-1.5 rounded-lg border-2 border-emerald-500 font-mono font-bold text-sm text-emerald-950 bg-white focus:border-emerald-600"
-                  />
-                </div>
-                <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                  {!isRemainingMode && numericTotalFee > 0 && (
+
+                  {numericPayingNow < maxPayableNow && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setClearFullPayment(false);
-                        setPayingNow(Math.round(numericTotalFee / 2));
-                      }}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition cursor-pointer ${
-                        Number(payingNow) === Math.round(numericTotalFee / 2)
-                          ? 'bg-emerald-600 text-white border-emerald-600'
-                          : 'bg-white text-emerald-800 border-emerald-300 hover:bg-emerald-50'
-                      }`}
+                      onClick={() => handleToggleClearFullPayment(true)}
+                      className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition cursor-pointer self-start sm:self-auto"
                     >
-                      50% (₹{Math.round(numericTotalFee / 2).toLocaleString('en-IN')})
+                      Pay Full ₹{maxPayableNow.toLocaleString('en-IN')}
                     </button>
                   )}
-                  {INSTALLMENT_PRESETS.filter((p) => p <= maxPayableNow).map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => handlePayingNowChange(preset)}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition cursor-pointer ${
-                        Number(payingNow) === preset
-                          ? 'bg-emerald-600 text-white border-emerald-600'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      ₹{preset.toLocaleString('en-IN')}
-                    </button>
-                  ))}
+                </div>
+
+                {/* Live Breakdown Summary Strip */}
+                <div className="pt-2.5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="text-slate-600">
+                    New Paid Total:{' '}
+                    <strong className="font-mono text-[#1A365D]">
+                      ₹{cumulativePaidAfter.toLocaleString('en-IN')}
+                    </strong>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {balanceAfterPayment > 0 ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold text-[11px]">
+                        Remaining Balance Due: ₹{balanceAfterPayment.toLocaleString('en-IN')}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono font-bold text-[11px]">
+                        ✓ Complete Fee Cleared (Balance: ₹0)
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Option to Clear Complete Payment Inside Form */}
-            <div className="p-2.5 rounded-lg bg-emerald-50/90 border border-emerald-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-emerald-950">
-                <input
-                  type="checkbox"
-                  checked={clearFullPayment || (maxPayableNow > 0 && numericPayingNow === maxPayableNow)}
-                  onChange={(e) => handleToggleClearFullPayment(e.target.checked)}
-                  className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
-                />
-                <span>
-                  {isRemainingMode
-                    ? `Clear Complete Remaining Payment (₹${maxPayableNow.toLocaleString('en-IN')})`
-                    : `Clear Complete Payment Now (Full ₹${numericTotalFee.toLocaleString('en-IN')})`}
-                </span>
-              </label>
-
-              {numericPayingNow < maxPayableNow && (
-                <button
-                  type="button"
-                  onClick={() => handleToggleClearFullPayment(true)}
-                  className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition cursor-pointer self-start sm:self-auto"
+            {/* 3. Voucher / Transaction Reference */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label
+                  htmlFor="txnRefInput"
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-600"
                 >
-                  Pay Full ₹{maxPayableNow.toLocaleString('en-IN')}
-                </button>
-              )}
-            </div>
-
-            {/* Live Breakdown Summary Strip */}
-            <div className="pt-2.5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="text-slate-600">
-                In Words:{' '}
-                <strong className="text-brand-navy">
-                  {numberToIndianWords(numericPayingNow)}
-                </strong>
-              </div>
-              <div className="flex items-center gap-2">
-                {balanceAfterPayment > 0 ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-mono font-bold text-[11px]">
-                    Remaining Balance Due: ₹{balanceAfterPayment.toLocaleString('en-IN')}
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono font-bold text-[11px]">
-                    ✓ Complete Fee Cleared (Balance: ₹0)
-                  </span>
+                  {paymentMethod === 'Cash'
+                    ? '3. Cash Voucher / Receipt Book Ref'
+                    : '3. UPI Transaction UTR / Gateway Ref ID'}
+                </label>
+                {paymentMethod === 'Online_UPI' && !isCorrectionMode && (
+                  <button
+                    type="button"
+                    onClick={handleSimulateGatewayRef}
+                    className="text-[11px] font-bold text-[#1A365D] hover:text-[#D97706] underline cursor-pointer"
+                  >
+                    + Auto-Generate Gateway UTR
+                  </button>
                 )}
               </div>
+              <input
+                id="txnRefInput"
+                type="text"
+                value={transactionId}
+                onChange={(e) => setTransactionId(e.target.value)}
+                placeholder={
+                  paymentMethod === 'Cash'
+                    ? 'e.g. CASH-VOUCHER-104 (Auto-generated if blank)'
+                    : 'e.g. 431289401289 / pay_Pn82kL91'
+                }
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm font-mono"
+              />
             </div>
-          </div>
 
-          {/* 3. Voucher / Transaction Reference */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label
-                htmlFor="txnRefInput"
-                className="block text-xs font-bold uppercase tracking-wider text-slate-600"
-              >
-                {paymentMethod === 'Cash'
-                  ? '3. Cash Voucher / Receipt Book Ref'
-                  : '3. UPI Transaction UTR / Gateway Ref ID'}
-              </label>
-              {paymentMethod === 'Online_UPI' && (
+            {/* 4. Cashier / Remarks (shown in Collection mode; Correction mode uses mandatory Reason above) */}
+            {!isCorrectionMode && (
+              <div>
+                <label
+                  htmlFor="feeRemarksInput"
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1"
+                >
+                  4. Cashier / Office Remarks
+                </label>
+                <input
+                  id="feeRemarksInput"
+                  type="text"
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  placeholder="e.g. Admission & Registration Fee for AY 2026-27"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm"
+                />
+                <span className="block text-[10px] text-slate-400 mt-1">
+                  Parent: {fatherName} • Sequential Receipt Format: <code>KES-REC-2026-XXXX</code>
+                </span>
+              </div>
+            )}
+
+            {/* Submit & Secondary Actions */}
+            <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={handleSimulateGatewayRef}
-                  className="text-[11px] font-bold text-brand-navy hover:text-brand-gold underline cursor-pointer"
+                  onClick={() => printStudentAdmissionSummary(student)}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition w-full sm:w-auto cursor-pointer"
                 >
-                  + Auto-Generate Gateway UTR
+                  <FileText className="w-3.5 h-3.5 text-[#1A365D]" />
+                  <span>Print Admission Summary</span>
                 </button>
-              )}
-            </div>
-            <input
-              id="txnRefInput"
-              type="text"
-              value={transactionId}
-              onChange={(e) => setTransactionId(e.target.value)}
-              placeholder={
-                paymentMethod === 'Cash'
-                  ? 'e.g. CASH-VOUCHER-104 (Auto-generated if blank)'
-                  : 'e.g. 431289401289 / pay_Pn82kL91'
-              }
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm font-mono"
-            />
-          </div>
+                {onClose && (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-3 py-2.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-100 text-xs font-semibold transition w-full sm:w-auto cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
 
-          {/* 4. Cashier / Remarks */}
-          <div>
-            <label
-              htmlFor="feeRemarksInput"
-              className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1"
-            >
-              4. Cashier / Office Remarks
-            </label>
-            <input
-              id="feeRemarksInput"
-              type="text"
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              placeholder="e.g. Admission & Registration Fee for AY 2026-27"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm"
-            />
-            <span className="block text-[10px] text-slate-400 mt-1">
-              Parent: {fatherName} • Sequential Receipt Format: <code>KES-REC-2026-XXXX</code>
-            </span>
-          </div>
-
-          {/* Submit & Secondary Actions */}
-          <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
-                type="button"
-                onClick={() => printStudentAdmissionSummary(student)}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition w-full sm:w-auto cursor-pointer"
+                type="submit"
+                disabled={submitting}
+                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl disabled:opacity-60 text-white font-bold text-xs sm:text-sm shadow-md transition cursor-pointer ${
+                  isCorrectionMode
+                    ? 'bg-[#D97706] hover:bg-amber-700'
+                    : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
               >
-                <FileText className="w-3.5 h-3.5 text-brand-navy" />
-                <span>Print Admission Summary</span>
+                {isCorrectionMode ? (
+                  <PencilLine className="w-4 h-4" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4" />
+                )}
+                <span>
+                  {submitting
+                    ? isCorrectionMode
+                      ? 'Saving Correction...'
+                      : 'Generating Receipt...'
+                    : isCorrectionMode
+                      ? 'Save Corrected Amount & Log Audit'
+                      : 'Confirm & Generate Official Receipt'}
+                </span>
               </button>
-              {onClose && (
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-3 py-2.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-100 text-xs font-semibold transition w-full sm:w-auto cursor-pointer"
-                >
-                  Cancel
-                </button>
-              )}
             </div>
+          </form>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold text-xs sm:text-sm shadow-md transition cursor-pointer"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>
-                {submitting
-                  ? 'Generating Receipt...'
-                  : 'Confirm & Generate Official Receipt'}
-              </span>
-            </button>
+          {/* In-Modal Payment & Edit History Log Section */}
+          <div className="px-5 sm:px-6 pb-6 pt-4 border-t border-slate-200 bg-[#F8FAFC]">
+            <PaymentAuditLogTimeline logs={auditLogs} compact />
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

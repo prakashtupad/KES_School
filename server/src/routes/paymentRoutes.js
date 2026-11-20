@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   recordFeePayment,
+  correctFeePayment,
   createOnlineOrder,
   verifyOnlinePayment,
   getReceiptByNumber,
@@ -11,9 +12,10 @@ const { protect, restrictTo } = require('../middleware/auth');
 // Public / authenticated receipt lookup & verification
 router.get('/receipt/:receiptNumber', getReceiptByNumber);
 
-// Protected Admin & Super Admin payment recording endpoints
+// Protected Admin & Super Admin payment recording & correction endpoints
 router.post('/record-fee', protect, restrictTo('admin', 'super_admin'), recordFeePayment);
 router.post('/record-cash', protect, restrictTo('admin', 'super_admin'), recordFeePayment);
+router.put('/correct-fee/:studentId', protect, restrictTo('admin', 'super_admin'), correctFeePayment);
 router.post('/create-order', protect, restrictTo('admin', 'super_admin'), createOnlineOrder);
 router.post('/verify-online', protect, restrictTo('admin', 'super_admin'), verifyOnlinePayment);
 

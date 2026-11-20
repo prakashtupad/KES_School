@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Search,
   UserPlus,
@@ -13,6 +14,8 @@ import {
   Printer,
   IndianRupee,
   Award,
+  History,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getDirectStudentChatUrl } from '../../utils/whatsappFormatter';
@@ -25,6 +28,7 @@ import StudentProfileDrawer from './StudentProfileDrawer';
 import AdmissionPaymentModal from './AdmissionPaymentModal';
 import PrintableFeeReceipt from './PrintableFeeReceipt';
 import StudentExamMarksModal from './StudentExamMarksModal';
+import PaymentAuditLogTimeline from './PaymentAuditLogTimeline';
 
 const GRADE_FILTERS = [
   'All Classes',
@@ -48,7 +52,7 @@ const isSectionApplicable = (sec) => {
 
 export default function StudentDirectoryDesk() {
   const { user, token } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +69,7 @@ export default function StudentDirectoryDesk() {
   const [paymentModalStudent, setPaymentModalStudent] = useState(null);
   const [receiptModalStudent, setReceiptModalStudent] = useState(null);
   const [marksModalStudent, setMarksModalStudent] = useState(null);
+  const [auditLogModalStudent, setAuditLogModalStudent] = useState(null);
   const [feedback, setFeedback] = useState('');
 
   const fetchStudents = useCallback(async () => {
@@ -369,6 +374,9 @@ export default function StudentDirectoryDesk() {
               );
               const hasPaidAny =
                 paidAmt > 0 || feeStatus === 'Paid' || feeStatus === 'Partial';
+              const paymentLogsCount = Array.isArray(st.feeDetails?.paymentLogs)
+                ? st.feeDetails.paymentLogs.length
+                : 0;
 
               return (
                 <div
@@ -429,11 +437,26 @@ export default function StudentDirectoryDesk() {
                           className="p-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
                           title={
                             hasPaidAny
-                              ? 'Collect Remaining Fee Amount'
+                              ? 'Collect Remaining or Edit Fee Amount'
                               : 'Collect Admission Fee'
                           }
                         >
                           <IndianRupee className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {isAdmin && (hasPaidAny || paymentLogsCount > 0) && (
+                        <button
+                          type="button"
+                          onClick={() => setAuditLogModalStudent(st)}
+                          className="p-1.5 rounded-lg border border-slate-300 bg-slate-50 text-[#1A365D] hover:bg-slate-100 relative"
+                          title="View Payment & Edit History Log"
+                        >
+                          <History className="w-3.5 h-3.5" />
+                          {paymentLogsCount > 0 && (
+                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#D97706] text-white text-[9px] font-bold flex items-center justify-center">
+                              {paymentLogsCount}
+                            </span>
+                          )}
                         </button>
                       )}
                       <button
@@ -518,6 +541,9 @@ export default function StudentDirectoryDesk() {
                     );
                     const hasPaidAny =
                       paidAmt > 0 || feeStatus === 'Paid' || feeStatus === 'Partial';
+                    const paymentLogsCount = Array.isArray(st.feeDetails?.paymentLogs)
+                      ? st.feeDetails.paymentLogs.length
+                      : 0;
 
                     return (
                       <tr key={st._id} className="group hover:bg-slate-50/80 transition">
@@ -584,11 +610,35 @@ export default function StudentDirectoryDesk() {
                                   {st.feeDetails.receiptNumber}
                                 </span>
                               )}
+                              {isAdmin && paymentLogsCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setAuditLogModalStudent(st)}
+                                  className="inline-flex items-center gap-1 text-[10px] font-bold text-[#1A365D] hover:text-[#D97706] underline underline-offset-2 cursor-pointer"
+                                  title="View Payment & Edit Audit History"
+                                >
+                                  <History className="w-2.5 h-2.5" />
+                                  <span>History ({paymentLogsCount})</span>
+                                </button>
+                              )}
                             </div>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold">
-                              {feeStatus}
-                            </span>
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold">
+                                {feeStatus}
+                              </span>
+                              {isAdmin && paymentLogsCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setAuditLogModalStudent(st)}
+                                  className="block inline-flex items-center gap-1 text-[10px] font-bold text-[#1A365D] hover:text-[#D97706] underline underline-offset-2 cursor-pointer"
+                                  title="View Payment & Edit Audit History"
+                                >
+                                  <History className="w-2.5 h-2.5" />
+                                  <span>History ({paymentLogsCount})</span>
+                                </button>
+                              )}
+                            </div>
                           )}
                         </td>
 
@@ -644,6 +694,23 @@ export default function StudentDirectoryDesk() {
                                   <span>Fee</span>
                                 </button>
                               ))}
+
+                            {isAdmin && (hasPaidAny || paymentLogsCount > 0) && (
+                              <button
+                                type="button"
+                                onClick={() => setAuditLogModalStudent(st)}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-300 bg-slate-50 hover:bg-slate-100 text-[#1A365D] text-xs font-semibold transition cursor-pointer"
+                                title="View Payment & Edit History Log"
+                              >
+                                <History className="w-3 h-3 text-[#D97706]" />
+                                <span>History</span>
+                                {paymentLogsCount > 0 && (
+                                  <span className="px-1 py-0.2 rounded-full bg-[#1A365D] text-white text-[9px] font-mono font-bold">
+                                    {paymentLogsCount}
+                                  </span>
+                                )}
+                              </button>
+                            )}
 
                             <button
                               type="button"
@@ -715,21 +782,130 @@ export default function StudentDirectoryDesk() {
         />
       )}
 
-      {/* Admission Fee Collection Modal */}
+      {/* Admission Fee Collection & Correction Modal */}
       {paymentModalStudent && isAdmin && (
         <AdmissionPaymentModal
           isOpen={Boolean(paymentModalStudent)}
           student={paymentModalStudent}
           onClose={() => setPaymentModalStudent(null)}
-          onPaymentRecorded={(updatedStudent) => {
+          onPaymentRecorded={(updatedStudent, meta = {}) => {
+            // Immediately reflect updated/corrected fee amounts in the Student Directory row
+            if (updatedStudent?._id) {
+              setStudents((prev) =>
+                prev.map((row) =>
+                  String(row._id) === String(updatedStudent._id) ? updatedStudent : row
+                )
+              );
+              setAuditLogModalStudent((prev) =>
+                prev && String(prev._id) === String(updatedStudent._id)
+                  ? updatedStudent
+                  : prev
+              );
+            }
             setFeedback(
-              `Official Fee Receipt (${updatedStudent.feeDetails?.receiptNumber || 'Paid'}) generated for ${updatedStudent.studentName}.`
+              meta.isCorrection
+                ? `Fee amount corrected to ₹${Number(updatedStudent.feeDetails?.amountPaid || 0).toLocaleString('en-IN')} for ${updatedStudent.studentName} and logged in audit trail.`
+                : `Official Fee Receipt (${updatedStudent.feeDetails?.receiptNumber || 'Paid'}) generated for ${updatedStudent.studentName}.`
             );
             setTimeout(() => setFeedback(''), 5000);
             fetchStudents();
           }}
         />
       )}
+
+      {/* Payment & Edit History Audit Log Drawer/Modal */}
+      {auditLogModalStudent &&
+        isAdmin &&
+        (() => {
+          const logPaid = Number(auditLogModalStudent.feeDetails?.amountPaid || 0);
+          const logTotal = Math.max(
+            Number(auditLogModalStudent.feeDetails?.admissionFeeAmount || logPaid || 0),
+            logPaid
+          );
+          const logBalance = Math.max(
+            0,
+            Number(auditLogModalStudent.feeDetails?.balanceDue ?? logTotal - logPaid)
+          );
+          const auditModal = (
+            <div
+              className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-900/75 backdrop-blur-xs p-3 sm:p-6 flex items-center justify-center"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Payment and Edit History Log"
+            >
+              <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[90vh] flex flex-col">
+                <div className="bg-[#1A365D] text-white px-5 py-4 flex items-center justify-between border-b border-[#D97706]/40">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#D97706]/20 border border-[#D97706] flex items-center justify-center text-[#D97706]">
+                      <History className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#D97706] block">
+                        Fee Accountability &amp; Audit Trail
+                      </span>
+                      <h3 className="text-base font-serif font-bold">
+                        {auditLogModalStudent.studentName} ({auditLogModalStudent.admissionNumber})
+                      </h3>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAuditLogModalStudent(null)}
+                    className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                    aria-label="Close payment history"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Current Financial Snapshot */}
+                <div className="bg-[#F8FAFC] px-5 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex flex-wrap items-center gap-3 font-mono">
+                    <span>
+                      Total Fee:{' '}
+                      <strong className="text-[#1A365D]">
+                        ₹{logTotal.toLocaleString('en-IN')}
+                      </strong>
+                    </span>
+                    <span>
+                      Paid:{' '}
+                      <strong className="text-emerald-700">
+                        ₹{logPaid.toLocaleString('en-IN')}
+                      </strong>
+                    </span>
+                    <span>
+                      Balance Due:{' '}
+                      <strong className={logBalance > 0 ? 'text-red-600' : 'text-emerald-700'}>
+                        ₹{logBalance.toLocaleString('en-IN')}
+                      </strong>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = auditLogModalStudent;
+                      setAuditLogModalStudent(null);
+                      setPaymentModalStudent(target);
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#1A365D] hover:bg-brand-navyDark text-white font-bold text-[11px] transition cursor-pointer"
+                  >
+                    <IndianRupee className="w-3 h-3 text-[#D97706]" />
+                    <span>Collect / Edit Fee</span>
+                  </button>
+                </div>
+
+                <div className="p-5 overflow-y-auto flex-1">
+                  <PaymentAuditLogTimeline
+                    logs={auditLogModalStudent.feeDetails?.paymentLogs || []}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+          return typeof document !== 'undefined'
+            ? createPortal(auditModal, document.body)
+            : auditModal;
+        })()}
 
       {/* Official Dual-Counterfoil Printable Fee Receipt Modal */}
       {receiptModalStudent && (

@@ -97,6 +97,7 @@ function formatPaymentMethodLabel(method) {
     Online_Card: 'Online Card / Gateway',
     Bank_Transfer: 'NEFT / Bank Transfer',
     Cheque_DD: 'Cheque / Demand Draft',
+    Adjustment: 'Fee Adjustment / Correction',
   };
   return map[method] || String(method).replace(/_/g, ' ');
 }
