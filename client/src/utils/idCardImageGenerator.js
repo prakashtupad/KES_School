@@ -154,7 +154,7 @@ export async function generateIdCardPng(
 
       ctx.fillStyle = '#E2E8F0';
       ctx.font = 'bold 16px Arial, sans-serif';
-      ctx.fillText('Khanatti, Gokak Taluk', ox + 144, oy + 138);
+      ctx.fillText('Khanatti, Mudalagi Taluk', ox + 144, oy + 138);
 
       ctx.fillStyle = '#FDE68A';
       ctx.font = 'bold 14px Arial, sans-serif';
@@ -340,7 +340,7 @@ export async function generateIdCardPng(
       ctx.fillStyle = '#E2E8F0';
       ctx.font = 'bold 16px Arial, sans-serif';
       ctx.fillText(
-        'Khanatti, Gokak Taluk  •  PERMANENT STUDENT IDENTITY CARD',
+        'Khanatti, Mudalagi Taluk  •  PERMANENT STUDENT IDENTITY CARD',
         ox + 132,
         oy + 110
       );
@@ -534,12 +534,12 @@ export async function generateIdCardPng(
       ctx.fillText('MEDIUM SCHOOL', ox + 138, oy + 110);
       ctx.fillStyle = '#E2E8F0';
       ctx.font = 'bold 16px Arial, sans-serif';
-      ctx.fillText('Khanatti, Gokak Taluk', ox + 138, oy + 140);
+      ctx.fillText('Khanatti, Mudalagi Taluk', ox + 138, oy + 140);
     } else {
       ctx.fillText('SHRI SIDDHAROODHA ENGLISH MEDIUM SCHOOL', ox + 138, oy + 74);
       ctx.fillStyle = '#E2E8F0';
       ctx.font = 'bold 16px Arial, sans-serif';
-      ctx.fillText('Khanatti, Gokak Taluk', ox + 138, oy + 104);
+      ctx.fillText('Khanatti, Mudalagi Taluk', ox + 138, oy + 104);
     }
 
     if (isPortrait) {
@@ -613,7 +613,7 @@ export async function generateIdCardPng(
       ctx.fillStyle = '#1A365D';
       ctx.font = 'bold 18px Arial, sans-serif';
       ctx.fillText(
-        'Medium School, Khanatti, Gokak Taluk',
+        'Medium School, Khanatti, Mudalagi Taluk',
         ox + cardW / 2,
         oy + cardH - 60
       );
@@ -680,7 +680,7 @@ export async function generateIdCardPng(
       ctx.fillStyle = '#1A365D';
       ctx.font = 'bold 18px Arial, sans-serif';
       ctx.fillText(
-        'If found, please return to: Shri Siddharoodha English Medium School, Khanatti, Gokak Taluk',
+        'If found, please return to: Shri Siddharoodha English Medium School, Khanatti, Mudalagi Taluk',
         ox + cardW / 2,
         oy + cardH - 48
       );

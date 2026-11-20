@@ -153,50 +153,51 @@ export default function StudentParentPortal() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
       {/* Sticky Top Navy Portal Header */}
-      <header className="sticky top-0 z-50 bg-[#1A365D] text-white border-b border-[#D97706]/40 shadow-md">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
-          <div className="flex items-center gap-2.5 min-w-0">
+      <header className="sticky top-0 z-50 w-full bg-[#1A365D] text-white border-b border-[#D97706]/40 shadow-md overflow-hidden shrink-0">
+        <div className="max-w-7xl mx-auto w-full px-2.5 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between flex-nowrap gap-1.5 sm:gap-4 overflow-hidden">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
             <button
               type="button"
               onClick={() => setSidebarOpen((prev) => !prev)}
-              className="lg:hidden p-2 rounded-lg text-slate-200 hover:bg-white/10 transition flex-shrink-0 cursor-pointer"
+              className="lg:hidden p-1.5 rounded-md text-slate-200 hover:bg-white/10 transition shrink-0 cursor-pointer"
               aria-label="Toggle student portal menu"
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
-            <Link to="/portal/student" className="flex items-center gap-2.5 min-w-0">
+            <Link to="/portal/student" className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
               <img
                 src={SCHOOL_INFO.logoUrl}
                 alt="School Emblem"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-contain border border-[#D97706] bg-white p-0.5 flex-shrink-0"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-contain border border-[#D97706] bg-white p-0.5 shrink-0"
               />
-              <div className="min-w-0">
-                <span className="text-[10px] uppercase tracking-wider text-[#D97706] font-bold block truncate">
+              <div className="min-w-0 flex-1">
+                <span className="hidden sm:block text-[10px] uppercase tracking-wider text-[#D97706] font-bold truncate">
                   {t('studentPortal.headerTitle')}
                 </span>
-                <h1 className="text-xs sm:text-sm md:text-base font-serif font-bold text-white truncate">
+                <h1 className="text-[10.5px] sm:text-sm md:text-base font-serif font-bold text-white leading-tight line-clamp-2 sm:line-clamp-none sm:truncate">
                   {t('common.schoolName')}
                 </h1>
               </div>
             </Link>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <LanguageToggle variant="dark" compact />
+          <div className="flex items-center flex-nowrap gap-1 sm:gap-2.5 md:gap-3 ml-auto shrink-0">
+            <LanguageToggle compact />
 
             <button
               type="button"
               onClick={handleGoPublicSite}
-              className="inline-flex items-center gap-1 text-xs font-medium text-slate-300 hover:text-amber-200 transition px-2.5 py-1.5 rounded-lg border border-white/10 hover:border-[#D97706]/40 cursor-pointer"
+              className="inline-flex items-center justify-center gap-1 p-1.5 sm:px-2.5 sm:py-1.5 rounded-md border border-white/15 hover:bg-white/10 hover:border-[#D97706]/40 text-slate-200 hover:text-amber-200 text-[11px] sm:text-xs font-medium transition shrink-0 cursor-pointer"
               title="Return to Public School Website"
+              aria-label="Return to Public School Website"
             >
               <span className="hidden sm:inline">{t('common.website')}</span>
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
             </button>
 
             {user && (
-              <div className="flex items-center gap-2 sm:pl-2 sm:border-l border-slate-700">
+              <div className="flex items-center gap-2 md:pl-2 md:border-l border-slate-700 shrink-0">
                 <div className="text-right hidden md:block">
                   <div className="text-xs font-bold text-white leading-tight">
                     {user.fullName}
@@ -205,9 +206,10 @@ export default function StudentParentPortal() {
                     +91 {parentSession?.parentPhone || user.mobileNumber || ''}
                   </div>
                 </div>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#D97706]/20 border border-[#D97706]/50 text-amber-200 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
-                  <Users className="w-3 h-3 text-[#D97706]" />
-                  <span>
+                <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] sm:text-[11px] uppercase tracking-wider shrink-0">
+                  <Users className="w-3 h-3 text-amber-400 shrink-0" />
+                  <span className="sm:hidden">{t('studentPortal.parentBadge')}</span>
+                  <span className="hidden sm:inline">
                     {t('studentPortal.parentBadge')} ({siblings.length}{' '}
                     {siblings.length === 1
                       ? t('studentPortal.childSingular')
@@ -221,8 +223,9 @@ export default function StudentParentPortal() {
             <button
               type="button"
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 bg-red-600/90 hover:bg-red-600 text-white text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg shadow transition cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-md shadow transition shrink-0 cursor-pointer"
               title="Sign out of Student & Parent Portal"
+              aria-label="Sign out of Student & Parent Portal"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t('auth.logout')}</span>

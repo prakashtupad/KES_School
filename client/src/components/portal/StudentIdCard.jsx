@@ -81,7 +81,7 @@ export default function StudentIdCard({
               SHRI SIDDHAROODHA ENGLISH MEDIUM SCHOOL
             </div>
             <div className="text-[7.5px] text-slate-200 leading-tight mt-0.5">
-              Khanatti, Gokak Taluk
+              Khanatti, Mudalagi Taluk
             </div>
           </div>
         </div>
@@ -148,7 +148,7 @@ export default function StudentIdCard({
           <div className="pt-1.5 border-t border-slate-200 text-center text-[8px] text-slate-600 leading-tight">
             If found, please return to:{' '}
             <strong className="text-[#1A365D]">
-              Shri Siddharoodha English Medium School, Khanatti, Gokak Taluk
+              Shri Siddharoodha English Medium School, Khanatti, Mudalagi Taluk
             </strong>
           </div>
         </div>
@@ -178,7 +178,7 @@ export default function StudentIdCard({
                 SHRI SIDDHAROODHA ENGLISH MEDIUM SCHOOL
               </div>
               <div className="text-[7.5px] font-semibold text-slate-200 leading-tight mt-0.5">
-                Khanatti, Gokak Taluk
+                Khanatti, Mudalagi Taluk
               </div>
               <div className="text-[6.4px] font-bold uppercase tracking-wider text-amber-200/95 mt-0.5">
                 PERMANENT STUDENT IDENTITY CARD
@@ -333,7 +333,7 @@ export default function StudentIdCard({
             SHRI SIDDHAROODHA ENGLISH MEDIUM SCHOOL
           </div>
           <div className="text-[7px] text-slate-200 leading-tight">
-            Khanatti, Gokak Taluk • Permanent Student Identity Card
+            Khanatti, Mudalagi Taluk • Permanent Student Identity Card
           </div>
         </div>
       </div>

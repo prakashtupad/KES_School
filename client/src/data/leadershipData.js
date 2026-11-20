@@ -7,7 +7,7 @@ export const LEADERSHIP_DATA = [
     designation: 'Founder, Khanatti Education Society (KES)',
     imageUrl: '/images/leadership/founder-subhash-tuppad.jpg',
     message: [
-      'Khanatti Education Society was established with a singular, heartfelt vision: to bring high-standard, value-rooted English medium education directly to the children of Khanatti, Mudalgi, and surrounding rural communities of Gokak Taluk.',
+      'Khanatti Education Society was established with a singular, heartfelt vision: to bring high-standard, value-rooted English medium education directly to the children of Khanatti, Mudalgi, and surrounding rural communities of Mudalagi Taluk.',
       'We firmly believe that every child, regardless of their rural background, possesses boundless potential. By combining modern academic rigor with strong moral character, discipline, and cultural values, we strive to empower young minds with the knowledge and confidence to dream big and achieve excellence.',
       'I extend my deepest gratitude to the parents, dedicated teachers, and community elders whose unwavering trust continues to strengthen our educational mission every single day.',
     ],

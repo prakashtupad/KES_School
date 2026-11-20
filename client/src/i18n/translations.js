@@ -156,7 +156,7 @@ export const translations = {
         title: 'Message from Our Founder',
         designation: 'Founder, Khanatti Education Society (KES)',
         paragraphs: [
-          'Khanatti Education Society was established with a singular, heartfelt vision: to bring high-standard, value-rooted English medium education directly to the children of Khanatti, Mudalgi, and surrounding rural communities of Gokak Taluk.',
+          'Khanatti Education Society was established with a singular, heartfelt vision: to bring high-standard, value-rooted English medium education directly to the children of Khanatti, Mudalgi, and surrounding rural communities of Mudalagi Taluk.',
           'We firmly believe that every child, regardless of their rural background, possesses boundless potential. By combining modern academic rigor with strong moral character, discipline, and cultural values, we strive to empower young minds with the knowledge and confidence to dream big and achieve excellence.',
           'I extend my deepest gratitude to the parents, dedicated teachers, and community elders whose unwavering trust continues to strengthen our educational mission every single day.',
         ],
@@ -602,7 +602,7 @@ export const translations = {
         title: 'ನಮ್ಮ ಸಂಸ್ಥಾಪಕರ ಸಂದೇಶ',
         designation: 'ಸಂಸ್ಥಾಪಕರು, ಖಾನಟ್ಟಿ ಎಜುಕೇಶನ್ ಸೊಸೈಟಿ (KES)',
         paragraphs: [
-          'ಖಾನಟ್ಟಿ, ಮೂಡಲಗಿ ಮತ್ತು ಗೋಕಾಕ ತಾಲೂಕಿನ ಸುತ್ತಮುತ್ತಲಿನ ಗ್ರಾಮೀಣ ಪ್ರದೇಶದ ಮಕ್ಕಳಿಗೆ ಉನ್ನತ ಗುಣಮಟ್ಟದ, ಮೌಲ್ಯಾಧಾರಿತ ಆಂಗ್ಲ ಮಾಧ್ಯಮ ಶಿಕ್ಷಣವನ್ನು ನೇರವಾಗಿ ತಲುಪಿಸುವ ಏಕೈಕ ಹೃದಯಪೂರ್ವಕ ದೃಷ್ಟಿಕೋನದೊಂದಿಗೆ ಖಾನಟ್ಟಿ ಎಜುಕೇಶನ್ ಸೊಸೈಟಿಯನ್ನು ಸ್ಥಾಪಿಸಲಾಗಿದೆ.',
+          'ಖಾನಟ್ಟಿ ಮತ್ತು ಮೂಡಲಗಿ ತಾಲೂಕಿನ ಸುತ್ತಮುತ್ತಲಿನ ಗ್ರಾಮೀಣ ಪ್ರದೇಶದ ಮಕ್ಕಳಿಗೆ ಉನ್ನತ ಗುಣಮಟ್ಟದ, ಮೌಲ್ಯಾಧಾರಿತ ಆಂಗ್ಲ ಮಾಧ್ಯಮ ಶಿಕ್ಷಣವನ್ನು ನೇರವಾಗಿ ತಲುಪಿಸುವ ಏಕೈಕ ಹೃದಯಪೂರ್ವಕ ದೃಷ್ಟಿಕೋನದೊಂದಿಗೆ ಖಾನಟ್ಟಿ ಎಜುಕೇಶನ್ ಸೊಸೈಟಿಯನ್ನು ಸ್ಥಾಪಿಸಲಾಗಿದೆ.',
           'ಗ್ರಾಮೀಣ ಹಿನ್ನೆಲೆಯ ಹೊರತಾಗಿಯೂ ಪ್ರತಿ ಮಗುವಿನಲ್ಲೂ ಅಪಾರ ಪ್ರತಿಭೆ ಇರುತ್ತದೆ ಎಂದು ನಾವು ದೃಢವಾಗಿ ನಂಬುತ್ತೇವೆ. ಆಧುನಿಕ ಶೈಕ್ಷಣಿಕ ಗುಣಮಟ್ಟದೊಂದಿಗೆ ಬಲವಾದ ನೈತಿಕ ಚಾರಿತ್ರ್ಯ, ಶಿಸ್ತು ಮತ್ತು ಸಾಂಸ್ಕೃತಿಕ ಮೌಲ್ಯಗಳನ್ನು ಸಂಯೋಜಿಸುವ ಮೂಲಕ, ಮಕ್ಕಳು ದೊಡ್ಡ ಕನಸುಗಳನ್ನು ಕಾಣಲು ಮತ್ತು ಯಶಸ್ಸು ಸಾಧಿಸಲು ಅಗತ್ಯವಾದ ಜ್ಞಾನ ಮತ್ತು ಆತ್ಮವಿಶ್ವಾಸವನ್ನು ತುಂಬಲು ನಾವು ಶ್ರಮಿಸುತ್ತಿದ್ದೇವೆ.',
           'ನಮ್ಮ ಶೈಕ್ಷಣಿಕ ಧ್ಯೇಯವನ್ನು ಪ್ರತಿದಿನ ಬಲಪಡಿಸುತ್ತಿರುವ ಪೋಷಕರು, ಸಮರ್ಪಿತ ಶಿಕ್ಷಕರು ಮತ್ತು ಗ್ರಾಮದ ಹಿರಿಯರ ಅಚಲ ನಂಬಿಕೆಗೆ ನನ್ನ ಹೃತ್ಪೂರ್ವಕ ಕೃತಜ್ಞತೆಗಳನ್ನು ಸಲ್ಲಿಸುತ್ತೇನೆ.',
         ],

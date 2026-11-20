@@ -135,7 +135,7 @@ const sendEnquiryNotification = async (enquiryData, referenceId) => {
           </tr>
           <tr>
             <td style="background:#F8FAFC;padding:14px 24px;border-top:1px solid #E2E8F0;font-size:11px;color:#64748B;text-align:center;">
-              Automated notification from Shri Siddharoodha English Medium School Admissions Portal (Reg- DRBG/SOR/1243/2025-2026) • Khanatti, Gokak Taluk<br/>
+              Automated notification from Shri Siddharoodha English Medium School Admissions Portal (Reg- DRBG/SOR/1243/2025-2026) • Khanatti, Mudalagi Taluk<br/>
               📞 +91 77957 70785 • ✉️ kes2026@gmail.com • <a href="https://www.instagram.com/khanatti_edu_society/" style="color:#1A365D;">Instagram</a> • <a href="https://www.facebook.com/profile.php?id=61590568034704" style="color:#1A365D;">Facebook</a>
             </td>
           </tr>
