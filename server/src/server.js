@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -14,6 +15,7 @@ const siteContentRoutes = require('./routes/siteContentRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const birthdayRoutes = require('./routes/birthdayRoutes');
 const studentPortalRoutes = require('./routes/studentPortalRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -22,7 +24,11 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 // Security & Parsing Middlewares
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 app.use(
   cors({
     origin: process.env.CLIENT_ORIGIN
@@ -34,6 +40,9 @@ app.use(
 );
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+
+// Serve uploaded student passport photos statically
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Ensure MongoDB is connected before handling requests (needed for serverless cold starts on Vercel)
 app.use(async (req, res, next) => {
@@ -64,6 +73,7 @@ app.use('/api/v1/content', siteContentRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/birthdays', birthdayRoutes);
 app.use('/api/v1/student-portal', studentPortalRoutes);
+app.use('/api/v1/upload', uploadRoutes);
 
 // 404 Handler for unknown API routes
 app.use('/api/*', (req, res) => {

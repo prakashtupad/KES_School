@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   CheckCircle2,
@@ -13,6 +13,12 @@ import {
   GraduationCap,
   Users,
   IndianRupee,
+  Camera,
+  Upload,
+  Trash2,
+  Loader2,
+  Bus,
+  CreditCard,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -23,8 +29,61 @@ import {
 import { printStudentAdmissionSummary } from '../../utils/printStudentSummary';
 import AdmissionPaymentModal from './AdmissionPaymentModal';
 import PrintableFeeReceipt from './PrintableFeeReceipt';
+import StudentIdCardModal from './StudentIdCardModal';
 
 const DRAFT_STORAGE_KEY = 'kes_direct_admission_draft_v1';
+
+const TRANSPORT_ROUTE_PRESETS = [
+  'Self / Walk',
+  'Route 1 - Khanatti Village',
+  'Route 2 - Gokak Road',
+  'Route 3 - Nearby Villages',
+];
+
+function compressImageFile(file, maxSize = 400, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Failed to read selected image file'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Invalid image file'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          if (width >= height) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          } else {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('Failed to compress image'));
+              return;
+            }
+            resolve({ blob, dataUrl });
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 const GRADE_OPTIONS = [
   'Nursery',
@@ -55,6 +114,7 @@ export const INITIAL_ONBOARDING_FORM = {
   languageIII: 'Kannada',
   transportRequired: false,
   schoolTransportOptIn: false,
+  transportRoute: 'Self / Walk',
 
   // Step 1: Student Demographics & Identification
   studentName: '',
@@ -156,6 +216,11 @@ function mapStudentToForm(st) {
     languageIII: st.languageIII || 'Kannada',
     transportRequired: Boolean(st.transportRequired || st.schoolTransportOptIn),
     schoolTransportOptIn: Boolean(st.schoolTransportOptIn || st.transportRequired),
+    transportRoute:
+      st.transportRoute ||
+      (st.transportRequired || st.schoolTransportOptIn
+        ? 'Route 1 - Khanatti Village'
+        : 'Self / Walk'),
 
     studentName: st.studentName || '',
     dateOfBirth: dobStr,
@@ -263,6 +328,10 @@ export default function DirectAdmissionOnboardingModal({
   const [successInfo, setSuccessInfo] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [showIdCardModal, setShowIdCardModal] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoUploadError, setPhotoUploadError] = useState('');
+  const photoInputRef = useRef(null);
 
   // Step 4 Inline Fee & Payment States
   const [step4ResetFee, setStep4ResetFee] = useState(false);
@@ -340,6 +409,64 @@ export default function DirectAdmissionOnboardingModal({
       [parent]: { ...prev[parent], [field]: value },
     }));
     setErrorMessage('');
+  };
+
+  const handleStudentPhotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setPhotoUploadError('Please select a JPG, PNG, or WebP passport photo.');
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setPhotoUploadError('Selected image is too large (max 10MB before compression).');
+      e.target.value = '';
+      return;
+    }
+
+    setUploadingPhoto(true);
+    setPhotoUploadError('');
+
+    try {
+      const { blob, dataUrl } = await compressImageFile(file, 400, 0.85);
+
+      const uploadBody = new FormData();
+      const safeName = (file.name || 'student-photo.jpg').replace(/\.[^/.]+$/, '') + '.jpg';
+      uploadBody.append('photo', blob, safeName);
+
+      const res = await fetch('/api/v1/upload/student-photo', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: uploadBody,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success && data.photoUrl) {
+        updateNested('documents', 'studentPhotoUrl', data.photoUrl);
+      } else {
+        // Fallback to compressed DataURL so photo still saves cleanly
+        updateNested('documents', 'studentPhotoUrl', dataUrl);
+      }
+    } catch (err) {
+      setPhotoUploadError(err.message || 'Could not process student photo.');
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveStudentPhoto = () => {
+    updateNested('documents', 'studentPhotoUrl', '');
+    setPhotoUploadError('');
+    if (photoInputRef.current) {
+      photoInputRef.current.value = '';
+    }
   };
 
   const handleSaveDraft = () => {
@@ -500,10 +627,17 @@ export default function DirectAdmissionOnboardingModal({
       10
     );
 
+    const resolvedTransportRoute = (formData.transportRoute || 'Self / Walk').trim();
+    const usesSchoolVan =
+      Boolean(formData.transportRequired) ||
+      (resolvedTransportRoute !== '' && resolvedTransportRoute !== 'Self / Walk');
+
     const payload = {
       ...formData,
       studentAadhaarNo: formData.aadhaarNumber,
-      schoolTransportOptIn: Boolean(formData.transportRequired),
+      transportRequired: usesSchoolVan,
+      schoolTransportOptIn: usesSchoolVan,
+      transportRoute: resolvedTransportRoute || 'Self / Walk',
       fatherName: formData.father.name.trim(),
       motherName: formData.mother.name.trim(),
       primaryPhone: fatherMobile,
@@ -697,6 +831,15 @@ export default function DirectAdmissionOnboardingModal({
 
         <button
           type="button"
+          onClick={() => setShowIdCardModal(true)}
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#1A365D] hover:bg-brand-navyDark text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm border border-[#D97706]/50 transition cursor-pointer"
+        >
+          <CreditCard className="w-4 h-4 text-[#D97706]" />
+          <span>Digital ID Card</span>
+        </button>
+
+        <button
+          type="button"
           onClick={handlePrintAdmissionSummary}
           className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-brand-gold hover:bg-brand-goldLight text-brand-navyDark text-xs sm:text-sm font-bold rounded-xl shadow-sm transition cursor-pointer"
         >
@@ -829,6 +972,86 @@ export default function DirectAdmissionOnboardingModal({
                 Step 1: Student Demographics &amp; Identification
               </h3>
               <span className="text-[11px] text-slate-500">* Required fields</span>
+            </div>
+
+            {/* Student Passport Photo Upload Box */}
+            <div className="p-3.5 sm:p-4 rounded-xl bg-[#F8FAFC] border border-slate-200 flex flex-col sm:flex-row items-center sm:items-start gap-4">
+              <div className="relative flex-shrink-0">
+                {formData.documents?.studentPhotoUrl ? (
+                  <img
+                    src={formData.documents.studentPhotoUrl}
+                    alt={formData.studentName || 'Student Passport Preview'}
+                    className="w-24 h-28 rounded-xl border-2 border-[#D97706] object-cover shadow-sm bg-white"
+                  />
+                ) : (
+                  <div className="w-24 h-28 rounded-xl border-2 border-dashed border-[#1A365D]/30 bg-white flex flex-col items-center justify-center text-[#1A365D]/60 shadow-xs">
+                    <Camera className="w-6 h-6 text-[#D97706] mb-1" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-center px-1 leading-tight">
+                      Passport Photo
+                    </span>
+                  </div>
+                )}
+                {uploadingPhoto && (
+                  <div className="absolute inset-0 rounded-xl bg-slate-900/55 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 text-center sm:text-left space-y-2 min-w-0">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#D97706] block">
+                    Digital ID Card &amp; Parent Portal Photo
+                  </span>
+                  <h4 className="text-xs sm:text-sm font-bold text-[#1A365D]">
+                    Student Passport Photo (Optional — Recommended)
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Accepts JPG, PNG, or WebP. Automatically resized to 400×400px and reused on the Digital Student ID Card, Directory, and Parent Portal.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleStudentPhotoChange}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    disabled={uploadingPhoto}
+                    onClick={() => photoInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1A365D] hover:bg-brand-navyDark disabled:opacity-60 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-[#D97706]" />
+                    <span>
+                      {uploadingPhoto
+                        ? 'Uploading...'
+                        : formData.documents?.studentPhotoUrl
+                          ? 'Change Photo'
+                          : 'Upload Passport Photo'}
+                    </span>
+                  </button>
+
+                  {formData.documents?.studentPhotoUrl && (
+                    <button
+                      type="button"
+                      disabled={uploadingPhoto}
+                      onClick={handleRemoveStudentPhoto}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold transition cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove</span>
+                    </button>
+                  )}
+                </div>
+
+                {photoUploadError && (
+                  <p className="text-[11px] font-semibold text-red-600">{photoUploadError}</p>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1092,6 +1315,63 @@ export default function DirectAdmissionOnboardingModal({
                   value={formData.medicalAilmentsOrAllergies}
                   onChange={(e) => updateRoot('medicalAilmentsOrAllergies', e.target.value)}
                   className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300"
+                />
+              </div>
+            </div>
+
+            {/* School Van / Transport Route */}
+            <div className="p-3.5 rounded-xl bg-amber-50/50 border border-[#D97706]/30 grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+              <div>
+                <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase text-[#1A365D] mb-1">
+                  <Bus className="w-3.5 h-3.5 text-[#D97706]" />
+                  <span>School Van / Transport Route</span>
+                </label>
+                <select
+                  value={
+                    TRANSPORT_ROUTE_PRESETS.includes(formData.transportRoute)
+                      ? formData.transportRoute
+                      : '__custom__'
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '__custom__') {
+                      updateRoot('transportRoute', 'Route 4 - ');
+                      updateRoot('transportRequired', true);
+                      updateRoot('schoolTransportOptIn', true);
+                    } else {
+                      updateRoot('transportRoute', val);
+                      const isVan = val !== 'Self / Walk';
+                      updateRoot('transportRequired', isVan);
+                      updateRoot('schoolTransportOptIn', isVan);
+                    }
+                  }}
+                  className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white focus:border-[#1A365D]"
+                >
+                  {TRANSPORT_ROUTE_PRESETS.map((route) => (
+                    <option key={route} value={route}>
+                      {route}
+                    </option>
+                  ))}
+                  <option value="__custom__">Other / Custom Route...</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                  Custom / Detailed Van Route (Printed on ID Card)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Route 1: Khanatti – Gokak Road"
+                  value={formData.transportRoute || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    updateRoot('transportRoute', val);
+                    const isVan = val.trim() !== '' && val.trim() !== 'Self / Walk';
+                    updateRoot('transportRequired', isVan);
+                    updateRoot('schoolTransportOptIn', isVan);
+                  }}
+                  className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white"
                 />
               </div>
             </div>
@@ -1876,6 +2156,15 @@ export default function DirectAdmissionOnboardingModal({
         <PrintableFeeReceipt
           student={successInfo}
           onClose={() => setShowReceiptModal(false)}
+        />
+      )}
+
+      {showIdCardModal && successInfo && (
+        <StudentIdCardModal
+          isOpen={showIdCardModal}
+          students={[successInfo]}
+          title={`Digital Student ID Card — ${successInfo.studentName}`}
+          onClose={() => setShowIdCardModal(false)}
         />
       )}
     </>

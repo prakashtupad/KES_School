@@ -16,6 +16,7 @@ import {
   Award,
   History,
   X,
+  CreditCard,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -30,6 +31,7 @@ import AdmissionPaymentModal from './AdmissionPaymentModal';
 import PrintableFeeReceipt from './PrintableFeeReceipt';
 import StudentExamMarksModal from './StudentExamMarksModal';
 import PaymentAuditLogTimeline from './PaymentAuditLogTimeline';
+import StudentIdCardModal from './StudentIdCardModal';
 
 const GRADE_FILTERS = [
   'All Classes',
@@ -72,6 +74,8 @@ export default function StudentDirectoryDesk() {
   const [receiptModalStudent, setReceiptModalStudent] = useState(null);
   const [marksModalStudent, setMarksModalStudent] = useState(null);
   const [auditLogModalStudent, setAuditLogModalStudent] = useState(null);
+  const [idCardModalStudents, setIdCardModalStudents] = useState(null);
+  const [idCardModalTitle, setIdCardModalTitle] = useState('');
   const [feedback, setFeedback] = useState('');
 
   const fetchStudents = useCallback(async () => {
@@ -247,6 +251,24 @@ export default function StudentDirectoryDesk() {
             title="Refresh directory"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+
+          <button
+            type="button"
+            disabled={students.length === 0}
+            onClick={() => {
+              const scopeLabel =
+                gradeFilter !== 'All Classes'
+                  ? `${gradeFilter}${sectionFilter !== 'All' ? ` (Sec ${sectionFilter})` : ''}`
+                  : 'Filtered Students';
+              setIdCardModalTitle(`Batch ID Cards — ${scopeLabel} (${students.length})`);
+              setIdCardModalStudents(students);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#D97706]/50 bg-amber-50 hover:bg-amber-100 disabled:opacity-50 text-[#1A365D] font-bold text-xs shadow-sm transition cursor-pointer"
+            title="Preview, Download & Print A4 Sheet of Student ID Cards"
+          >
+            <CreditCard className="w-3.5 h-3.5 text-[#D97706]" />
+            <span>🪪 Print Class ID Cards</span>
           </button>
 
           <button
@@ -463,6 +485,17 @@ export default function StudentDirectoryDesk() {
                       )}
                       <button
                         type="button"
+                        onClick={() => {
+                          setIdCardModalTitle(`Digital ID Card — ${st.studentName}`);
+                          setIdCardModalStudents([st]);
+                        }}
+                        className="p-1.5 rounded-lg border border-[#D97706]/50 bg-amber-50 text-[#1A365D] hover:bg-amber-100"
+                        title="View / Download / Print Student ID Card"
+                      >
+                        <CreditCard className="w-3.5 h-3.5 text-[#D97706]" />
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setSelectedProfileStudent(st)}
                         className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
                         title="View Full Student Profile"
@@ -559,9 +592,25 @@ export default function StudentDirectoryDesk() {
                           <button
                             type="button"
                             onClick={() => setSelectedProfileStudent(st)}
-                            className="font-bold text-brand-navy hover:text-brand-gold text-xs sm:text-sm text-left transition cursor-pointer"
+                            className="inline-flex items-center gap-2 font-bold text-brand-navy hover:text-brand-gold text-xs sm:text-sm text-left transition cursor-pointer"
                           >
-                            {st.studentName}
+                            {st.documents?.studentPhotoUrl ? (
+                              <img
+                                src={st.documents.studentPhotoUrl}
+                                alt={st.studentName}
+                                className="w-7 h-7 rounded-full object-cover border border-[#D97706] flex-shrink-0 bg-slate-100"
+                              />
+                            ) : (
+                              <span className="w-7 h-7 rounded-full bg-[#1A365D]/10 text-[#1A365D] border border-[#1A365D]/20 text-[10px] font-bold inline-flex items-center justify-center flex-shrink-0">
+                                {(st.studentName || 'S')
+                                  .split(' ')
+                                  .filter(Boolean)
+                                  .slice(0, 2)
+                                  .map((p) => p[0].toUpperCase())
+                                  .join('')}
+                              </span>
+                            )}
+                            <span>{st.studentName}</span>
                           </button>
                         </td>
 
@@ -713,6 +762,19 @@ export default function StudentDirectoryDesk() {
                                 )}
                               </button>
                             )}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIdCardModalTitle(`Digital ID Card — ${st.studentName}`);
+                                setIdCardModalStudents([st]);
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-[#D97706]/50 bg-amber-50 hover:bg-amber-100 text-[#1A365D] text-xs font-bold transition cursor-pointer"
+                              title="Preview, Download PNG, or Print Student ID Card"
+                            >
+                              <CreditCard className="w-3 h-3 text-[#D97706]" />
+                              <span>🪪 ID Card</span>
+                            </button>
 
                             <button
                               type="button"
@@ -930,6 +992,16 @@ export default function StudentDirectoryDesk() {
             setTimeout(() => setFeedback(''), 5000);
             fetchStudents();
           }}
+        />
+      )}
+
+      {/* Digital Student ID Card Studio & A4 Batch Print Modal */}
+      {idCardModalStudents && idCardModalStudents.length > 0 && (
+        <StudentIdCardModal
+          isOpen={Boolean(idCardModalStudents)}
+          students={idCardModalStudents}
+          title={idCardModalTitle || 'Digital Student ID Card Studio'}
+          onClose={() => setIdCardModalStudents(null)}
         />
       )}
     </div>

@@ -76,6 +76,7 @@ function normalizeStudentPayload(raw = {}, userId = null) {
     languageIII: raw.languageIII || 'Kannada',
     transportRequired: transport,
     schoolTransportOptIn: transport,
+    transportRoute: (raw.transportRoute || raw.vanRoute || (transport ? 'Route 1 - Khanatti Village' : 'Self / Walk')).trim(),
 
     studentName: (raw.studentName || '').trim(),
     dateOfBirth: raw.dateOfBirth || new Date('2019-06-01'),
@@ -565,6 +566,111 @@ exports.updateStudent = async (req, res) => {
       success: false,
       error: error.message,
       message: error.message,
+    });
+  }
+};
+
+/**
+ * GET /api/v1/students/id-cards?grade=Grade%201&section=A (or ?ids=id1,id2)
+ * Returns active/enrolled students with all fields needed for CR80 Digital ID Cards.
+ */
+exports.getStudentsForIdCards = async (req, res) => {
+  try {
+    const { grade, section, ids } = req.query;
+    const dbStatus = getDbStatus();
+
+    const projection = {
+      admissionNumber: 1,
+      studentName: 1,
+      grade: 1,
+      section: 1,
+      rollNumber: 1,
+      academicYear: 1,
+      dateOfBirth: 1,
+      bloodGroup: 1,
+      primaryPhone: 1,
+      whatsappNumber: 1,
+      fatherName: 1,
+      'father.name': 1,
+      'father.mobile': 1,
+      'father.mobileNumber': 1,
+      residentialVillage: 1,
+      residentialAddress: 1,
+      transportRequired: 1,
+      schoolTransportOptIn: 1,
+      transportRoute: 1,
+      'previousStudy.stsNumber': 1,
+      'documents.studentPhotoUrl': 1,
+      status: 1,
+    };
+
+    if (dbStatus.isConnected) {
+      const filter = { status: { $in: ['Active', 'Enrolled'] } };
+
+      if (ids && String(ids).trim()) {
+        const idList = String(ids)
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => mongoose.Types.ObjectId.isValid(s));
+        if (idList.length > 0) {
+          filter._id = { $in: idList };
+        }
+      } else {
+        if (grade && grade !== 'All' && grade !== 'All Classes' && grade !== 'all') {
+          filter.grade = grade;
+        }
+        if (section && section !== 'All' && section !== 'all') {
+          filter.section = String(section).trim().toUpperCase();
+        }
+      }
+
+      const students = await Student.find(filter, projection)
+        .sort({ grade: 1, section: 1, rollNumber: 1, studentName: 1 })
+        .lean();
+
+      return res.status(200).json({
+        success: true,
+        count: students.length,
+        students,
+        data: students,
+      });
+    }
+
+    // MemoryStore fallback
+    let results = (memoryStore.students || []).filter(
+      (st) => !st.status || st.status === 'Active' || st.status === 'Enrolled'
+    );
+
+    if (ids && String(ids).trim()) {
+      const idSet = new Set(
+        String(ids)
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      );
+      results = results.filter((st) => idSet.has(String(st._id)));
+    } else {
+      if (grade && grade !== 'All' && grade !== 'All Classes' && grade !== 'all') {
+        results = results.filter((st) => st.grade === grade);
+      }
+      if (section && section !== 'All' && section !== 'all') {
+        const sec = String(section).trim().toUpperCase();
+        results = results.filter((st) => String(st.section || 'A').toUpperCase() === sec);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: results.length,
+      students: results,
+      data: results,
+    });
+  } catch (error) {
+    console.error('[StudentController getStudentsForIdCards Error]', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to load students for ID cards.',
+      message: 'Failed to load students for ID cards.',
     });
   }
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   User,
   Calendar,
@@ -10,13 +10,16 @@ import {
   Bus,
   BookOpen,
   Users,
+  CreditCard,
 } from 'lucide-react';
 import { getStudentInitials, isSectionApplicable } from './SiblingSwitcherHeader';
 import { printStudentAdmissionSummary } from '../../utils/printStudentSummary';
 import { useLanguage } from '../../context/LanguageContext';
+import StudentIdCardModal from './StudentIdCardModal';
 
 export default function StudentOverviewTab({ student }) {
   const { t } = useLanguage();
+  const [showIdCardModal, setShowIdCardModal] = useState(false);
   if (!student) return null;
 
   const photoUrl = student.documents?.studentPhotoUrl || '';
@@ -63,14 +66,25 @@ export default function StudentOverviewTab({ student }) {
             </h3>
           </div>
 
-          <button
-            type="button"
-            onClick={() => printStudentAdmissionSummary(student)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D97706] hover:bg-amber-500 text-[#1A365D] font-bold text-xs shadow-sm transition cursor-pointer"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>{t('studentPortal.overview.printProfile')}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowIdCardModal(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/25 font-bold text-xs shadow-sm transition cursor-pointer"
+            >
+              <CreditCard className="w-3.5 h-3.5 text-[#D97706]" />
+              <span>🪪 Digital ID Card</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => printStudentAdmissionSummary(student)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D97706] hover:bg-amber-500 text-[#1A365D] font-bold text-xs shadow-sm transition cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>{t('studentPortal.overview.printProfile')}</span>
+            </button>
+          </div>
         </div>
 
         <div className="p-5 sm:p-6 flex flex-col md:flex-row items-start md:items-center gap-5">
@@ -286,11 +300,13 @@ export default function StudentOverviewTab({ student }) {
                 {t('studentPortal.overview.transport')}
               </span>
               <strong className="text-slate-800 mt-0.5 flex items-center gap-1">
-                <Bus className="w-3.5 h-3.5 text-[#D97706]" />
-                <span>
-                  {student.transportRequired || student.schoolTransportOptIn
-                    ? t('studentPortal.overview.vanOpted')
-                    : t('studentPortal.overview.selfCommute')}
+                <Bus className="w-3.5 h-3.5 text-[#D97706] flex-shrink-0" />
+                <span className="truncate">
+                  {student.transportRoute && student.transportRoute !== 'Self / Walk'
+                    ? student.transportRoute
+                    : student.transportRequired || student.schoolTransportOptIn
+                      ? t('studentPortal.overview.vanOpted')
+                      : t('studentPortal.overview.selfCommute')}
                 </span>
               </strong>
             </div>
@@ -309,6 +325,15 @@ export default function StudentOverviewTab({ student }) {
           </div>
         </div>
       </div>
+      {/* Digital Student ID Card Preview & Download Modal */}
+      {showIdCardModal && (
+        <StudentIdCardModal
+          isOpen={showIdCardModal}
+          students={[student]}
+          title={`Digital Student ID Card — ${student.studentName}`}
+          onClose={() => setShowIdCardModal(false)}
+        />
+      )}
     </div>
   );
 }

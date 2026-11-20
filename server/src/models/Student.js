@@ -91,6 +91,11 @@ const studentSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    transportRoute: {
+      type: String,
+      trim: true,
+      default: 'Self / Walk',
+    },
 
     // 1. Demographics & Compliance ("As per Aadhaar")
     studentName: {
