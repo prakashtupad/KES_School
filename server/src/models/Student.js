@@ -16,6 +16,11 @@ const paymentLogSchema = new mongoose.Schema({
     enum: ['Cash', 'Online_UPI', 'Online_Card', 'Bank_Transfer', 'Cheque_DD', 'Adjustment'],
     default: 'Cash',
   },
+  paymentCategory: {
+    type: String,
+    enum: ['ALL_COMBINED', 'TUITION_FEE', 'CAB_FEE'],
+    default: 'ALL_COMBINED',
+  },
   transactionId: { type: String, trim: true },
   receiptNumber: { type: String, trim: true },
   reason: { type: String, required: true, trim: true },
@@ -95,6 +100,25 @@ const studentSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: 'Self / Walk',
+    },
+    transportDetails: {
+      optedIn: { type: Boolean, default: false },
+      cabNumber: { type: String, trim: true, default: '' },
+      vehicleName: { type: String, trim: true, default: 'School Van 1' },
+      vehicleImageUrl: { type: String, default: '/school-cab.jpg' },
+      driverName: { type: String, trim: true, default: '' },
+      driverPhone: { type: String, trim: true, default: '' },
+      routeName: { type: String, trim: true, default: '' },
+      pickupPoint: { type: String, trim: true, default: '' },
+      pickupTime: { type: String, trim: true, default: '' },
+      dropTime: { type: String, trim: true, default: '' },
+      annualCabFee: { type: Number, default: 0 },
+      cabFeePaid: { type: Number, default: 0 },
+      cabFeeStatus: {
+        type: String,
+        enum: ['Not_Applicable', 'Pending', 'Partial', 'Paid'],
+        default: 'Not_Applicable',
+      },
     },
 
     // 1. Demographics & Compliance ("As per Aadhaar")
@@ -292,6 +316,9 @@ const studentSchema = new mongoose.Schema(
 
     // 5. Admission Fee Collection & Official Receipt Details
     feeDetails: {
+      tuitionFeeAmount: { type: Number, default: 10000 },
+      cabFeeAmount: { type: Number, default: 0 },
+      cabFeePaid: { type: Number, default: 0 },
       admissionFeeAmount: { type: Number, default: 10000 },
       amountPaid: { type: Number, default: 0 },
       balanceDue: { type: Number, default: 10000 },
@@ -333,6 +360,11 @@ const studentSchema = new mongoose.Schema(
           receiptNumber: { type: String, trim: true },
           amountPaid: { type: Number, default: 0 },
           paymentMethod: { type: String, default: 'Cash' },
+          paymentCategory: {
+            type: String,
+            enum: ['ALL_COMBINED', 'TUITION_FEE', 'CAB_FEE'],
+            default: 'ALL_COMBINED',
+          },
           transactionId: { type: String, trim: true },
           paidAt: { type: Date, default: Date.now },
           remarks: { type: String, trim: true },
@@ -454,7 +486,13 @@ studentSchema.pre('validate', function (next) {
     this.medicalAilmentOrAllergy = this.medicalAilmentsOrAllergies;
   }
 
-  if (this.schoolTransportOptIn && !this.transportRequired) {
+  if (this.transportDetails?.optedIn) {
+    this.transportRequired = true;
+    this.schoolTransportOptIn = true;
+    if (this.transportDetails.routeName) {
+      this.transportRoute = this.transportDetails.routeName;
+    }
+  } else if (this.schoolTransportOptIn && !this.transportRequired) {
     this.transportRequired = true;
   } else if (this.transportRequired && !this.schoolTransportOptIn) {
     this.schoolTransportOptIn = true;

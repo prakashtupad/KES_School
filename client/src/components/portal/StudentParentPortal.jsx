@@ -12,6 +12,7 @@ import {
   X,
   Users,
   GraduationCap,
+  Bus,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -26,6 +27,7 @@ import StudentFeesTab from './StudentFeesTab';
 import StudentCurriculumTab from './StudentCurriculumTab';
 import StudentReportCardTab from './StudentReportCardTab';
 import StudentAttendanceTab from './StudentAttendanceTab';
+import StudentTransportTab from './StudentTransportTab';
 import OurLeadership from '../OurLeadership';
 
 const PORTAL_TABS = [
@@ -139,6 +141,32 @@ export default function StudentParentPortal() {
       ? activeSiblingIndex
       : 0;
   const currentStudent = siblings[safeIndex] || null;
+  const hasTransportOptIn = Boolean(currentStudent?.transportDetails?.optedIn);
+
+  const visibleTabs = useMemo(() => {
+    if (!hasTransportOptIn) return PORTAL_TABS;
+    const transportTab = {
+      id: 'transport',
+      labelKey: 'studentPortal.tabs.transport',
+      shortKey: 'studentPortal.tabs.transportShort',
+      icon: Bus,
+    };
+    // Insert Transportation right after Fee Ledger & Receipts
+    const feesIdx = PORTAL_TABS.findIndex((tab) => tab.id === 'fees');
+    if (feesIdx === -1) return [...PORTAL_TABS, transportTab];
+    return [
+      ...PORTAL_TABS.slice(0, feesIdx + 1),
+      transportTab,
+      ...PORTAL_TABS.slice(feesIdx + 1),
+    ];
+  }, [hasTransportOptIn]);
+
+  // If parent switches to a sibling who has NOT opted into School Cab, exit the transport tab cleanly
+  useEffect(() => {
+    if (activeTab === 'transport' && !hasTransportOptIn) {
+      setActiveTab('overview');
+    }
+  }, [activeTab, hasTransportOptIn]);
 
   const handleLogout = () => {
     logout();
@@ -291,7 +319,7 @@ export default function StudentParentPortal() {
                 {t('studentPortal.dashboardMenu')}
               </div>
               <nav className="space-y-1" aria-label="Student Portal Tabs">
-                {PORTAL_TABS.map((tab) => {
+                {visibleTabs.map((tab) => {
                   const IconComponent = tab.icon;
                   const isActive = activeTab === tab.id;
                   return (
@@ -354,7 +382,7 @@ export default function StudentParentPortal() {
 
               {/* Mobile Quick Horizontal Tab Switcher */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:hidden">
-                {PORTAL_TABS.map((tab) => {
+                {visibleTabs.map((tab) => {
                   const IconComponent = tab.icon;
                   const isActive = activeTab === tab.id;
                   return (
@@ -392,6 +420,12 @@ export default function StudentParentPortal() {
                 />
               )}
               {activeTab === 'fees' && <StudentFeesTab student={currentStudent} />}
+              {activeTab === 'transport' && hasTransportOptIn && (
+                <StudentTransportTab
+                  student={currentStudent}
+                  onOpenFeesTab={() => setActiveTab('fees')}
+                />
+              )}
               {activeTab === 'homework' && (
                 <StudentCurriculumTab
                   student={currentStudent}

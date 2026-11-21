@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   CalendarCheck,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
@@ -8,6 +9,7 @@ import {
   Clock,
   Info,
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -66,6 +68,8 @@ export default function StudentAttendanceTab({
   attendanceData,
   loading = false,
 }) {
+  const { language } = useLanguage();
+  const isKn = language === 'kn';
   const [selectedDayRecord, setSelectedDayRecord] = useState(null);
 
   const summary = attendanceData?.summary || {
@@ -75,11 +79,22 @@ export default function StudentAttendanceTab({
     lateDays: 0,
     halfDayCount: 0,
     excusedLeaveDays: 0,
+    holidayDays: 0,
     attendancePercentage: 100,
   };
 
   const dailyRecords = useMemo(
     () => (Array.isArray(attendanceData?.dailyRecords) ? attendanceData.dailyRecords : []),
+    [attendanceData]
+  );
+
+  const monthHolidays = useMemo(
+    () => (Array.isArray(attendanceData?.holidays) ? attendanceData.holidays : []),
+    [attendanceData]
+  );
+
+  const holidayDatesMap = useMemo(
+    () => attendanceData?.holidayDatesMap || {},
     [attendanceData]
   );
 
@@ -110,11 +125,12 @@ export default function StudentAttendanceTab({
         day,
         dateStr,
         isSunday: dow === 0,
+        holiday: holidayDatesMap[dateStr] || null,
         record: recordByDate.get(dateStr) || null,
       });
     }
     return cells;
-  }, [selectedMonth, recordByDate]);
+  }, [selectedMonth, recordByDate, holidayDatesMap]);
 
   if (!student) return null;
 
@@ -258,6 +274,10 @@ export default function StudentAttendanceTab({
               Late / Leave
             </span>
             <span className="inline-flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 inline-block" />
+              Holiday
+            </span>
+            <span className="inline-flex items-center gap-1">
               <span className="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block" />
               Sunday / Unmarked
             </span>
@@ -290,34 +310,56 @@ export default function StudentAttendanceTab({
                 }
 
                 const rec = cell.record;
+                const hol = cell.holiday;
                 const stStyle = rec ? STATUS_STYLE[rec.status] : null;
                 const isSelected = selectedDayRecord?.date === cell.dateStr;
+                const holLabel = hol ? (isKn && hol.titleKn ? hol.titleKn : hol.title) : '';
 
                 return (
                   <button
                     key={cell.key}
                     type="button"
-                    onClick={() => setSelectedDayRecord(rec || null)}
+                    onClick={() =>
+                      setSelectedDayRecord(
+                        rec ||
+                          (hol
+                            ? {
+                                date: cell.dateStr,
+                                status: 'Holiday',
+                                remarks: `${hol.title}${hol.titleKn ? ` (${hol.titleKn})` : ''}`,
+                              }
+                            : null)
+                      )
+                    }
                     title={
-                      rec
-                        ? `${cell.dateStr}: ${stStyle?.label || rec.status}${rec.remarks ? ` — ${rec.remarks}` : ''}`
-                        : cell.isSunday
-                          ? 'Sunday / Holiday'
-                          : 'No attendance marked'
+                      hol
+                        ? `${cell.dateStr}: Holiday — ${holLabel}`
+                        : rec
+                          ? `${cell.dateStr}: ${stStyle?.label || rec.status}${rec.remarks ? ` — ${rec.remarks}` : ''}`
+                          : cell.isSunday
+                            ? 'Sunday (Weekly Off)'
+                            : 'No attendance marked'
                     }
                     className={`h-14 sm:h-16 rounded-xl border p-1.5 flex flex-col items-center justify-between transition ${
-                      stStyle
-                        ? `${stStyle.cell} cursor-pointer hover:shadow-xs`
-                        : cell.isSunday
-                          ? 'bg-slate-100/80 border-slate-200 text-slate-400 cursor-default'
-                          : 'bg-white border-slate-200 text-slate-500 cursor-default'
+                      hol
+                        ? 'bg-indigo-50 border-indigo-300 text-indigo-950 cursor-pointer hover:shadow-xs'
+                        : stStyle
+                          ? `${stStyle.cell} cursor-pointer hover:shadow-xs`
+                          : cell.isSunday
+                            ? 'bg-slate-100/80 border-slate-200 text-slate-400 cursor-default'
+                            : 'bg-white border-slate-200 text-slate-500 cursor-default'
                     } ${isSelected ? 'ring-2 ring-[#1A365D]' : ''}`}
                   >
                     <span className="text-xs font-mono font-bold self-start leading-none">
                       {cell.day}
                     </span>
 
-                    {stStyle ? (
+                    {hol ? (
+                      <span className="px-1.5 py-0.5 rounded-md text-[8.5px] sm:text-[9.5px] font-bold leading-none bg-indigo-600 text-white max-w-full truncate">
+                        <span className="sm:hidden">Hol</span>
+                        <span className="hidden sm:inline">{holLabel}</span>
+                      </span>
+                    ) : stStyle ? (
                       <span
                         className={`px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold leading-none ${stStyle.badge}`}
                       >
@@ -356,6 +398,48 @@ export default function StudentAttendanceTab({
           </>
         )}
       </div>
+
+      {/* Holidays in Selected Month Summary List */}
+      {monthHolidays.length > 0 && (
+        <div className="bg-white rounded-2xl border border-indigo-200 p-4 sm:p-5 shadow-sm space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-indigo-600" />
+              <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#1A365D]">
+                Holidays in {formatMonthLabel(selectedMonth)} ({monthHolidays.length})
+              </h4>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+              Excluded from Working Days
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {monthHolidays.map((h) => (
+              <div
+                key={h._id || `${h.startDate}-${h.title}`}
+                className="p-3 rounded-xl bg-indigo-50/60 border border-indigo-200/80 flex items-center justify-between gap-2 text-xs"
+              >
+                <div className="min-w-0">
+                  <div className="font-bold text-[#1A365D] truncate">
+                    {isKn && h.titleKn ? h.titleKn : h.title}
+                  </div>
+                  {!isKn && h.titleKn && (
+                    <div className="text-[11px] text-slate-600 font-kannada truncate">
+                      {h.titleKn}
+                    </div>
+                  )}
+                </div>
+                <span className="font-mono font-bold text-[11px] px-2 py-1 rounded-lg bg-white border border-indigo-200 text-indigo-800 whitespace-nowrap flex-shrink-0">
+                  {h.endDate && h.endDate !== h.startDate
+                    ? `${h.startDate.slice(5)} → ${h.endDate.slice(5)}`
+                    : h.startDate}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Absence / Late / Leave Remarks List */}
       {nonPresentDays.length > 0 && (

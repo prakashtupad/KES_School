@@ -114,6 +114,24 @@ export default function PrintableFeeReceipt({ student, onClose }) {
   const amountPaid = Number(feeDetails.amountPaid ?? feeDetails.admissionFeeAmount ?? 500);
   const totalFee = Math.max(Number(feeDetails.admissionFeeAmount ?? amountPaid), amountPaid);
   const balanceDue = Math.max(0, Number(feeDetails.balanceDue ?? totalFee - amountPaid));
+  const hasCabFee =
+    Boolean(student.transportDetails?.optedIn) || Number(feeDetails.cabFeeAmount || 0) > 0;
+  const cabFeeTotal = hasCabFee
+    ? Number(student.transportDetails?.annualCabFee || feeDetails.cabFeeAmount || 6000)
+    : 0;
+  const cabFeePaid = hasCabFee
+    ? Math.min(
+        cabFeeTotal,
+        Number(student.transportDetails?.cabFeePaid ?? feeDetails.cabFeePaid ?? 0)
+      )
+    : 0;
+  const cabFeeDue = Math.max(0, cabFeeTotal - cabFeePaid);
+  const tuitionFeeTotal = hasCabFee
+    ? Math.max(0, Number(feeDetails.tuitionFeeAmount || totalFee - cabFeeTotal || 10000))
+    : totalFee;
+  const tuitionFeePaid = hasCabFee
+    ? Math.max(0, amountPaid - cabFeePaid)
+    : amountPaid;
   const amountWords = numberToIndianWords(amountPaid);
   const paymentMode = formatPaymentMethodLabel(feeDetails.paymentMethod);
   const txnRef = feeDetails.transactionId || 'OFFICE-CASH-COUNTER';
@@ -308,8 +326,21 @@ export default function PrintableFeeReceipt({ student, onClose }) {
                 ${feeDetails.remarks ? `<div style="font-size: 10px; color: #475569; margin-top: 2px;">Note: ${feeDetails.remarks}</div>` : ''}
               </td>
               <td style="font-size: 10.5px;">${paymentMode}<br/><span style="font-family: monospace;">${txnRef}</span></td>
-              <td style="text-align: right; font-family: monospace; font-weight: bold;">₹ ${amountPaid.toFixed(2)}</td>
+              <td style="text-align: right; font-family: monospace; font-weight: bold;">₹ ${(hasCabFee ? tuitionFeePaid : amountPaid).toFixed(2)}</td>
             </tr>
+            ${
+              hasCabFee
+                ? `<tr>
+                    <td style="text-align: center;">2</td>
+                    <td>
+                      <strong>School Cab / Transport Facility Fee (AY ${academicYear})</strong>
+                      <br/><span style="font-size: 10px; color: #475569;">Annual Cab Fee: ₹ ${cabFeeTotal.toFixed(2)} • Paid: ₹ ${cabFeePaid.toFixed(2)} • ${cabFeeDue > 0 ? `Pending Due: ₹ ${cabFeeDue.toFixed(2)}` : 'Paid in Full'}</span>
+                    </td>
+                    <td style="font-size: 10.5px;">${student.transportDetails?.cabNumber || 'School Cab'}</td>
+                    <td style="text-align: right; font-family: monospace; font-weight: bold;">₹ ${cabFeePaid.toFixed(2)}</td>
+                  </tr>`
+                : ''
+            }
             <tr class="total-row">
               <td colspan="3" style="text-align: right;">TOTAL AMOUNT RECEIVED${balanceDue > 0 ? ` (Balance Due: ₹ ${balanceDue.toFixed(2)})` : ''}:</td>
               <td style="text-align: right; font-family: monospace; font-size: 13px; color: #065f46;">₹ ${amountPaid.toFixed(2)}</td>
@@ -688,9 +719,29 @@ export default function PrintableFeeReceipt({ student, onClose }) {
                 <span className="block font-mono text-[10px] text-slate-500">{txnRef}</span>
               </td>
               <td className="border border-slate-300 p-2 text-right font-mono font-bold">
-                ₹ {amountPaid.toFixed(2)}
+                ₹ {(hasCabFee ? tuitionFeePaid : amountPaid).toFixed(2)}
               </td>
             </tr>
+            {hasCabFee && (
+              <tr>
+                <td className="border border-slate-300 p-2 text-center">2</td>
+                <td className="border border-slate-300 p-2 font-medium">
+                  School Cab / Transport Facility Fee (AY {academicYear})
+                  <span className="block text-[10px] text-slate-600 font-normal mt-0.5">
+                    Annual Cab Fee: ₹ {cabFeeTotal.toFixed(2)} • Paid: ₹ {cabFeePaid.toFixed(2)} •{' '}
+                    <strong className={cabFeeDue > 0 ? 'text-amber-800' : 'text-emerald-700'}>
+                      {cabFeeDue > 0 ? `Pending Due: ₹ ${cabFeeDue.toFixed(2)}` : 'Paid in Full'}
+                    </strong>
+                  </span>
+                </td>
+                <td className="border border-slate-300 p-2 text-[11px] font-mono">
+                  {student.transportDetails?.cabNumber || 'School Cab'}
+                </td>
+                <td className="border border-slate-300 p-2 text-right font-mono font-bold">
+                  ₹ {cabFeePaid.toFixed(2)}
+                </td>
+              </tr>
+            )}
             <tr className="bg-slate-50 font-bold">
               <td colSpan={3} className="border border-slate-300 p-2 text-right uppercase">
                 Total Amount Received:

@@ -11,6 +11,7 @@ import {
   History,
   PencilLine,
   ShieldAlert,
+  Bus,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import PrintableFeeReceipt, { numberToIndianWords } from './PrintableFeeReceipt';
@@ -55,6 +56,7 @@ export default function AdmissionPaymentModal({
   const [correctionReason, setCorrectionReason] = useState('');
 
   const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [paymentCategory, setPaymentCategory] = useState('ALL_COMBINED');
   const [transactionId, setTransactionId] = useState('');
   const [remarks, setRemarks] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -110,6 +112,7 @@ export default function AdmissionPaymentModal({
           ? student.feeDetails.paymentMethod
           : 'Cash'
       );
+      setPaymentCategory('ALL_COMBINED');
       setTransactionId(
         prevPaid > 0 && prevBalance === 0 ? student.feeDetails?.transactionId || '' : ''
       );
@@ -136,6 +139,55 @@ export default function AdmissionPaymentModal({
   const isCorrectionMode = hasPreviousPayment && collectionMode === 'correct';
   const isRemainingMode = hasPreviousPayment && collectionMode === 'remaining';
   const baseAlreadyPaid = isRemainingMode ? existingPaid : 0;
+
+  // School Cab Transport Fee Breakdown
+  const hasCabOptIn =
+    Boolean(student.transportDetails?.optedIn) ||
+    Number(student.feeDetails?.cabFeeAmount || 0) > 0;
+  const annualCabFee = hasCabOptIn
+    ? Number(student.transportDetails?.annualCabFee || student.feeDetails?.cabFeeAmount || 6000)
+    : 0;
+  const cabFeePaid = hasCabOptIn
+    ? Math.min(
+        annualCabFee,
+        Number(student.transportDetails?.cabFeePaid ?? student.feeDetails?.cabFeePaid ?? 0)
+      )
+    : 0;
+  const cabFeeDue = Math.max(0, annualCabFee - cabFeePaid);
+  const tuitionFeeTotal = hasCabOptIn
+    ? Math.max(
+        0,
+        Number(student.feeDetails?.tuitionFeeAmount || existingTotal - annualCabFee || 10000)
+      )
+    : existingTotal;
+  const tuitionFeePaid = Math.min(tuitionFeeTotal, Math.max(0, existingPaid - cabFeePaid));
+  const tuitionFeeDue = Math.max(0, tuitionFeeTotal - tuitionFeePaid);
+
+  const handleSelectPaymentCategory = (cat) => {
+    setPaymentCategory(cat);
+    setErrorMsg('');
+    if (cat === 'CAB_FEE') {
+      const target = Math.min(maxPayableNow, cabFeeDue);
+      setPayingNow(target);
+      setClearFullPayment(target >= maxPayableNow && maxPayableNow > 0);
+      setRemarks(
+        `School Cab Facility Fee (₹${annualCabFee.toLocaleString('en-IN')}) collected by ${user?.fullName || 'Office Admin'}`
+      );
+    } else if (cat === 'TUITION_FEE') {
+      const target = Math.min(maxPayableNow, tuitionFeeDue);
+      setPayingNow(target);
+      setClearFullPayment(target >= maxPayableNow && maxPayableNow > 0);
+      setRemarks(
+        `Tuition Fee Installment collected by ${user?.fullName || 'Office Admin'}`
+      );
+    } else {
+      setPayingNow(maxPayableNow);
+      setClearFullPayment(true);
+      setRemarks(
+        `Combined Tuition & School Cab Fee collected by ${user?.fullName || 'Office Admin'}`
+      );
+    }
+  };
 
   // Calculations for Collect / Installment mode
   const numericTotalFee = Math.max(0, Number(totalFeeAmount) || 0);
@@ -320,6 +372,7 @@ export default function AdmissionPaymentModal({
           admissionFeeAmount: effectiveTotalFee,
           isRemainingPayment: isRemainingMode,
           paymentMethod,
+          paymentCategory: hasCabOptIn ? paymentCategory : 'ALL_COMBINED',
           transactionId:
             transactionId.trim() ||
             (paymentMethod === 'Cash'
@@ -449,6 +502,106 @@ export default function AdmissionPaymentModal({
               <strong className="font-mono text-slate-800">+91 {student.primaryPhone}</strong>
             </div>
           </div>
+
+          {/* Itemized Tuition + School Cab Fee Breakdown (when opted in) */}
+          {hasCabOptIn && (
+            <div className="px-5 py-3.5 bg-amber-50/60 border-b border-[#D97706]/30 space-y-2.5 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] text-[#1A365D]">
+                  <Bus className="w-4 h-4 text-[#D97706]" />
+                  <span>Tuition + School Cab Fee Breakdown</span>
+                </span>
+                {student.transportDetails?.cabNumber && (
+                  <span className="font-mono font-bold text-[10px] px-2 py-0.5 rounded bg-[#1A365D] text-amber-300">
+                    {student.transportDetails.cabNumber}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="p-2.5 rounded-lg bg-white border border-slate-200">
+                  <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                    School Tuition Fee
+                  </span>
+                  <div className="font-mono font-bold text-[#1A365D] mt-0.5">
+                    ₹{tuitionFeeTotal.toLocaleString('en-IN')}
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-mono">
+                    Paid: ₹{tuitionFeePaid.toLocaleString('en-IN')} | Due:{' '}
+                    <strong className={tuitionFeeDue > 0 ? 'text-amber-700' : 'text-emerald-700'}>
+                      ₹{tuitionFeeDue.toLocaleString('en-IN')}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-white border border-[#D97706]/40">
+                  <span className="text-[10px] font-bold uppercase text-[#D97706] block">
+                    School Cab Facility Fee
+                  </span>
+                  <div className="font-mono font-bold text-[#1A365D] mt-0.5">
+                    ₹{annualCabFee.toLocaleString('en-IN')}
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-mono">
+                    Paid: ₹{cabFeePaid.toLocaleString('en-IN')} |{' '}
+                    <strong className={cabFeeDue > 0 ? 'text-red-600' : 'text-emerald-700'}>
+                      {cabFeeDue > 0 ? `Due: ₹${cabFeeDue.toLocaleString('en-IN')}` : 'Paid'}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-[#1A365D] text-white">
+                  <span className="text-[10px] font-bold uppercase text-amber-300 block">
+                    Grand Total Payable
+                  </span>
+                  <div className="font-mono font-bold text-base mt-0.5">
+                    ₹{Math.max(0, existingTotal - existingPaid).toLocaleString('en-IN')}
+                  </div>
+                  <div className="text-[10px] text-slate-300 font-mono">
+                    Total: ₹{existingTotal.toLocaleString('en-IN')}
+                  </div>
+                </div>
+              </div>
+
+              {!isCorrectionMode && maxPayableNow > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[10px] font-bold uppercase text-slate-600 mr-1">
+                    Pay Towards:
+                  </span>
+                  {[
+                    {
+                      id: 'ALL_COMBINED',
+                      label: `Combined Due (₹${maxPayableNow.toLocaleString('en-IN')})`,
+                      disabled: false,
+                    },
+                    {
+                      id: 'CAB_FEE',
+                      label: `School Cab Fee (₹${cabFeeDue.toLocaleString('en-IN')})`,
+                      disabled: cabFeeDue <= 0,
+                    },
+                    {
+                      id: 'TUITION_FEE',
+                      label: `Tuition Fee (₹${tuitionFeeDue.toLocaleString('en-IN')})`,
+                      disabled: tuitionFeeDue <= 0,
+                    },
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      disabled={opt.disabled}
+                      onClick={() => handleSelectPaymentCategory(opt.id)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                        paymentCategory === opt.id
+                          ? 'bg-[#1A365D] text-white border-[#1A365D] shadow-xs'
+                          : 'bg-white text-[#1A365D] border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Previous Payment Summary & Two-Mode Toggle Strip */}
           {hasPreviousPayment && (

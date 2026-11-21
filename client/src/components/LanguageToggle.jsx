@@ -28,14 +28,15 @@ export default function LanguageToggle({ compact = false, className = '' }) {
           type="button"
           onClick={() => setLanguage('en')}
           aria-pressed={!isKannada}
-          className={`flex items-center justify-center gap-0.5 md:gap-1.5 rounded-full font-bold transition-colors duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
+          aria-label="English"
+          className={`flex items-center justify-center md:gap-1.5 rounded-full font-bold transition-colors duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
             compact
-              ? 'px-2 py-1 text-[11px] md:px-2.5 md:py-1 md:text-[11px]'
-              : 'px-2 py-1 text-[11px] md:px-3 md:py-1 md:text-xs'
+              ? 'p-1 md:px-2.5 md:py-1 text-[11px]'
+              : 'p-1 md:px-3 md:py-1 text-xs'
           } ${!isKannada ? 'text-white' : 'text-slate-600 hover:text-[#1A365D]'}`}
         >
           <span
-            className={`hidden md:inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] font-extrabold leading-none shrink-0 ${
+            className={`inline-flex items-center justify-center w-[22px] h-[22px] md:w-[18px] md:h-[18px] rounded-full text-[11px] md:text-[10px] font-extrabold leading-none shrink-0 ${
               !isKannada
                 ? 'bg-white/20 text-amber-300'
                 : 'bg-slate-200/80 text-[#1A365D]'
@@ -43,7 +44,6 @@ export default function LanguageToggle({ compact = false, className = '' }) {
           >
             A
           </span>
-          <span className="md:hidden">EN</span>
           <span className="hidden md:inline">English</span>
         </button>
 
@@ -51,14 +51,15 @@ export default function LanguageToggle({ compact = false, className = '' }) {
           type="button"
           onClick={() => setLanguage('kn')}
           aria-pressed={isKannada}
-          className={`flex items-center justify-center gap-0.5 md:gap-1.5 rounded-full font-bold font-kannada transition-colors duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
+          aria-label="ಕನ್ನಡ (Kannada)"
+          className={`flex items-center justify-center md:gap-1.5 rounded-full font-bold font-kannada transition-colors duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
             compact
-              ? 'px-2 py-1 text-[11px] md:px-2.5 md:py-1 md:text-[11px]'
-              : 'px-2 py-1 text-[11px] md:px-3 md:py-1 md:text-xs'
+              ? 'p-1 md:px-2.5 md:py-1 text-[11px]'
+              : 'p-1 md:px-3 md:py-1 text-xs'
           } ${isKannada ? 'text-white' : 'text-slate-600 hover:text-[#1A365D]'}`}
         >
           <span
-            className={`hidden md:inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] font-extrabold !leading-none shrink-0 font-kannada ${
+            className={`inline-flex items-center justify-center w-[22px] h-[22px] md:w-[18px] md:h-[18px] rounded-full text-[11px] md:text-[10px] font-extrabold !leading-none shrink-0 font-kannada ${
               isKannada
                 ? 'bg-white/20 text-white'
                 : 'bg-slate-200/80 text-[#1A365D]'
@@ -66,7 +67,6 @@ export default function LanguageToggle({ compact = false, className = '' }) {
           >
             <span className="translate-y-[1.5px]">ಅ</span>
           </span>
-          <span className="md:hidden font-sans">KA</span>
           <span className="hidden md:inline translate-y-[0.5px]">ಕನ್ನಡ</span>
         </button>
       </div>

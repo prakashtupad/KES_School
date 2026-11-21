@@ -15,6 +15,7 @@ import {
   X,
   Shield,
   Layers,
+  CalendarDays,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -75,6 +76,12 @@ const NAV_CONFIG = [
     key: 'portal.noticesCirculars',
     to: '/portal/notices',
     icon: Bell,
+    roles: ['admin', 'teacher'],
+  },
+  {
+    key: 'portal.holidayCalendar',
+    to: '/portal/holidays',
+    icon: CalendarDays,
     roles: ['admin', 'teacher'],
   },
   {

@@ -3,6 +3,11 @@ const StudentAttendance = require('../models/StudentAttendance');
 const Student = require('../models/Student');
 const { getDbStatus } = require('../config/db');
 const memoryStore = require('../utils/memoryStore');
+const {
+  isSundayDateStr,
+  checkDateHolidayStatus,
+  getMonthHolidaysMap,
+} = require('../seed/seedHolidays');
 
 const VALID_STATUSES = ['Present', 'Absent', 'Late', 'Half-Day', 'Excused_Leave'];
 
@@ -54,15 +59,19 @@ const enrichAbsenteeList = (records, studentsById, grade, section) => {
     });
 };
 
-const computeSummaryFromRecords = (dailyRecords) => {
-  const totalWorkingDays = dailyRecords.length;
+const computeSummaryFromRecords = (dailyRecords, holidayDatesMap = {}) => {
+  // Exclude Sundays and SchoolHolidays from totalWorkingDays denominator
+  const workingDayRecords = dailyRecords.filter(
+    (r) => !isSundayDateStr(r.date) && !holidayDatesMap[r.date]
+  );
+  const totalWorkingDays = workingDayRecords.length;
   let presentDays = 0;
   let absentDays = 0;
   let lateDays = 0;
   let halfDayCount = 0;
   let excusedLeaveDays = 0;
 
-  for (const r of dailyRecords) {
+  for (const r of workingDayRecords) {
     if (r.status === 'Present') presentDays += 1;
     else if (r.status === 'Absent') absentDays += 1;
     else if (r.status === 'Late') lateDays += 1;
@@ -84,6 +93,7 @@ const computeSummaryFromRecords = (dailyRecords) => {
     lateDays,
     halfDayCount,
     excusedLeaveDays,
+    holidayDays: Object.keys(holidayDatesMap).length,
     attendancePercentage,
   };
 };
@@ -211,9 +221,14 @@ exports.getClassAttendanceSheet = async (req, res) => {
       ? enrichAbsenteeList(mergedRecords, studentsById, grade, section)
       : [];
 
+    const holidayStatus = await checkDateHolidayStatus(date, 'students');
+
     return res.status(200).json({
       success: true,
       isAlreadyMarked: Boolean(existingSheet),
+      isHoliday: holidayStatus.isHoliday,
+      isSunday: holidayStatus.isSunday,
+      holidayInfo: holidayStatus.holidayInfo,
       date,
       grade,
       section,
@@ -603,7 +618,8 @@ exports.getStudentMonthlyAttendance = async (req, res) => {
       })
       .filter(Boolean);
 
-    const summary = computeSummaryFromRecords(dailyRecords);
+    const { holidays, holidayDatesMap } = await getMonthHolidaysMap(month, 'students');
+    const summary = computeSummaryFromRecords(dailyRecords, holidayDatesMap);
 
     return res.status(200).json({
       success: true,
@@ -611,6 +627,8 @@ exports.getStudentMonthlyAttendance = async (req, res) => {
       month,
       summary,
       dailyRecords,
+      holidays,
+      holidayDatesMap,
     });
   } catch (error) {
     console.error('[Get Student Monthly Attendance Error]', error);
@@ -678,6 +696,8 @@ exports.getSiblingsAttendanceSummary = async (req, res) => {
         .sort((a, b) => a.date.localeCompare(b.date));
     }
 
+    const { holidays, holidayDatesMap } = await getMonthHolidaysMap(month, 'students');
+
     const byStudentId = {};
     for (const id of requestedIds) {
       const dailyRecords = [];
@@ -696,14 +716,18 @@ exports.getSiblingsAttendanceSummary = async (req, res) => {
         }
       }
       byStudentId[String(id)] = {
-        summary: computeSummaryFromRecords(dailyRecords),
+        summary: computeSummaryFromRecords(dailyRecords, holidayDatesMap),
         dailyRecords,
+        holidays,
+        holidayDatesMap,
       };
     }
 
     return res.status(200).json({
       success: true,
       month,
+      holidays,
+      holidayDatesMap,
       byStudentId,
     });
   } catch (error) {

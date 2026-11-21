@@ -13,6 +13,7 @@ import OurLeadership from './components/OurLeadership';
 import CampusLifeSection from './components/CampusLifeSection';
 import AdmissionsCallout from './components/AdmissionsCallout';
 import NewsSection from './components/NewsSection';
+import UpcomingHolidaysSection from './components/UpcomingHolidaysSection';
 import EnquiryForm from './components/EnquiryForm';
 import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
@@ -32,6 +33,7 @@ import AdminStaffAttendanceRegister from './components/portal/AdminStaffAttendan
 import StudentDirectoryDesk from './components/portal/StudentDirectoryDesk';
 import WebsiteContentDesk from './components/portal/WebsiteContentDesk';
 import DailyAttendanceDesk from './components/portal/DailyAttendanceDesk';
+import HolidayCalendarDesk from './components/portal/HolidayCalendarDesk';
 import StudentParentPortal from './components/portal/StudentParentPortal';
 
 function PublicHomePage() {
@@ -72,6 +74,9 @@ function PublicHomePage() {
 
         {/* Official Notices & News Updates Section */}
         <NewsSection />
+
+        {/* Academic Calendar & Upcoming Holidays Section */}
+        <UpcomingHolidaysSection />
 
         {/* Validated Admissions Enquiry Form */}
         <EnquiryForm />
@@ -209,6 +214,16 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['admin', 'teacher', 'super_admin']}>
                   <DailyAttendanceDesk />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 2026 & 2027 School Holiday Calendar & Term Break Manager */}
+            <Route
+              path="holidays"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'teacher', 'super_admin']}>
+                  <HolidayCalendarDesk />
                 </ProtectedRoute>
               }
             />

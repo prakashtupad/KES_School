@@ -94,6 +94,10 @@ export default function DailyAttendanceDesk() {
   const [absentees, setAbsentees] = useState([]);
   const [isAlreadyMarked, setIsAlreadyMarked] = useState(false);
   const [sheetMeta, setSheetMeta] = useState(null);
+  const [isHoliday, setIsHoliday] = useState(false);
+  const [holidayInfo, setHolidayInfo] = useState(null);
+  const [overrideHoliday, setOverrideHoliday] = useState(false);
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -122,6 +126,9 @@ export default function DailyAttendanceDesk() {
       setAbsentees(Array.isArray(data.absentees) ? data.absentees : []);
       setIsAlreadyMarked(Boolean(data.isAlreadyMarked));
       setSheetMeta(data.sheet || null);
+      setIsHoliday(Boolean(data.isHoliday));
+      setHolidayInfo(data.holidayInfo || null);
+      setOverrideHoliday(false);
     } catch (err) {
       setErrorMsg(err.message || 'Error loading attendance sheet.');
       setRecords([]);
@@ -358,7 +365,7 @@ export default function DailyAttendanceDesk() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              disabled={records.length === 0}
+              disabled={records.length === 0 || (isHoliday && !overrideHoliday)}
               onClick={handleMarkAllPresent}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 text-emerald-800 border border-emerald-300 font-bold text-xs transition cursor-pointer"
             >
@@ -368,7 +375,7 @@ export default function DailyAttendanceDesk() {
 
             <button
               type="button"
-              disabled={saving || records.length === 0}
+              disabled={saving || records.length === 0 || (isHoliday && !overrideHoliday)}
               onClick={handleSaveAttendance}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1A365D] hover:bg-brand-navyDark disabled:opacity-60 text-white font-bold text-xs sm:text-sm shadow-sm transition cursor-pointer"
             >
@@ -378,6 +385,43 @@ export default function DailyAttendanceDesk() {
           </div>
         </div>
       </div>
+
+      {/* School Holiday / Sunday Attendance Lock Banner */}
+      {isHoliday && holidayInfo && (
+        <div className="rounded-2xl border-2 border-indigo-300 bg-gradient-to-r from-indigo-50 via-white to-amber-50 p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-700 block">
+                {holidayInfo.isFlagHoistingDay
+                  ? 'National Observance • Flag Hoisting Day'
+                  : 'School Holiday — Attendance Marking Locked'}
+              </span>
+              <h3 className="text-sm sm:text-base font-serif font-bold text-[#1A365D]">
+                School Holiday: {holidayInfo.title}
+                {holidayInfo.titleKn ? ` (${holidayInfo.titleKn})` : ''}
+              </h3>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Regular attendance &amp; absentee WhatsApp alerts are automatically disabled on holidays so students are not marked absent by mistake.
+              </p>
+            </div>
+          </div>
+
+          {isAdmin && (
+            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-indigo-200 text-xs font-bold text-[#1A365D] cursor-pointer flex-shrink-0 shadow-2xs">
+              <input
+                type="checkbox"
+                checked={overrideHoliday}
+                onChange={(e) => setOverrideHoliday(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-indigo-600 cursor-pointer"
+              />
+              <span>Override for Special Campus Event</span>
+            </label>
+          )}
+        </div>
+      )}
 
       {/* Live Attendance Summary KPI Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

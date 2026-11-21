@@ -81,10 +81,16 @@ exports.recordFeePayment = async (req, res) => {
       admissionFeeAmount,
       isRemainingPayment = false,
       paymentMethod = 'Cash',
+      paymentCategory = 'ALL_COMBINED',
       transactionId = '',
       voucherNumber = '',
       remarks = '',
     } = req.body || {};
+
+    const validCategories = ['ALL_COMBINED', 'TUITION_FEE', 'CAB_FEE'];
+    const resolvedCategory = validCategories.includes(paymentCategory)
+      ? paymentCategory
+      : 'ALL_COMBINED';
 
     if (!studentId) {
       return res.status(400).json({
@@ -180,6 +186,7 @@ exports.recordFeePayment = async (req, res) => {
         receiptNumber: receiptNo,
         amountPaid: numericInputPaid,
         paymentMethod: resolvedMethod,
+        paymentCategory: resolvedCategory,
         transactionId: resolvedTxnId,
         paidAt: now,
         remarks: resolvedRemarks,
@@ -200,6 +207,7 @@ exports.recordFeePayment = async (req, res) => {
         previousTotalFee,
         newTotalFee: totalFee,
         paymentMethod: logPaymentMethod,
+        paymentCategory: resolvedCategory,
         transactionId: resolvedTxnId,
         receiptNumber: receiptNo,
         reason: resolvedRemarks,
@@ -207,8 +215,55 @@ exports.recordFeePayment = async (req, res) => {
         timestamp: now,
       });
 
+      // Reconcile School Cab Fee allocation if student opted into transportDetails
+      const hasCabOptIn = Boolean(student.transportDetails?.optedIn);
+      const annualCabFee = hasCabOptIn
+        ? Number(student.transportDetails?.annualCabFee || student.feeDetails?.cabFeeAmount || 6000)
+        : 0;
+      const tuitionFeeAmount = hasCabOptIn
+        ? Math.max(0, totalFee - annualCabFee)
+        : totalFee;
+
+      let newCabFeePaid = Number(
+        student.transportDetails?.cabFeePaid ?? student.feeDetails?.cabFeePaid ?? 0
+      );
+      if (hasCabOptIn) {
+        if (resolvedCategory === 'CAB_FEE') {
+          newCabFeePaid = Math.min(annualCabFee, newCabFeePaid + numericInputPaid);
+        } else if (resolvedCategory === 'ALL_COMBINED') {
+          // If paying full combined balance, cab fee is fully paid; otherwise allocate excess above tuition
+          if (balanceDue === 0) {
+            newCabFeePaid = annualCabFee;
+          } else {
+            const overflowToCab = Math.max(0, cumulativePaid - tuitionFeeAmount);
+            newCabFeePaid = Math.min(annualCabFee, Math.max(newCabFeePaid, overflowToCab));
+          }
+        } else if (resolvedCategory === 'TUITION_FEE' && balanceDue === 0) {
+          newCabFeePaid = annualCabFee;
+        }
+
+        const newCabFeeStatus =
+          newCabFeePaid >= annualCabFee
+            ? 'Paid'
+            : newCabFeePaid > 0
+              ? 'Partial'
+              : 'Pending';
+
+        student.transportDetails = {
+          ...(student.transportDetails.toObject?.() || student.transportDetails),
+          annualCabFee,
+          cabFeePaid: newCabFeePaid,
+          cabFeeStatus: newCabFeeStatus,
+        };
+      } else {
+        newCabFeePaid = 0;
+      }
+
       student.feeDetails = {
         ...(student.feeDetails ? student.feeDetails.toObject?.() || student.feeDetails : {}),
+        tuitionFeeAmount,
+        cabFeeAmount: annualCabFee,
+        cabFeePaid: newCabFeePaid,
         admissionFeeAmount: totalFee,
         amountPaid: cumulativePaid,
         balanceDue,

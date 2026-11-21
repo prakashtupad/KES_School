@@ -33,12 +33,46 @@ import StudentIdCardModal from './StudentIdCardModal';
 
 const DRAFT_STORAGE_KEY = 'kes_direct_admission_draft_v1';
 
-const TRANSPORT_ROUTE_PRESETS = [
-  'Self / Walk',
-  'Route 1 - Khanatti Village',
-  'Route 2 - Gokak Road',
-  'Route 3 - Nearby Villages',
+const CAB_ROUTE_PRESETS = [
+  {
+    id: 'route1',
+    label: 'Route 1: Khanatti – Mallapur – Mudalagi (KA-41-A-7684)',
+    cabNumber: 'KA-41-A-7684',
+    vehicleName: 'KES School Van 1',
+    vehicleImageUrl: '/school-cab.jpg',
+    routeName: 'Route 1: Khanatti – Mallapur – Mudalagi',
+    pickupTime: '07:45 AM',
+    dropTime: '04:15 PM',
+    annualCabFee: 6000,
+  },
+  {
+    id: 'route2',
+    label: 'Route 2: Khanatti – Huligund – Nearby Villages (KA-23-M-7711)',
+    cabNumber: 'KA-23-M-7711',
+    vehicleName: 'KES School Van 2',
+    vehicleImageUrl: '/school-cab.jpg',
+    routeName: 'Route 2: Khanatti – Huligund – Nearby Villages',
+    pickupTime: '08:00 AM',
+    dropTime: '04:20 PM',
+    annualCabFee: 6000,
+  },
 ];
+
+const DEFAULT_TRANSPORT_DETAILS = {
+  optedIn: false,
+  cabNumber: 'KA-41-A-7684',
+  vehicleName: 'KES School Van 1',
+  vehicleImageUrl: '/school-cab.jpg',
+  driverName: '',
+  driverPhone: '',
+  routeName: 'Route 1: Khanatti – Mallapur – Mudalagi',
+  pickupPoint: 'Khanatti Main Circle',
+  pickupTime: '07:45 AM',
+  dropTime: '04:15 PM',
+  annualCabFee: 6000,
+  cabFeePaid: 0,
+  cabFeeStatus: 'Not_Applicable',
+};
 
 function compressImageFile(file, maxSize = 400, quality = 0.85) {
   return new Promise((resolve, reject) => {
@@ -115,6 +149,7 @@ export const INITIAL_ONBOARDING_FORM = {
   transportRequired: false,
   schoolTransportOptIn: false,
   transportRoute: 'Self / Walk',
+  transportDetails: { ...DEFAULT_TRANSPORT_DETAILS },
 
   // Step 1: Student Demographics & Identification
   studentName: '',
@@ -214,13 +249,29 @@ function mapStudentToForm(st) {
     section: st.section || 'A',
     academicYear: st.academicYear || '2026-2027',
     languageIII: st.languageIII || 'Kannada',
-    transportRequired: Boolean(st.transportRequired || st.schoolTransportOptIn),
-    schoolTransportOptIn: Boolean(st.schoolTransportOptIn || st.transportRequired),
+    transportRequired: Boolean(
+      st.transportDetails?.optedIn || st.transportRequired || st.schoolTransportOptIn
+    ),
+    schoolTransportOptIn: Boolean(
+      st.transportDetails?.optedIn || st.schoolTransportOptIn || st.transportRequired
+    ),
     transportRoute:
+      st.transportDetails?.routeName ||
       st.transportRoute ||
-      (st.transportRequired || st.schoolTransportOptIn
-        ? 'Route 1 - Khanatti Village'
+      (st.transportDetails?.optedIn || st.transportRequired || st.schoolTransportOptIn
+        ? 'Route 1: Khanatti – Mallapur – Mudalagi'
         : 'Self / Walk'),
+    transportDetails: {
+      ...DEFAULT_TRANSPORT_DETAILS,
+      ...(st.transportDetails || {}),
+      optedIn: Boolean(
+        st.transportDetails?.optedIn || st.transportRequired || st.schoolTransportOptIn
+      ),
+      annualCabFee:
+        Number(st.transportDetails?.annualCabFee) > 0
+          ? Number(st.transportDetails.annualCabFee)
+          : 6000,
+    },
 
     studentName: st.studentName || '',
     dateOfBirth: dobStr,
@@ -627,17 +678,25 @@ export default function DirectAdmissionOnboardingModal({
       10
     );
 
-    const resolvedTransportRoute = (formData.transportRoute || 'Self / Walk').trim();
-    const usesSchoolVan =
-      Boolean(formData.transportRequired) ||
-      (resolvedTransportRoute !== '' && resolvedTransportRoute !== 'Self / Walk');
+    const cabOptedIn = Boolean(formData.transportDetails?.optedIn);
+    const resolvedTransportRoute = cabOptedIn
+      ? (formData.transportDetails?.routeName || 'Route 1: Khanatti – Mallapur – Mudalagi').trim()
+      : 'Self / Walk';
 
     const payload = {
       ...formData,
       studentAadhaarNo: formData.aadhaarNumber,
-      transportRequired: usesSchoolVan,
-      schoolTransportOptIn: usesSchoolVan,
-      transportRoute: resolvedTransportRoute || 'Self / Walk',
+      transportRequired: cabOptedIn,
+      schoolTransportOptIn: cabOptedIn,
+      transportRoute: resolvedTransportRoute,
+      transportDetails: {
+        ...formData.transportDetails,
+        optedIn: cabOptedIn,
+        routeName: cabOptedIn ? resolvedTransportRoute : '',
+        annualCabFee: cabOptedIn
+          ? Number(formData.transportDetails?.annualCabFee || 6000)
+          : 0,
+      },
       fatherName: formData.father.name.trim(),
       motherName: formData.mother.name.trim(),
       primaryPhone: fatherMobile,
@@ -1319,61 +1378,319 @@ export default function DirectAdmissionOnboardingModal({
               </div>
             </div>
 
-            {/* School Van / Transport Route */}
-            <div className="p-3.5 rounded-xl bg-amber-50/50 border border-[#D97706]/30 grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
-              <div>
-                <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase text-[#1A365D] mb-1">
-                  <Bus className="w-3.5 h-3.5 text-[#D97706]" />
-                  <span>School Van / Transport Route</span>
-                </label>
-                <select
-                  value={
-                    TRANSPORT_ROUTE_PRESETS.includes(formData.transportRoute)
-                      ? formData.transportRoute
-                      : '__custom__'
-                  }
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '__custom__') {
-                      updateRoot('transportRoute', 'Route 4 - ');
+            {/* School Cab / Van Facility Opt-In Section */}
+            <div className="p-4 rounded-xl bg-[#F8FAFC] border border-slate-200 space-y-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#1A365D] text-[#D97706] flex items-center justify-center flex-shrink-0">
+                    <Bus className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-[#1A365D]">
+                      School Cab / Van Facility Opt-In
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Visible only in Student &amp; Parent Portal when opted in (+ ₹6,000 Annual Cab Fee)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="inline-flex rounded-lg bg-slate-200/80 p-0.5 border border-slate-300">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateNested('transportDetails', 'optedIn', false);
+                      updateRoot('transportRequired', false);
+                      updateRoot('schoolTransportOptIn', false);
+                      updateRoot('transportRoute', 'Self / Walk');
+                    }}
+                    className={`px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
+                      !formData.transportDetails?.optedIn
+                        ? 'bg-[#1A365D] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-[#1A365D]'
+                    }`}
+                  >
+                    No (Self / Walk)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateNested('transportDetails', 'optedIn', true);
+                      if (!Number(formData.transportDetails?.annualCabFee)) {
+                        updateNested('transportDetails', 'annualCabFee', 6000);
+                      }
                       updateRoot('transportRequired', true);
                       updateRoot('schoolTransportOptIn', true);
-                    } else {
-                      updateRoot('transportRoute', val);
-                      const isVan = val !== 'Self / Walk';
-                      updateRoot('transportRequired', isVan);
-                      updateRoot('schoolTransportOptIn', isVan);
-                    }
-                  }}
-                  className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white focus:border-[#1A365D]"
-                >
-                  {TRANSPORT_ROUTE_PRESETS.map((route) => (
-                    <option key={route} value={route}>
-                      {route}
-                    </option>
-                  ))}
-                  <option value="__custom__">Other / Custom Route...</option>
-                </select>
+                      updateRoot(
+                        'transportRoute',
+                        formData.transportDetails?.routeName ||
+                          'Route 1: Khanatti – Mallapur – Mudalagi'
+                      );
+                    }}
+                    className={`px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
+                      formData.transportDetails?.optedIn
+                        ? 'bg-[#D97706] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-[#1A365D]'
+                    }`}
+                  >
+                    Yes (+ ₹6,000)
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
-                  Custom / Detailed Van Route (Printed on ID Card)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Route 1: Khanatti – Gokak Road"
-                  value={formData.transportRoute || ''}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    updateRoot('transportRoute', val);
-                    const isVan = val.trim() !== '' && val.trim() !== 'Self / Walk';
-                    updateRoot('transportRequired', isVan);
-                    updateRoot('schoolTransportOptIn', isVan);
-                  }}
-                  className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white"
-                />
-              </div>
+              {formData.transportDetails?.optedIn && (
+                <div className="space-y-3 pt-2 border-t border-slate-200">
+                  {/* Automatic ₹6,000 Cab Fee Notice Pill */}
+                  <div className="p-2.5 rounded-lg bg-amber-50 border border-[#D97706]/40 text-amber-950 text-xs font-semibold flex items-center gap-2">
+                    <IndianRupee className="w-4 h-4 text-[#D97706] flex-shrink-0" />
+                    <span>
+                      Note: ₹
+                      {Number(formData.transportDetails?.annualCabFee || 6000).toLocaleString(
+                        'en-IN'
+                      )}{' '}
+                      Annual Cab Fee will be added to this student&apos;s Fee Ledger as Pending Due.
+                    </span>
+                  </div>
+
+                  {/* Route Preset + Cab Photo Thumbnail */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-bold uppercase text-[#1A365D] mb-1">
+                        Cab / Route Preset
+                      </label>
+                      <select
+                        value={
+                          CAB_ROUTE_PRESETS.find(
+                            (p) =>
+                              p.cabNumber === formData.transportDetails?.cabNumber &&
+                              p.routeName === formData.transportDetails?.routeName
+                          )?.id || 'custom'
+                        }
+                        onChange={(e) => {
+                          const preset = CAB_ROUTE_PRESETS.find((p) => p.id === e.target.value);
+                          if (preset) {
+                            setFormData((prev) => ({
+                              ...prev,
+                              transportRoute: preset.routeName,
+                              transportDetails: {
+                                ...prev.transportDetails,
+                                optedIn: true,
+                                cabNumber: preset.cabNumber,
+                                vehicleName: preset.vehicleName,
+                                vehicleImageUrl: preset.vehicleImageUrl,
+                                routeName: preset.routeName,
+                                pickupTime: preset.pickupTime,
+                                dropTime: preset.dropTime,
+                                annualCabFee: preset.annualCabFee,
+                              },
+                            }));
+                          }
+                        }}
+                        className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white focus:border-[#1A365D]"
+                      >
+                        {CAB_ROUTE_PRESETS.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.label}
+                          </option>
+                        ))}
+                        <option value="custom">Custom Cab / Route</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 p-2 rounded-lg bg-white border border-slate-200">
+                      <img
+                        src={formData.transportDetails?.vehicleImageUrl || '/school-cab.jpg'}
+                        alt="School Van Preview"
+                        className="w-12 h-10 rounded-md object-cover border border-[#D97706]/50 flex-shrink-0 bg-amber-50"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-bold uppercase text-[#D97706] truncate">
+                          {formData.transportDetails?.vehicleName || 'KES School Van'}
+                        </div>
+                        <div className="font-mono font-bold text-xs text-[#1A365D] truncate">
+                          {formData.transportDetails?.cabNumber || 'KA-41-A-7684'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cab Number, Vehicle Name, Cab Photo URL */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                        Vehicle / Cab Number
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. KA-41-A-7684"
+                        value={formData.transportDetails?.cabNumber || ''}
+                        onChange={(e) =>
+                          updateNested(
+                            'transportDetails',
+                            'cabNumber',
+                            e.target.value.toUpperCase()
+                          )
+                        }
+                        className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white font-mono uppercase"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                        Vehicle Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. KES School Van 1"
+                        value={formData.transportDetails?.vehicleName || ''}
+                        onChange={(e) =>
+                          updateNested('transportDetails', 'vehicleName', e.target.value)
+                        }
+                        className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                        Annual Cab Fee (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={formData.transportDetails?.annualCabFee ?? 6000}
+                        onChange={(e) =>
+                          updateNested(
+                            'transportDetails',
+                            'annualCabFee',
+                            Number(e.target.value) || 0
+                          )
+                        }
+                        className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white font-mono font-bold text-[#1A365D]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Driver Name, Driver Contact, Cab Photo URL */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                        Driver Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Sri Basavaraj Patil"
+                        value={formData.transportDetails?.driverName || ''}
+                        onChange={(e) =>
+                          updateNested('transportDetails', 'driverName', e.target.value)
+                        }
+                        className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                        Driver Contact Number
+                      </label>
+                      <input
+                        type="tel"
+                        maxLength={10}
+                        placeholder="10-digit mobile"
+                        value={formData.transportDetails?.driverPhone || ''}
+                        onChange={(e) =>
+                          updateNested(
+                            'transportDetails',
+                            'driverPhone',
+                            sanitizeDigits(e.target.value, 10)
+                          )
+                        }
+                        className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                        Cab Photo URL
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="/school-cab.jpg"
+                        value={formData.transportDetails?.vehicleImageUrl || '/school-cab.jpg'}
+                        onChange={(e) =>
+                          updateNested('transportDetails', 'vehicleImageUrl', e.target.value)
+                        }
+                        className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Route Name, Pickup Village/Stop, Pickup Time, Drop Time */}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                        Route Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Route 1: Khanatti – Mallapur – Mudalagi"
+                        value={formData.transportDetails?.routeName || ''}
+                        onChange={(e) => {
+                          updateNested('transportDetails', 'routeName', e.target.value);
+                          updateRoot('transportRoute', e.target.value);
+                        }}
+                        className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                        Morning Pickup Time
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="07:45 AM"
+                        value={formData.transportDetails?.pickupTime || ''}
+                        onChange={(e) =>
+                          updateNested('transportDetails', 'pickupTime', e.target.value)
+                        }
+                        className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                        Evening Drop Time
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="04:15 PM"
+                        value={formData.transportDetails?.dropTime || ''}
+                        onChange={(e) =>
+                          updateNested('transportDetails', 'dropTime', e.target.value)
+                        }
+                        className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                      Pickup Village / Stop
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Khanatti Main Circle / Bus Stand"
+                      value={formData.transportDetails?.pickupPoint || ''}
+                      onChange={(e) =>
+                        updateNested('transportDetails', 'pickupPoint', e.target.value)
+                      }
+                      className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

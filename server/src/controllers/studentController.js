@@ -3,6 +3,108 @@ const Student = require('../models/Student');
 const { getDbStatus } = require('../config/db');
 const memoryStore = require('../utils/memoryStore');
 
+const DEFAULT_ANNUAL_CAB_FEE = 6000;
+
+/**
+ * Normalize transportDetails sub-document cleanly
+ */
+function normalizeTransportDetails(raw = {}, existing = {}) {
+  const td = raw.transportDetails || {};
+  const hasExplicitOptIn = typeof td.optedIn === 'boolean';
+  const optedIn = hasExplicitOptIn
+    ? td.optedIn
+    : Boolean(raw.transportRequired || raw.schoolTransportOptIn || existing.optedIn);
+
+  if (!optedIn) {
+    return {
+      optedIn: false,
+      cabNumber: '',
+      vehicleName: 'School Van 1',
+      vehicleImageUrl: '/school-cab.jpg',
+      driverName: '',
+      driverPhone: '',
+      routeName: '',
+      pickupPoint: '',
+      pickupTime: '',
+      dropTime: '',
+      annualCabFee: 0,
+      cabFeePaid: 0,
+      cabFeeStatus: 'Not_Applicable',
+    };
+  }
+
+  const parsedAnnualFee = Number(td.annualCabFee);
+  const annualCabFee =
+    !Number.isNaN(parsedAnnualFee) && parsedAnnualFee > 0
+      ? parsedAnnualFee
+      : Number(existing.annualCabFee) > 0
+        ? Number(existing.annualCabFee)
+        : DEFAULT_ANNUAL_CAB_FEE;
+
+  const existingPaid = Number(existing.cabFeePaid || 0);
+  const incomingPaid = td.cabFeePaid !== undefined ? Number(td.cabFeePaid) : existingPaid;
+  const cabFeePaid = Math.min(annualCabFee, Math.max(0, Number.isNaN(incomingPaid) ? existingPaid : incomingPaid));
+  const cabFeeStatus =
+    cabFeePaid >= annualCabFee ? 'Paid' : cabFeePaid > 0 ? 'Partial' : 'Pending';
+
+  const routeName = String(
+    td.routeName || raw.transportRoute || existing.routeName || 'Route 1: Khanatti – Mallapur – Mudalgi'
+  ).trim();
+
+  return {
+    optedIn: true,
+    cabNumber: String(td.cabNumber ?? existing.cabNumber ?? 'KA-41-A-7684').trim().toUpperCase(),
+    vehicleName: String(td.vehicleName ?? existing.vehicleName ?? 'School Van 1').trim() || 'School Van 1',
+    vehicleImageUrl: String(td.vehicleImageUrl ?? existing.vehicleImageUrl ?? '/school-cab.jpg').trim() || '/school-cab.jpg',
+    driverName: String(td.driverName ?? existing.driverName ?? '').trim(),
+    driverPhone: String(td.driverPhone ?? existing.driverPhone ?? '').trim(),
+    routeName,
+    pickupPoint: String(td.pickupPoint ?? existing.pickupPoint ?? '').trim(),
+    pickupTime: String(td.pickupTime ?? existing.pickupTime ?? '07:45 AM').trim(),
+    dropTime: String(td.dropTime ?? existing.dropTime ?? '04:15 PM').trim(),
+    annualCabFee,
+    cabFeePaid,
+    cabFeeStatus,
+  };
+}
+
+/**
+ * Reconcile combined feeDetails when transportDetails.optedIn changes or on new admission
+ */
+function reconcileFeeWithTransport(existingFee = {}, transportDetails = {}) {
+  const prevTotal = Number(existingFee.admissionFeeAmount || 10000);
+  const prevCabFee = Number(existingFee.cabFeeAmount || 0);
+  const prevTuition =
+    Number(existingFee.tuitionFeeAmount) > 0
+      ? Number(existingFee.tuitionFeeAmount)
+      : Math.max(0, prevTotal - prevCabFee) || 10000;
+
+  const prevPaid = Number(existingFee.amountPaid || 0);
+  const newCabFee = transportDetails.optedIn ? Number(transportDetails.annualCabFee || DEFAULT_ANNUAL_CAB_FEE) : 0;
+  const newCabPaid = transportDetails.optedIn ? Number(transportDetails.cabFeePaid || 0) : 0;
+  const newCombinedTotal = prevTuition + newCabFee;
+  const newBalanceDue = Math.max(0, newCombinedTotal - prevPaid);
+  const newStatus =
+    existingFee.paymentStatus === 'Waived / Free Ship'
+      ? 'Waived / Free Ship'
+      : prevPaid <= 0
+        ? 'Pending'
+        : newBalanceDue > 0
+          ? 'Partial'
+          : 'Paid';
+
+  return {
+    ...existingFee,
+    tuitionFeeAmount: prevTuition,
+    cabFeeAmount: newCabFee,
+    cabFeePaid: newCabPaid,
+    admissionFeeAmount: newCombinedTotal,
+    amountPaid: prevPaid,
+    balanceDue: newBalanceDue,
+    paymentStatus: newStatus,
+  };
+}
+
 /**
  * Helper to normalize and synchronize flat + nested student fields
  */
@@ -48,8 +150,9 @@ function normalizeStudentPayload(raw = {}, userId = null) {
     .toString()
     .replace(/\D/g, '');
 
-  const transport =
-    Boolean(raw.transportRequired) || Boolean(raw.schoolTransportOptIn);
+  const transportDetails = normalizeTransportDetails(raw, {});
+  const transport = Boolean(transportDetails.optedIn);
+  const reconciledFeeDetails = reconcileFeeWithTransport(raw.feeDetails || {}, transportDetails);
 
   const medical = (
     raw.medicalAilmentsOrAllergies ||
@@ -76,7 +179,11 @@ function normalizeStudentPayload(raw = {}, userId = null) {
     languageIII: raw.languageIII || 'Kannada',
     transportRequired: transport,
     schoolTransportOptIn: transport,
-    transportRoute: (raw.transportRoute || raw.vanRoute || (transport ? 'Route 1 - Khanatti Village' : 'Self / Walk')).trim(),
+    transportRoute: transport
+      ? transportDetails.routeName || 'Route 1: Khanatti – Mallapur – Mudalgi'
+      : 'Self / Walk',
+    transportDetails,
+    feeDetails: reconciledFeeDetails,
 
     studentName: (raw.studentName || '').trim(),
     dateOfBirth: raw.dateOfBirth || new Date('2019-06-01'),
@@ -514,8 +621,40 @@ exports.updateStudent = async (req, res) => {
     }
 
     const dbStatus = getDbStatus();
+    const hasTransportUpdate =
+      updatePayload.transportDetails !== undefined ||
+      updatePayload.transportRequired !== undefined ||
+      updatePayload.schoolTransportOptIn !== undefined;
+
+    // Never allow accidental overwrite of feeDetails from profile edit payload
+    delete updatePayload.feeDetails;
 
     if (dbStatus.isConnected) {
+      if (hasTransportUpdate) {
+        const existingDoc = await Student.findById(id).lean();
+        if (!existingDoc) {
+          return res.status(404).json({
+            success: false,
+            error: 'Student not found.',
+            message: 'Student not found.',
+          });
+        }
+        const normalizedTd = normalizeTransportDetails(
+          updatePayload,
+          existingDoc.transportDetails || {}
+        );
+        updatePayload.transportDetails = normalizedTd;
+        updatePayload.transportRequired = normalizedTd.optedIn;
+        updatePayload.schoolTransportOptIn = normalizedTd.optedIn;
+        updatePayload.transportRoute = normalizedTd.optedIn
+          ? normalizedTd.routeName || 'Route 1: Khanatti – Mallapur – Mudalgi'
+          : 'Self / Walk';
+        updatePayload.feeDetails = reconcileFeeWithTransport(
+          existingDoc.feeDetails || {},
+          normalizedTd
+        );
+      }
+
       const student = await Student.findByIdAndUpdate(id, updatePayload, {
         new: true,
         runValidators: true,
@@ -544,6 +683,23 @@ exports.updateStudent = async (req, res) => {
         error: 'Student not found.',
         message: 'Student not found.',
       });
+    }
+
+    if (hasTransportUpdate) {
+      const normalizedTd = normalizeTransportDetails(
+        updatePayload,
+        memStudent.transportDetails || {}
+      );
+      updatePayload.transportDetails = normalizedTd;
+      updatePayload.transportRequired = normalizedTd.optedIn;
+      updatePayload.schoolTransportOptIn = normalizedTd.optedIn;
+      updatePayload.transportRoute = normalizedTd.optedIn
+        ? normalizedTd.routeName || 'Route 1: Khanatti – Mallapur – Mudalgi'
+        : 'Self / Walk';
+      updatePayload.feeDetails = reconcileFeeWithTransport(
+        memStudent.feeDetails || {},
+        normalizedTd
+      );
     }
 
     Object.assign(memStudent, updatePayload, { updatedAt: new Date() });

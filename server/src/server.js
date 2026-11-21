@@ -16,12 +16,18 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const birthdayRoutes = require('./routes/birthdayRoutes');
 const studentPortalRoutes = require('./routes/studentPortalRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const holidayRoutes = require('./routes/holidayRoutes');
+const { seedDefaultHolidays } = require('./seed/seedHolidays');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB Atlas / Local instance
-connectDB();
+// Connect to MongoDB Atlas / Local instance & auto-seed 2026-2027 holiday calendar if empty
+connectDB().then(() => {
+  seedDefaultHolidays({ onlyIfEmpty: true }).catch((err) => {
+    console.error('[Holiday Auto-Seed Error]', err.message);
+  });
+});
 
 // Security & Parsing Middlewares
 app.use(
@@ -74,6 +80,7 @@ app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/birthdays', birthdayRoutes);
 app.use('/api/v1/student-portal', studentPortalRoutes);
 app.use('/api/v1/upload', uploadRoutes);
+app.use('/api/v1/holidays', holidayRoutes);
 
 // 404 Handler for unknown API routes
 app.use('/api/*', (req, res) => {

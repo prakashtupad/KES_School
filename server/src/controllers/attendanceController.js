@@ -3,6 +3,10 @@ const Attendance = require('../models/Attendance');
 const User = require('../models/User');
 const { getDbStatus } = require('../config/db');
 const memoryStore = require('../utils/memoryStore');
+const {
+  checkDateHolidayStatus,
+  getMonthHolidaysMap,
+} = require('../seed/seedHolidays');
 
 /**
  * Helper: Returns YYYY-MM-DD in IST / local date string and midnight UTC Date object
@@ -505,6 +509,8 @@ const getAdminDailyRegister = async (req, res) => {
       attendanceMap.set(String(att.staff), att);
     }
 
+    const holidayStatus = await checkDateHolidayStatus(dateKey, 'teachers');
+
     const register = staffList.map((staffMember) => {
       const att = attendanceMap.get(String(staffMember._id));
       const totalHours = att
@@ -523,7 +529,7 @@ const getAdminDailyRegister = async (req, res) => {
         checkInTime: att ? att.checkInTime : null,
         checkOutTime: att ? att.checkOutTime : null,
         totalHours,
-        status: att ? att.status : 'Not Checked In',
+        status: att ? att.status : holidayStatus.isHoliday ? 'Holiday' : 'Not Checked In',
         workType: att ? att.workType : 'Regular Teaching',
         periodsCovered: att ? att.periodsCovered : 0,
         dailyNotes: att ? att.dailyNotes : '',
@@ -541,11 +547,15 @@ const getAdminDailyRegister = async (req, res) => {
       onLeave: register.filter((r) => r.status === 'On Leave').length,
       absent: register.filter((r) => r.status === 'Absent').length,
       notCheckedIn: register.filter((r) => r.status === 'Not Checked In').length,
+      onHoliday: register.filter((r) => r.status === 'Holiday').length,
     };
 
     return res.status(200).json({
       success: true,
       date: dateKey,
+      isHoliday: holidayStatus.isHoliday,
+      isSunday: holidayStatus.isSunday,
+      holidayInfo: holidayStatus.holidayInfo,
       kpi,
       data: register,
     });

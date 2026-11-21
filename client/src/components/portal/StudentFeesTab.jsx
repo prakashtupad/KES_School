@@ -7,6 +7,7 @@ import {
   Receipt,
   CreditCard,
   Calendar,
+  Bus,
 } from 'lucide-react';
 import PrintableFeeReceipt from './PrintableFeeReceipt';
 import { useLanguage } from '../../context/LanguageContext';
@@ -30,6 +31,24 @@ export default function StudentFeesTab({ student }) {
   const paymentStatus =
     amountPaid <= 0 ? 'Pending' : balanceDue > 0 ? 'Partial' : 'Paid';
   const hasPaidAny = amountPaid > 0;
+
+  const hasCabOptIn =
+    Boolean(student.transportDetails?.optedIn) || Number(fee.cabFeeAmount || 0) > 0;
+  const annualCabFee = hasCabOptIn
+    ? Number(student.transportDetails?.annualCabFee || fee.cabFeeAmount || 6000)
+    : 0;
+  const cabFeePaid = hasCabOptIn
+    ? Math.min(
+        annualCabFee,
+        Number(student.transportDetails?.cabFeePaid ?? fee.cabFeePaid ?? 0)
+      )
+    : 0;
+  const cabFeeDue = Math.max(0, annualCabFee - cabFeePaid);
+  const tuitionFeeTotal = hasCabOptIn
+    ? Math.max(0, Number(fee.tuitionFeeAmount || admissionFeeAmount - annualCabFee || 10000))
+    : admissionFeeAmount;
+  const tuitionFeePaid = Math.min(tuitionFeeTotal, Math.max(0, amountPaid - cabFeePaid));
+  const tuitionFeeDue = Math.max(0, tuitionFeeTotal - tuitionFeePaid);
   const paidDateDisplay = fee.paidAt
     ? new Date(fee.paidAt).toLocaleDateString('en-IN', {
         day: '2-digit',
@@ -164,6 +183,77 @@ export default function StudentFeesTab({ student }) {
             </span>
           </div>
         </div>
+
+        {/* Itemized Fee Breakdown (Tuition + ₹6,000 School Cab Fee) */}
+        {hasCabOptIn && (
+          <div className="px-5 pb-5">
+            <div className="rounded-xl border border-[#D97706]/35 bg-amber-50/50 p-4 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#1A365D]">
+                  <Bus className="w-4 h-4 text-[#D97706]" />
+                  <span>{t('studentPortal.transport.itemizedFeeHeading')}</span>
+                </span>
+                {student.transportDetails?.cabNumber && (
+                  <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-[#1A365D] text-amber-300">
+                    {student.transportDetails.cabNumber}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                      {t('studentPortal.transport.tuitionFeeLabel')}
+                    </span>
+                    <div className="font-mono font-bold text-sm text-[#1A365D] mt-0.5">
+                      ₹{tuitionFeeTotal.toLocaleString('en-IN')}
+                    </div>
+                    <span className="text-[11px] text-slate-500 font-mono">
+                      Paid: ₹{tuitionFeePaid.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+                      tuitionFeeDue > 0
+                        ? 'bg-amber-100 text-amber-900 border-amber-300'
+                        : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    }`}
+                  >
+                    {tuitionFeeDue > 0
+                      ? `Due: ₹${tuitionFeeDue.toLocaleString('en-IN')}`
+                      : 'Paid'}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-white border border-[#D97706]/40 flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-[#D97706] block">
+                      {t('studentPortal.transport.cabFeeLabel')}
+                    </span>
+                    <div className="font-mono font-bold text-sm text-[#1A365D] mt-0.5">
+                      ₹{annualCabFee.toLocaleString('en-IN')}
+                    </div>
+                    <span className="text-[11px] text-slate-500 font-mono">
+                      Paid: ₹{cabFeePaid.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+                      cabFeeDue > 0
+                        ? 'bg-amber-100 text-amber-900 border-amber-300'
+                        : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    }`}
+                  >
+                    {cabFeeDue > 0
+                      ? `${t('studentPortal.transport.pendingDue')}: ₹${cabFeeDue.toLocaleString('en-IN')}`
+                      : t('studentPortal.transport.cabFeePaid')}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Payment History & Receipt Ledger Table */}

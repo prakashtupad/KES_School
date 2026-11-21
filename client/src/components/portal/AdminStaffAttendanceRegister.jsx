@@ -21,6 +21,7 @@ const STATUS_PILL_STYLES = {
   'Half Day': 'bg-blue-100 text-blue-800 border-blue-300',
   'On Leave': 'bg-red-100 text-red-800 border-red-300',
   Absent: 'bg-rose-100 text-rose-800 border-rose-300',
+  Holiday: 'bg-indigo-100 text-indigo-800 border-indigo-300',
   'Not Checked In': 'bg-slate-100 text-slate-600 border-slate-300',
 };
 
@@ -65,6 +66,8 @@ export default function AdminStaffAttendanceRegister() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
   const [toast, setToast] = useState('');
+  const [isHoliday, setIsHoliday] = useState(false);
+  const [holidayInfo, setHolidayInfo] = useState(null);
 
   const fetchRegister = useCallback(async () => {
     if (!token) return;
@@ -79,6 +82,8 @@ export default function AdminStaffAttendanceRegister() {
       const data = await res.json();
       if (res.ok && data.success) {
         setRegisterData(data.data || []);
+        setIsHoliday(Boolean(data.isHoliday));
+        setHolidayInfo(data.holidayInfo || null);
         setKpi(
           data.kpi || {
             totalStaff: 0,
@@ -264,6 +269,25 @@ export default function AdminStaffAttendanceRegister() {
               </button>
             </div>
           </div>
+
+          {isHoliday && holidayInfo && (
+            <div className="p-3.5 rounded-xl bg-indigo-50 border border-indigo-300 text-indigo-950 text-xs flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <Calendar className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                <div>
+                  <strong className="text-[#1A365D]">
+                    School Holiday: {holidayInfo.title}
+                    {holidayInfo.titleKn ? ` (${holidayInfo.titleKn})` : ''}
+                  </strong>
+                  <span className="block text-[11px] text-slate-600">
+                    {holidayInfo.isFlagHoistingDay
+                      ? 'National Observance — Staff default to Holiday. You may optionally mark Flag Hoisting / Event Attendance below.'
+                      : 'Staff are automatically tagged as Holiday and excluded from absent counts.'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {toast && (
             <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-semibold flex items-center justify-between">
