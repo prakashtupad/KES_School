@@ -332,12 +332,32 @@ export function printStudentDirectoryTable(students = [], gradeFilter = 'All Cla
   }
 
   const logoSrc = resolveAbsoluteUrl(SCHOOL_INFO.logoUrl || '/images/logo.jpg');
+  let sumTotalFees = 0;
+  let sumPaidFees = 0;
+  let sumBalanceDue = 0;
+
   const rowsHtml = students
     .map((st, idx) => {
       const dob = st.dateOfBirth ? new Date(st.dateOfBirth).toLocaleDateString('en-IN') : '—';
       const father = st.father?.name || st.fatherName || '—';
-      const sts = st.previousStudy?.stsNumber || '—';
-      const pen = st.previousStudy?.penNumber || '—';
+      const paidAmt = Number(st.feeDetails?.amountPaid || 0);
+      const totalFee = Math.max(
+        Number(st.feeDetails?.admissionFeeAmount || paidAmt || 10000),
+        paidAmt
+      );
+      const balanceDue = Math.max(
+        0,
+        Number(st.feeDetails?.balanceDue ?? totalFee - paidAmt)
+      );
+      sumTotalFees += totalFee;
+      sumPaidFees += paidAmt;
+      sumBalanceDue += balanceDue;
+
+      const feeSubline =
+        balanceDue > 0
+          ? `Paid: ₹${paidAmt.toLocaleString('en-IN')} • <span style="color:#b91c1c;font-weight:bold;">Due: ₹${balanceDue.toLocaleString('en-IN')}</span>`
+          : `Paid: ₹${paidAmt.toLocaleString('en-IN')} • <span style="color:#047857;font-weight:bold;">Cleared</span>`;
+
       return `
         <tr>
           <td style="text-align:center;">${idx + 1}</td>
@@ -347,7 +367,10 @@ export function printStudentDirectoryTable(students = [], gradeFilter = 'All Cla
           <td>${dob} / ${st.gender || '—'}</td>
           <td>${father}</td>
           <td>+91 ${st.primaryPhone || st.whatsappNumber || '—'}</td>
-          <td>${sts} / ${pen}</td>
+          <td style="text-align:right;font-family:monospace;">
+            <strong style="color:#1A365D;font-size:11.5px;">₹${totalFee.toLocaleString('en-IN')}</strong>
+            <div style="font-size:9.5px;color:#475569;margin-top:2px;">${feeSubline}</div>
+          </td>
           <td>${st.residentialAddress?.villageOrTown || st.residentialVillage || 'Khanatti'}</td>
         </tr>
       `;
@@ -423,13 +446,27 @@ export function printStudentDirectoryTable(students = [], gradeFilter = 'All Cla
               <th>DOB / Gender</th>
               <th>Father / Guardian</th>
               <th>Mobile / WhatsApp</th>
-              <th>STS / PEN</th>
+              <th style="text-align:right;">Grand Total Fees Payable</th>
               <th>Village</th>
             </tr>
           </thead>
           <tbody>
             ${rowsHtml}
           </tbody>
+          <tfoot>
+            <tr style="background:#f1f5f9;font-weight:bold;">
+              <td colspan="7" style="text-align:right;color:#1A365D;text-transform:uppercase;font-size:10.5px;">
+                Directory Summary (${students.length} Student${students.length === 1 ? '' : 's'})
+              </td>
+              <td style="text-align:right;font-family:monospace;">
+                <strong style="color:#1A365D;font-size:12px;">₹${sumTotalFees.toLocaleString('en-IN')}</strong>
+                <div style="font-size:9.5px;color:#475569;margin-top:2px;">
+                  Paid: ₹${sumPaidFees.toLocaleString('en-IN')} • <span style="color:${sumBalanceDue > 0 ? '#b91c1c' : '#047857'};">Due: ₹${sumBalanceDue.toLocaleString('en-IN')}</span>
+                </div>
+              </td>
+              <td></td>
+            </tr>
+          </tfoot>
         </table>
         <script>
           (function() {
