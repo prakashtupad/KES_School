@@ -215,14 +215,23 @@ exports.recordFeePayment = async (req, res) => {
         timestamp: now,
       });
 
-      // Reconcile School Cab Fee allocation if student opted into transportDetails
+      // Reconcile School Cab Fee allocation if student opted into transportDetails (no hardcoded 6000 fallback)
       const hasCabOptIn = Boolean(student.transportDetails?.optedIn);
-      const annualCabFee = hasCabOptIn
-        ? Number(student.transportDetails?.annualCabFee || student.feeDetails?.cabFeeAmount || 6000)
-        : 0;
-      const tuitionFeeAmount = hasCabOptIn
-        ? Math.max(0, totalFee - annualCabFee)
-        : totalFee;
+      const rawAnnualCab =
+        req.body?.annualCabFee !== undefined && req.body?.annualCabFee !== ''
+          ? Number(req.body.annualCabFee)
+          : Number(student.transportDetails?.annualCabFee ?? student.feeDetails?.cabFeeAmount ?? 0);
+      const annualCabFee = hasCabOptIn && !Number.isNaN(rawAnnualCab) ? Math.max(0, rawAnnualCab) : 0;
+
+      const explicitTuition =
+        req.body?.tuitionFeeAmount !== undefined && req.body?.tuitionFeeAmount !== ''
+          ? Number(req.body.tuitionFeeAmount)
+          : NaN;
+      const tuitionFeeAmount = !Number.isNaN(explicitTuition) && explicitTuition >= 0
+        ? explicitTuition
+        : hasCabOptIn
+          ? Math.max(0, totalFee - annualCabFee)
+          : totalFee;
 
       let newCabFeePaid = Number(
         student.transportDetails?.cabFeePaid ?? student.feeDetails?.cabFeePaid ?? 0
@@ -231,7 +240,6 @@ exports.recordFeePayment = async (req, res) => {
         if (resolvedCategory === 'CAB_FEE') {
           newCabFeePaid = Math.min(annualCabFee, newCabFeePaid + numericInputPaid);
         } else if (resolvedCategory === 'ALL_COMBINED') {
-          // If paying full combined balance, cab fee is fully paid; otherwise allocate excess above tuition
           if (balanceDue === 0) {
             newCabFeePaid = annualCabFee;
           } else {
@@ -242,12 +250,15 @@ exports.recordFeePayment = async (req, res) => {
           newCabFeePaid = annualCabFee;
         }
 
+        const cabFeeDueAfter = Math.max(0, annualCabFee - newCabFeePaid);
         const newCabFeeStatus =
-          newCabFeePaid >= annualCabFee
-            ? 'Paid'
-            : newCabFeePaid > 0
-              ? 'Partial'
-              : 'Pending';
+          annualCabFee <= 0
+            ? 'Not_Applicable'
+            : cabFeeDueAfter === 0
+              ? 'Paid'
+              : newCabFeePaid > 0
+                ? 'Partial'
+                : 'Pending';
 
         student.transportDetails = {
           ...(student.transportDetails.toObject?.() || student.transportDetails),

@@ -31,12 +31,21 @@ export default function AdmissionPaymentModal({
   onPaymentRecorded,
 }) {
   const { token, user } = useAuth();
+  const [activeStudent, setActiveStudent] = useState(student);
+  const [editingTuitionFee, setEditingTuitionFee] = useState(false);
+  const [tuitionFeeDraft, setTuitionFeeDraft] = useState('');
+  const [savingTuitionFee, setSavingTuitionFee] = useState(false);
+  const [editingCabFee, setEditingCabFee] = useState(false);
+  const [cabFeeDraft, setCabFeeDraft] = useState('');
+  const [savingCabFee, setSavingCabFee] = useState(false);
 
-  const existingPaid = Number(student?.feeDetails?.amountPaid || 0);
-  const existingTotal = Number(student?.feeDetails?.admissionFeeAmount || 10000);
+  const curStudent = activeStudent || student;
+
+  const existingPaid = Number(curStudent?.feeDetails?.amountPaid || 0);
+  const existingTotal = Number(curStudent?.feeDetails?.admissionFeeAmount || 10000);
   const existingBalance = Math.max(
     0,
-    Number(student?.feeDetails?.balanceDue ?? existingTotal - existingPaid)
+    Number(curStudent?.feeDetails?.balanceDue ?? existingTotal - existingPaid)
   );
 
   const hasPreviousPayment = existingPaid > 0;
@@ -64,7 +73,19 @@ export default function AdmissionPaymentModal({
   const [paidStudentRecord, setPaidStudentRecord] = useState(null);
 
   useEffect(() => {
+    setActiveStudent(student);
+    setEditingTuitionFee(false);
+    setEditingCabFee(false);
     if (student) {
+      const currentCab = Number(
+        student.transportDetails?.annualCabFee ?? student.feeDetails?.cabFeeAmount ?? 0
+      );
+      setCabFeeDraft(currentCab > 0 ? String(currentCab) : '');
+      const currentTuition =
+        Number(student.feeDetails?.tuitionFeeAmount) > 0
+          ? Number(student.feeDetails.tuitionFeeAmount)
+          : Math.max(0, Number(student.feeDetails?.admissionFeeAmount || 10000) - currentCab) || 10000;
+      setTuitionFeeDraft(String(currentTuition));
       const prevPaid = Number(student.feeDetails?.amountPaid || 0);
       const rawPrevTotal = Number(student.feeDetails?.admissionFeeAmount || 0);
       const resolvedTotal =
@@ -140,28 +161,134 @@ export default function AdmissionPaymentModal({
   const isRemainingMode = hasPreviousPayment && collectionMode === 'remaining';
   const baseAlreadyPaid = isRemainingMode ? existingPaid : 0;
 
-  // School Cab Transport Fee Breakdown
+  // School Cab Transport Fee Breakdown (variable distance-based fee — no hardcoded 6000)
   const hasCabOptIn =
-    Boolean(student.transportDetails?.optedIn) ||
-    Number(student.feeDetails?.cabFeeAmount || 0) > 0;
+    Boolean(curStudent.transportDetails?.optedIn) ||
+    Number(curStudent.feeDetails?.cabFeeAmount || 0) > 0;
   const annualCabFee = hasCabOptIn
-    ? Number(student.transportDetails?.annualCabFee || student.feeDetails?.cabFeeAmount || 6000)
+    ? Math.max(
+        0,
+        Number(curStudent.transportDetails?.annualCabFee ?? curStudent.feeDetails?.cabFeeAmount ?? 0)
+      )
     : 0;
   const cabFeePaid = hasCabOptIn
     ? Math.min(
         annualCabFee,
-        Number(student.transportDetails?.cabFeePaid ?? student.feeDetails?.cabFeePaid ?? 0)
+        Number(curStudent.transportDetails?.cabFeePaid ?? curStudent.feeDetails?.cabFeePaid ?? 0)
       )
     : 0;
   const cabFeeDue = Math.max(0, annualCabFee - cabFeePaid);
   const tuitionFeeTotal = hasCabOptIn
     ? Math.max(
         0,
-        Number(student.feeDetails?.tuitionFeeAmount || existingTotal - annualCabFee || 10000)
+        Number(curStudent.feeDetails?.tuitionFeeAmount || existingTotal - annualCabFee || 10000)
       )
     : existingTotal;
   const tuitionFeePaid = Math.min(tuitionFeeTotal, Math.max(0, existingPaid - cabFeePaid));
   const tuitionFeeDue = Math.max(0, tuitionFeeTotal - tuitionFeePaid);
+
+  const handleSaveInlineTuitionFee = async () => {
+    const parsedTuition = Math.max(0, Number(tuitionFeeDraft) || 0);
+    setSavingTuitionFee(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch(`/api/v1/students/${curStudent._id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          tuitionFeeAmount: parsedTuition,
+          transportDetails: {
+            ...(curStudent.transportDetails || {}),
+            optedIn: hasCabOptIn,
+            annualCabFee,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Failed to update School Tuition Fee.');
+      }
+      const updated = data.student || data.data;
+      if (updated) {
+        setActiveStudent(updated);
+        const newTotal = Number(updated.feeDetails?.admissionFeeAmount || parsedTuition + annualCabFee);
+        const newPaid = Number(updated.feeDetails?.amountPaid || 0);
+        const newBal = Math.max(0, newTotal - newPaid);
+        setTotalFeeAmount(newTotal);
+        setCorrectedTotalFee(newTotal);
+        if (newPaid > 0 && newBal > 0) {
+          setCollectionMode('remaining');
+          setPayingNow(newBal);
+          setClearFullPayment(true);
+        } else if (newPaid === 0) {
+          setCollectionMode('initial');
+          setPayingNow(Math.round(newTotal / 2));
+        }
+        if (onPaymentRecorded) {
+          onPaymentRecorded(updated, { isCorrection: false });
+        }
+      }
+      setEditingTuitionFee(false);
+    } catch (err) {
+      setErrorMsg(err.message || 'Could not update School Tuition Fee.');
+    } finally {
+      setSavingTuitionFee(false);
+    }
+  };
+
+  const handleSaveInlineCabFee = async () => {
+    const parsed = Math.max(0, Number(cabFeeDraft) || 0);
+    setSavingCabFee(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch(`/api/v1/students/${curStudent._id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          transportDetails: {
+            ...(curStudent.transportDetails || {}),
+            optedIn: true,
+            annualCabFee: parsed,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Failed to update Annual Cab Fee.');
+      }
+      const updated = data.student || data.data;
+      if (updated) {
+        setActiveStudent(updated);
+        const newTotal = Number(updated.feeDetails?.admissionFeeAmount || tuitionFeeTotal + parsed);
+        const newPaid = Number(updated.feeDetails?.amountPaid || 0);
+        const newBal = Math.max(0, newTotal - newPaid);
+        setTotalFeeAmount(newTotal);
+        setCorrectedTotalFee(newTotal);
+        if (newPaid > 0 && newBal > 0) {
+          setCollectionMode('remaining');
+          setPayingNow(newBal);
+          setClearFullPayment(true);
+        } else if (newPaid === 0) {
+          setCollectionMode('initial');
+          setPayingNow(Math.round(newTotal / 2));
+        }
+        if (onPaymentRecorded) {
+          onPaymentRecorded(updated, { isCorrection: false });
+        }
+      }
+      setEditingCabFee(false);
+    } catch (err) {
+      setErrorMsg(err.message || 'Could not update Annual Cab Fee.');
+    } finally {
+      setSavingCabFee(false);
+    }
+  };
 
   const handleSelectPaymentCategory = (cat) => {
     setPaymentCategory(cat);
@@ -373,6 +500,7 @@ export default function AdmissionPaymentModal({
           isRemainingPayment: isRemainingMode,
           paymentMethod,
           paymentCategory: hasCabOptIn ? paymentCategory : 'ALL_COMBINED',
+          annualCabFee: hasCabOptIn ? annualCabFee : 0,
           transactionId:
             transactionId.trim() ||
             (paymentMethod === 'Cash'
@@ -503,103 +631,158 @@ export default function AdmissionPaymentModal({
             </div>
           </div>
 
-          {/* Itemized Tuition + School Cab Fee Breakdown (when opted in) */}
+          {/* Simple Additive Fee Breakdown: Tuition + School Cab = Grand Total */}
           {hasCabOptIn && (
             <div className="px-5 py-3.5 bg-amber-50/60 border-b border-[#D97706]/30 space-y-2.5 text-xs">
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] text-[#1A365D]">
                   <Bus className="w-4 h-4 text-[#D97706]" />
-                  <span>Tuition + School Cab Fee Breakdown</span>
+                  <span>Tuition + School Cab Fee Summary</span>
                 </span>
-                {student.transportDetails?.cabNumber && (
+                {curStudent.transportDetails?.cabNumber && (
                   <span className="font-mono font-bold text-[10px] px-2 py-0.5 rounded bg-[#1A365D] text-amber-300">
-                    {student.transportDetails.cabNumber}
+                    {curStudent.transportDetails.cabNumber}
                   </span>
                 )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {/* 1. School Tuition Fee (Editable) */}
                 <div className="p-2.5 rounded-lg bg-white border border-slate-200">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 block">
-                    School Tuition Fee
-                  </span>
-                  <div className="font-mono font-bold text-[#1A365D] mt-0.5">
-                    ₹{tuitionFeeTotal.toLocaleString('en-IN')}
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[10px] font-bold uppercase text-slate-500">
+                      School Tuition Fee
+                    </span>
+                    {!editingTuitionFee && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTuitionFeeDraft(String(tuitionFeeTotal));
+                          setEditingTuitionFee(true);
+                        }}
+                        className="text-[10px] font-bold text-[#1A365D] hover:text-[#D97706] underline underline-offset-2 cursor-pointer"
+                      >
+                        ✏️ Edit
+                      </button>
+                    )}
                   </div>
-                  <div className="text-[10px] text-slate-500 font-mono">
-                    Paid: ₹{tuitionFeePaid.toLocaleString('en-IN')} | Due:{' '}
-                    <strong className={tuitionFeeDue > 0 ? 'text-amber-700' : 'text-emerald-700'}>
-                      ₹{tuitionFeeDue.toLocaleString('en-IN')}
-                    </strong>
-                  </div>
+
+                  {editingTuitionFee ? (
+                    <div className="mt-1.5 space-y-1.5">
+                      <input
+                        type="number"
+                        min={0}
+                        placeholder="e.g. 10000"
+                        value={tuitionFeeDraft}
+                        onChange={(e) => setTuitionFeeDraft(e.target.value)}
+                        className="w-full px-2 py-1 text-xs font-mono font-bold text-[#1A365D] border border-[#1A365D] rounded bg-slate-50"
+                      />
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={savingTuitionFee}
+                          onClick={handleSaveInlineTuitionFee}
+                          className="px-2 py-0.5 rounded bg-[#1A365D] hover:bg-brand-navyDark text-white text-[10px] font-bold cursor-pointer disabled:opacity-60"
+                        >
+                          {savingTuitionFee ? 'Saving...' : 'Save'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingTuitionFee(false)}
+                          className="px-2 py-0.5 rounded border border-slate-300 text-slate-600 text-[10px] font-bold cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="font-mono font-bold text-base text-[#1A365D] mt-0.5">
+                        ₹{tuitionFeeTotal.toLocaleString('en-IN')}
+                      </div>
+                      <div className="text-[10px] text-slate-500">
+                        Base annual school fee
+                      </div>
+                    </>
+                  )}
                 </div>
 
+                {/* 2. School Cab Facility Fee (Editable) */}
                 <div className="p-2.5 rounded-lg bg-white border border-[#D97706]/40">
-                  <span className="text-[10px] font-bold uppercase text-[#D97706] block">
-                    School Cab Facility Fee
-                  </span>
-                  <div className="font-mono font-bold text-[#1A365D] mt-0.5">
-                    ₹{annualCabFee.toLocaleString('en-IN')}
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[10px] font-bold uppercase text-[#D97706]">
+                      School Cab Fee
+                    </span>
+                    {!editingCabFee && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCabFeeDraft(annualCabFee > 0 ? String(annualCabFee) : '');
+                          setEditingCabFee(true);
+                        }}
+                        className="text-[10px] font-bold text-[#1A365D] hover:text-[#D97706] underline underline-offset-2 cursor-pointer"
+                      >
+                        ✏️ Edit
+                      </button>
+                    )}
                   </div>
-                  <div className="text-[10px] text-slate-500 font-mono">
-                    Paid: ₹{cabFeePaid.toLocaleString('en-IN')} |{' '}
-                    <strong className={cabFeeDue > 0 ? 'text-red-600' : 'text-emerald-700'}>
-                      {cabFeeDue > 0 ? `Due: ₹${cabFeeDue.toLocaleString('en-IN')}` : 'Paid'}
-                    </strong>
-                  </div>
+
+                  {editingCabFee ? (
+                    <div className="mt-1.5 space-y-1.5">
+                      <input
+                        type="number"
+                        min={0}
+                        placeholder="e.g. 4500"
+                        value={cabFeeDraft}
+                        onChange={(e) => setCabFeeDraft(e.target.value)}
+                        className="w-full px-2 py-1 text-xs font-mono font-bold text-[#1A365D] border border-[#D97706] rounded bg-amber-50/40"
+                      />
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={savingCabFee}
+                          onClick={handleSaveInlineCabFee}
+                          className="px-2 py-0.5 rounded bg-[#1A365D] hover:bg-brand-navyDark text-white text-[10px] font-bold cursor-pointer disabled:opacity-60"
+                        >
+                          {savingCabFee ? 'Saving...' : 'Save'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingCabFee(false)}
+                          className="px-2 py-0.5 rounded border border-slate-300 text-slate-600 text-[10px] font-bold cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="font-mono font-bold text-base text-[#1A365D] mt-0.5">
+                        + ₹{annualCabFee.toLocaleString('en-IN')}
+                      </div>
+                      <div className="text-[10px] text-slate-500">
+                        Distance-based transport fee
+                      </div>
+                    </>
+                  )}
                 </div>
 
+                {/* 3. Grand Total = Tuition + Cab */}
                 <div className="p-2.5 rounded-lg bg-[#1A365D] text-white">
                   <span className="text-[10px] font-bold uppercase text-amber-300 block">
-                    Grand Total Payable
+                    Grand Total (Tuition + Cab)
                   </span>
                   <div className="font-mono font-bold text-base mt-0.5">
-                    ₹{Math.max(0, existingTotal - existingPaid).toLocaleString('en-IN')}
+                    ₹{(tuitionFeeTotal + annualCabFee).toLocaleString('en-IN')}
                   </div>
-                  <div className="text-[10px] text-slate-300 font-mono">
-                    Total: ₹{existingTotal.toLocaleString('en-IN')}
+                  <div className="text-[10px] text-slate-200 font-mono">
+                    Paid: ₹{existingPaid.toLocaleString('en-IN')} • Due:{' '}
+                    <strong className="text-amber-300">
+                      ₹{Math.max(0, tuitionFeeTotal + annualCabFee - existingPaid).toLocaleString('en-IN')}
+                    </strong>
                   </div>
                 </div>
               </div>
-
-              {!isCorrectionMode && maxPayableNow > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  <span className="text-[10px] font-bold uppercase text-slate-600 mr-1">
-                    Pay Towards:
-                  </span>
-                  {[
-                    {
-                      id: 'ALL_COMBINED',
-                      label: `Combined Due (₹${maxPayableNow.toLocaleString('en-IN')})`,
-                      disabled: false,
-                    },
-                    {
-                      id: 'CAB_FEE',
-                      label: `School Cab Fee (₹${cabFeeDue.toLocaleString('en-IN')})`,
-                      disabled: cabFeeDue <= 0,
-                    },
-                    {
-                      id: 'TUITION_FEE',
-                      label: `Tuition Fee (₹${tuitionFeeDue.toLocaleString('en-IN')})`,
-                      disabled: tuitionFeeDue <= 0,
-                    },
-                  ].map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      disabled={opt.disabled}
-                      onClick={() => handleSelectPaymentCategory(opt.id)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                        paymentCategory === opt.id
-                          ? 'bg-[#1A365D] text-white border-[#1A365D] shadow-xs'
-                          : 'bg-white text-[#1A365D] border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 

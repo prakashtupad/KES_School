@@ -407,7 +407,7 @@ export default function StudentDirectoryDesk() {
                   key={st._id}
                   className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm space-y-2.5"
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-2">
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-mono font-bold text-[10px] px-2 py-0.5 rounded bg-slate-100 text-brand-navy border border-slate-200">
@@ -434,7 +434,7 @@ export default function StudentDirectoryDesk() {
                       <button
                         type="button"
                         onClick={() => setSelectedProfileStudent(st)}
-                        className="font-bold text-sm text-brand-navy hover:text-brand-gold mt-1 truncate block text-left underline decoration-brand-gold/50 underline-offset-2"
+                        className="font-bold text-sm text-brand-navy hover:text-brand-gold mt-1.5 truncate block text-left underline decoration-brand-gold/50 underline-offset-2"
                       >
                         {st.studentName}
                       </button>
@@ -443,36 +443,60 @@ export default function StudentDirectoryDesk() {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                    {/* Mobile Action Bar (Clean Wrapping Row — 360px–412px Safe) */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
                       {hasPaidAny && (
                         <button
                           type="button"
                           onClick={() => setReceiptModalStudent(st)}
-                          className="p-1.5 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                          className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-[11px] font-bold cursor-pointer"
                           title="Print Official Fee Receipt"
                         >
                           <Printer className="w-3.5 h-3.5" />
+                          <span>Receipt</span>
                         </button>
                       )}
                       {isAdmin && (
                         <button
                           type="button"
                           onClick={() => setPaymentModalStudent(st)}
-                          className="p-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                          className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 text-[11px] font-bold cursor-pointer"
                           title={
                             hasPaidAny
                               ? 'Collect Remaining or Edit Fee Amount'
                               : 'Collect Admission Fee'
                           }
                         >
-                          <IndianRupee className="w-3.5 h-3.5" />
+                          <IndianRupee className="w-3.5 h-3.5 text-brand-gold" />
+                          <span>Fee</span>
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => setMarksModalStudent(st)}
+                        className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 text-[#1A365D] hover:bg-indigo-100 text-[11px] font-bold cursor-pointer"
+                        title="Publish / Update Digital Report Card Marks"
+                      >
+                        <Award className="w-3.5 h-3.5 text-[#D97706]" />
+                        <span>Marks</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIdCardModalTitle(`Digital ID Card — ${st.studentName}`);
+                          setIdCardModalStudents([st]);
+                        }}
+                        className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-[#D97706]/50 bg-amber-50 text-[#1A365D] hover:bg-amber-100 text-[11px] font-bold cursor-pointer"
+                        title="View / Download / Print Student ID Card"
+                      >
+                        <CreditCard className="w-3.5 h-3.5 text-[#D97706]" />
+                        <span>ID Card</span>
+                      </button>
                       {isAdmin && (hasPaidAny || paymentLogsCount > 0) && (
                         <button
                           type="button"
                           onClick={() => setAuditLogModalStudent(st)}
-                          className="p-1.5 rounded-lg border border-slate-300 bg-slate-50 text-[#1A365D] hover:bg-slate-100 relative"
+                          className="p-1.5 rounded-lg border border-slate-300 bg-slate-50 text-[#1A365D] hover:bg-slate-100 relative cursor-pointer"
                           title="View Payment & Edit History Log"
                         >
                           <History className="w-3.5 h-3.5" />
@@ -485,19 +509,8 @@ export default function StudentDirectoryDesk() {
                       )}
                       <button
                         type="button"
-                        onClick={() => {
-                          setIdCardModalTitle(`Digital ID Card — ${st.studentName}`);
-                          setIdCardModalStudents([st]);
-                        }}
-                        className="p-1.5 rounded-lg border border-[#D97706]/50 bg-amber-50 text-[#1A365D] hover:bg-amber-100"
-                        title="View / Download / Print Student ID Card"
-                      >
-                        <CreditCard className="w-3.5 h-3.5 text-[#D97706]" />
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => setSelectedProfileStudent(st)}
-                        className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                        className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
                         title="View Full Student Profile"
                       >
                         <Eye className="w-3.5 h-3.5 text-brand-navy" />
@@ -506,7 +519,7 @@ export default function StudentDirectoryDesk() {
                         <button
                           type="button"
                           onClick={() => handleOpenEditStudent(st)}
-                          className="p-1.5 rounded-lg border border-slate-200 text-brand-navy hover:bg-slate-50"
+                          className="p-1.5 rounded-lg border border-slate-200 text-brand-navy hover:bg-slate-50 cursor-pointer"
                           title="Edit Student"
                         >
                           <Pencil className="w-3.5 h-3.5 text-brand-gold" />

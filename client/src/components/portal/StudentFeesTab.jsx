@@ -35,7 +35,7 @@ export default function StudentFeesTab({ student }) {
   const hasCabOptIn =
     Boolean(student.transportDetails?.optedIn) || Number(fee.cabFeeAmount || 0) > 0;
   const annualCabFee = hasCabOptIn
-    ? Number(student.transportDetails?.annualCabFee || fee.cabFeeAmount || 6000)
+    ? Math.max(0, Number(student.transportDetails?.annualCabFee ?? fee.cabFeeAmount ?? 0))
     : 0;
   const cabFeePaid = hasCabOptIn
     ? Math.min(

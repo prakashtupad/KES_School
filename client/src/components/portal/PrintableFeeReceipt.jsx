@@ -117,7 +117,7 @@ export default function PrintableFeeReceipt({ student, onClose }) {
   const hasCabFee =
     Boolean(student.transportDetails?.optedIn) || Number(feeDetails.cabFeeAmount || 0) > 0;
   const cabFeeTotal = hasCabFee
-    ? Number(student.transportDetails?.annualCabFee || feeDetails.cabFeeAmount || 6000)
+    ? Math.max(0, Number(student.transportDetails?.annualCabFee ?? feeDetails.cabFeeAmount ?? 0))
     : 0;
   const cabFeePaid = hasCabFee
     ? Math.min(

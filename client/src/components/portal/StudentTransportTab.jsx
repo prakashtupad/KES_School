@@ -55,13 +55,16 @@ export default function StudentTransportTab({ student, onOpenFeesTab }) {
   const startStopLabel = routeParts[0] || pickupPoint;
   const midStopLabel = routeParts.length > 1 ? routeParts[1] : 'Main Road';
 
-  const annualCabFee = Number(td.annualCabFee || fee.cabFeeAmount || 6000);
+  const annualCabFee = Math.max(
+    0,
+    Number(td.annualCabFee ?? fee.cabFeeAmount ?? 0)
+  );
   const cabFeePaid = Math.min(
     annualCabFee,
     Number(td.cabFeePaid ?? fee.cabFeePaid ?? 0)
   );
   const cabFeeDue = Math.max(0, annualCabFee - cabFeePaid);
-  const isCabPaid = cabFeeDue <= 0;
+  const isCabPaid = annualCabFee > 0 && cabFeeDue <= 0;
 
   return (
     <div className="space-y-4 sm:space-y-5">

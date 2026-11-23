@@ -43,7 +43,6 @@ const CAB_ROUTE_PRESETS = [
     routeName: 'Route 1: Khanatti – Mallapur – Mudalagi',
     pickupTime: '07:45 AM',
     dropTime: '04:15 PM',
-    annualCabFee: 6000,
   },
   {
     id: 'route2',
@@ -54,7 +53,6 @@ const CAB_ROUTE_PRESETS = [
     routeName: 'Route 2: Khanatti – Huligund – Nearby Villages',
     pickupTime: '08:00 AM',
     dropTime: '04:20 PM',
-    annualCabFee: 6000,
   },
 ];
 
@@ -69,7 +67,7 @@ const DEFAULT_TRANSPORT_DETAILS = {
   pickupPoint: 'Khanatti Main Circle',
   pickupTime: '07:45 AM',
   dropTime: '04:15 PM',
-  annualCabFee: 6000,
+  annualCabFee: '',
   cabFeePaid: 0,
   cabFeeStatus: 'Not_Applicable',
 };
@@ -268,9 +266,11 @@ function mapStudentToForm(st) {
         st.transportDetails?.optedIn || st.transportRequired || st.schoolTransportOptIn
       ),
       annualCabFee:
-        Number(st.transportDetails?.annualCabFee) > 0
+        st.transportDetails?.annualCabFee !== undefined &&
+        st.transportDetails?.annualCabFee !== null &&
+        Number(st.transportDetails.annualCabFee) > 0
           ? Number(st.transportDetails.annualCabFee)
-          : 6000,
+          : '',
     },
 
     studentName: st.studentName || '',
@@ -391,6 +391,28 @@ export default function DirectAdmissionOnboardingModal({
   const [step4ClearFullPayment, setStep4ClearFullPayment] = useState(false);
   const [step4PaymentMethod, setStep4PaymentMethod] = useState('Cash');
   const [step4TransactionId, setStep4TransactionId] = useState('');
+
+  // Keep Step 4 Total Applicable Fee automatically equal to Base Tuition (10000) + Cab Fee when opted in
+  const currentFormCabFee = formData.transportDetails?.optedIn
+    ? Math.max(0, Number(formData.transportDetails?.annualCabFee) || 0)
+    : 0;
+
+  useEffect(() => {
+    const baseTuition = isEditing
+      ? Number(initialStudent?.feeDetails?.tuitionFeeAmount) ||
+        Math.max(
+          0,
+          Number(initialStudent?.feeDetails?.admissionFeeAmount || 10000) -
+            Number(initialStudent?.feeDetails?.cabFeeAmount || 0)
+        ) ||
+        10000
+      : 10000;
+    const combinedTotal = baseTuition + currentFormCabFee;
+    setStep4TotalFee(combinedTotal);
+    if (!isEditing) {
+      setStep4PayingNow(step4ClearFullPayment ? combinedTotal : Math.round(combinedTotal / 2));
+    }
+  }, [currentFormCabFee, isEditing, initialStudent, step4ClearFullPayment]);
 
   useEffect(() => {
     if (initialStudent) {
@@ -694,7 +716,7 @@ export default function DirectAdmissionOnboardingModal({
         optedIn: cabOptedIn,
         routeName: cabOptedIn ? resolvedTransportRoute : '',
         annualCabFee: cabOptedIn
-          ? Number(formData.transportDetails?.annualCabFee || 6000)
+          ? Math.max(0, Number(formData.transportDetails?.annualCabFee) || 0)
           : 0,
       },
       fatherName: formData.father.name.trim(),
@@ -756,6 +778,8 @@ export default function DirectAdmissionOnboardingModal({
               currentPaymentAmount: numericStep4PayingNow,
               amountPaid: step4CumulativePaid,
               admissionFeeAmount: numericStep4TotalFee,
+              tuitionFeeAmount: Math.max(0, numericStep4TotalFee - currentFormCabFee),
+              annualCabFee: currentFormCabFee,
               isRemainingPayment: existingPaidInForm > 0,
               paymentMethod: step4PaymentMethod,
               transactionId:
@@ -1390,7 +1414,7 @@ export default function DirectAdmissionOnboardingModal({
                       School Cab / Van Facility Opt-In
                     </h4>
                     <p className="text-[11px] text-slate-500">
-                      Visible only in Student &amp; Parent Portal when opted in (+ ₹6,000 Annual Cab Fee)
+                      Visible only in Student &amp; Parent Portal when opted in (distance-based Annual Cab Fee)
                     </p>
                   </div>
                 </div>
@@ -1416,9 +1440,6 @@ export default function DirectAdmissionOnboardingModal({
                     type="button"
                     onClick={() => {
                       updateNested('transportDetails', 'optedIn', true);
-                      if (!Number(formData.transportDetails?.annualCabFee)) {
-                        updateNested('transportDetails', 'annualCabFee', 6000);
-                      }
                       updateRoot('transportRequired', true);
                       updateRoot('schoolTransportOptIn', true);
                       updateRoot(
@@ -1433,22 +1454,18 @@ export default function DirectAdmissionOnboardingModal({
                         : 'text-slate-600 hover:text-[#1A365D]'
                     }`}
                   >
-                    Yes (+ ₹6,000)
+                    Yes (Opt-In)
                   </button>
                 </div>
               </div>
 
               {formData.transportDetails?.optedIn && (
                 <div className="space-y-3 pt-2 border-t border-slate-200">
-                  {/* Automatic ₹6,000 Cab Fee Notice Pill */}
+                  {/* Distance-based Cab Fee Notice Pill */}
                   <div className="p-2.5 rounded-lg bg-amber-50 border border-[#D97706]/40 text-amber-950 text-xs font-semibold flex items-center gap-2">
                     <IndianRupee className="w-4 h-4 text-[#D97706] flex-shrink-0" />
                     <span>
-                      Note: ₹
-                      {Number(formData.transportDetails?.annualCabFee || 6000).toLocaleString(
-                        'en-IN'
-                      )}{' '}
-                      Annual Cab Fee will be added to this student&apos;s Fee Ledger as Pending Due.
+                      Note: Enter the student&apos;s distance-based Annual Cab Fee below. This amount will be added to the student&apos;s Fee Ledger as Pending Due.
                     </span>
                   </div>
 
@@ -1481,7 +1498,6 @@ export default function DirectAdmissionOnboardingModal({
                                 routeName: preset.routeName,
                                 pickupTime: preset.pickupTime,
                                 dropTime: preset.dropTime,
-                                annualCabFee: preset.annualCabFee,
                               },
                             }));
                           }
@@ -1560,12 +1576,13 @@ export default function DirectAdmissionOnboardingModal({
                       <input
                         type="number"
                         min={0}
-                        value={formData.transportDetails?.annualCabFee ?? 6000}
+                        placeholder="Enter cab fee e.g. 4500"
+                        value={formData.transportDetails?.annualCabFee ?? ''}
                         onChange={(e) =>
                           updateNested(
                             'transportDetails',
                             'annualCabFee',
-                            Number(e.target.value) || 0
+                            e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0)
                           )
                         }
                         className="w-full text-xs sm:text-sm p-2 rounded-lg border border-slate-300 bg-white font-mono font-bold text-[#1A365D]"

@@ -3,10 +3,8 @@ const Student = require('../models/Student');
 const { getDbStatus } = require('../config/db');
 const memoryStore = require('../utils/memoryStore');
 
-const DEFAULT_ANNUAL_CAB_FEE = 6000;
-
 /**
- * Normalize transportDetails sub-document cleanly
+ * Normalize transportDetails sub-document cleanly (distance-based variable annualCabFee)
  */
 function normalizeTransportDetails(raw = {}, existing = {}) {
   const td = raw.transportDetails || {};
@@ -33,19 +31,31 @@ function normalizeTransportDetails(raw = {}, existing = {}) {
     };
   }
 
-  const parsedAnnualFee = Number(td.annualCabFee);
-  const annualCabFee =
-    !Number.isNaN(parsedAnnualFee) && parsedAnnualFee > 0
-      ? parsedAnnualFee
-      : Number(existing.annualCabFee) > 0
-        ? Number(existing.annualCabFee)
-        : DEFAULT_ANNUAL_CAB_FEE;
+  // Respect whatever numeric annualCabFee >= 0 the admin entered (no hardcoded 6000 fallback)
+  let annualCabFee = 0;
+  if (td.annualCabFee !== undefined && td.annualCabFee !== '' && td.annualCabFee !== null) {
+    const parsed = Number(td.annualCabFee);
+    annualCabFee = !Number.isNaN(parsed) && parsed >= 0 ? parsed : 0;
+  } else if (existing.annualCabFee !== undefined && existing.annualCabFee !== null) {
+    const parsedExisting = Number(existing.annualCabFee);
+    annualCabFee = !Number.isNaN(parsedExisting) && parsedExisting >= 0 ? parsedExisting : 0;
+  }
 
   const existingPaid = Number(existing.cabFeePaid || 0);
   const incomingPaid = td.cabFeePaid !== undefined ? Number(td.cabFeePaid) : existingPaid;
-  const cabFeePaid = Math.min(annualCabFee, Math.max(0, Number.isNaN(incomingPaid) ? existingPaid : incomingPaid));
+  const cabFeePaid = Math.min(
+    annualCabFee,
+    Math.max(0, Number.isNaN(incomingPaid) ? existingPaid : incomingPaid)
+  );
+  const cabFeeDue = Math.max(0, annualCabFee - cabFeePaid);
   const cabFeeStatus =
-    cabFeePaid >= annualCabFee ? 'Paid' : cabFeePaid > 0 ? 'Partial' : 'Pending';
+    annualCabFee <= 0
+      ? 'Not_Applicable'
+      : cabFeeDue === 0
+        ? 'Paid'
+        : cabFeePaid > 0
+          ? 'Partial'
+          : 'Pending';
 
   const routeName = String(
     td.routeName || raw.transportRoute || existing.routeName || 'Route 1: Khanatti – Mallapur – Mudalgi'
@@ -69,19 +79,29 @@ function normalizeTransportDetails(raw = {}, existing = {}) {
 }
 
 /**
- * Reconcile combined feeDetails when transportDetails.optedIn changes or on new admission
+ * Reconcile combined feeDetails when transportDetails.optedIn or annualCabFee changes
  */
-function reconcileFeeWithTransport(existingFee = {}, transportDetails = {}) {
+function reconcileFeeWithTransport(existingFee = {}, transportDetails = {}, explicitTuitionFee = undefined) {
   const prevTotal = Number(existingFee.admissionFeeAmount || 10000);
   const prevCabFee = Number(existingFee.cabFeeAmount || 0);
+  const parsedExplicitTuition =
+    explicitTuitionFee !== undefined && explicitTuitionFee !== '' && explicitTuitionFee !== null
+      ? Number(explicitTuitionFee)
+      : NaN;
   const prevTuition =
-    Number(existingFee.tuitionFeeAmount) > 0
-      ? Number(existingFee.tuitionFeeAmount)
-      : Math.max(0, prevTotal - prevCabFee) || 10000;
+    !Number.isNaN(parsedExplicitTuition) && parsedExplicitTuition >= 0
+      ? parsedExplicitTuition
+      : Number(existingFee.tuitionFeeAmount) > 0
+        ? Number(existingFee.tuitionFeeAmount)
+        : Math.max(0, prevTotal - prevCabFee) || 10000;
 
   const prevPaid = Number(existingFee.amountPaid || 0);
-  const newCabFee = transportDetails.optedIn ? Number(transportDetails.annualCabFee || DEFAULT_ANNUAL_CAB_FEE) : 0;
-  const newCabPaid = transportDetails.optedIn ? Number(transportDetails.cabFeePaid || 0) : 0;
+  const newCabFee = transportDetails.optedIn
+    ? Math.max(0, Number(transportDetails.annualCabFee) || 0)
+    : 0;
+  const newCabPaid = transportDetails.optedIn
+    ? Math.min(newCabFee, Math.max(0, Number(transportDetails.cabFeePaid) || 0))
+    : 0;
   const newCombinedTotal = prevTuition + newCabFee;
   const newBalanceDue = Math.max(0, newCombinedTotal - prevPaid);
   const newStatus =
@@ -621,10 +641,14 @@ exports.updateStudent = async (req, res) => {
     }
 
     const dbStatus = getDbStatus();
+    const explicitTuitionFee = updatePayload.tuitionFeeAmount;
+    delete updatePayload.tuitionFeeAmount;
+
     const hasTransportUpdate =
       updatePayload.transportDetails !== undefined ||
       updatePayload.transportRequired !== undefined ||
-      updatePayload.schoolTransportOptIn !== undefined;
+      updatePayload.schoolTransportOptIn !== undefined ||
+      explicitTuitionFee !== undefined;
 
     // Never allow accidental overwrite of feeDetails from profile edit payload
     delete updatePayload.feeDetails;
@@ -651,7 +675,8 @@ exports.updateStudent = async (req, res) => {
           : 'Self / Walk';
         updatePayload.feeDetails = reconcileFeeWithTransport(
           existingDoc.feeDetails || {},
-          normalizedTd
+          normalizedTd,
+          explicitTuitionFee
         );
       }
 
