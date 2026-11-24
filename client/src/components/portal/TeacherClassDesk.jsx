@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   BookOpen,
   PlusCircle,
+  Pencil,
   Trash2,
   Calendar,
   GraduationCap,
@@ -58,6 +59,8 @@ export default function TeacherClassDesk() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [editingHomeworkId, setEditingHomeworkId] = useState(null);
+  const formCardRef = useRef(null);
 
   // WhatsApp Parent Broadcast Modal State
   const [broadcastHomework, setBroadcastHomework] = useState(null);
@@ -91,6 +94,39 @@ export default function TeacherClassDesk() {
     fetchHomework();
   }, [fetchHomework]);
 
+  const resetForm = () => {
+    setEditingHomeworkId(null);
+    setSelectedGrade('All Classes');
+    setSelectedSection('A');
+    setSubject('');
+    setTitle('');
+    setDescription('');
+    setDueDate('');
+  };
+
+  const handleStartEditHomework = (item) => {
+    setError('');
+    setSuccessMsg('');
+    setEditingHomeworkId(item._id);
+    setSelectedGrade(item.grade || 'All Classes');
+    setSelectedSection(item.section || 'A');
+    setSubject(item.subject || '');
+    setTitle(item.title || '');
+    setDescription(item.description || '');
+    setDueDate(
+      item.dueDate ? new Date(item.dueDate).toISOString().slice(0, 10) : ''
+    );
+    if (formCardRef.current) {
+      formCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setError('');
+    setSuccessMsg('');
+    resetForm();
+  };
+
   const handlePublishHomework = async (e) => {
     e.preventDefault();
     setError('');
@@ -101,10 +137,14 @@ export default function TeacherClassDesk() {
       return;
     }
 
+    const isEditing = Boolean(editingHomeworkId);
     setSubmitting(true);
     try {
-      const res = await fetch('/api/v1/teacher/homework', {
-        method: 'POST',
+      const endpoint = isEditing
+        ? `/api/v1/teacher/homework/${editingHomeworkId}`
+        : '/api/v1/teacher/homework';
+      const res = await fetch(endpoint, {
+        method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -115,20 +155,25 @@ export default function TeacherClassDesk() {
           subject: subject.trim(),
           title: title.trim(),
           description: description.trim(),
-          dueDate: dueDate || undefined,
+          dueDate: dueDate || '',
         }),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Failed to publish homework.');
+        throw new Error(
+          data.message ||
+            (isEditing ? 'Failed to update homework.' : 'Failed to publish homework.')
+        );
       }
 
-      setSuccessMsg(data.message || 'Homework assignment published successfully!');
-      setSubject('');
-      setTitle('');
-      setDescription('');
-      setDueDate('');
+      setSuccessMsg(
+        data.message ||
+          (isEditing
+            ? 'Homework assignment updated successfully!'
+            : 'Homework assignment published successfully!')
+      );
+      resetForm();
       fetchHomework();
     } catch (err) {
       setError(err.message);
@@ -147,6 +192,9 @@ export default function TeacherClassDesk() {
       });
       if (res.ok) {
         setHomeworkList((prev) => prev.filter((item) => String(item._id) !== String(id)));
+        if (String(editingHomeworkId) === String(id)) {
+          resetForm();
+        }
       }
     } catch (err) {
       console.error('Failed to delete homework:', err);
@@ -207,12 +255,37 @@ export default function TeacherClassDesk() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left: Publish Homework Form */}
-        <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200 shadow-sm p-5 sm:p-6">
-          <h3 className="font-serif font-bold text-base text-brand-navy border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-            <PlusCircle className="w-4 h-4 text-brand-gold" />
-            <span>Publish New Homework</span>
-          </h3>
+        {/* Left: Publish / Edit Homework Form */}
+        <div
+          ref={formCardRef}
+          className={`lg:col-span-5 bg-white rounded-xl border shadow-sm p-5 sm:p-6 transition ${
+            editingHomeworkId
+              ? 'border-brand-gold ring-2 ring-amber-400/20'
+              : 'border-slate-200'
+          }`}
+        >
+          <div className="border-b border-slate-100 pb-3 mb-4 flex items-center justify-between gap-2">
+            <h3 className="font-serif font-bold text-base text-brand-navy flex items-center gap-2">
+              {editingHomeworkId ? (
+                <Pencil className="w-4 h-4 text-brand-gold" />
+              ) : (
+                <PlusCircle className="w-4 h-4 text-brand-gold" />
+              )}
+              <span>
+                {editingHomeworkId ? 'Edit Homework Assignment' : 'Publish New Homework'}
+              </span>
+            </h3>
+            {editingHomeworkId && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-brand-navy bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Cancel</span>
+              </button>
+            )}
+          </div>
 
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-300 text-red-800 text-xs font-medium">
@@ -341,13 +414,31 @@ export default function TeacherClassDesk() {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-brand-navy hover:bg-brand-navyDark disabled:opacity-60 text-white font-bold py-2.5 px-5 rounded-lg shadow transition text-sm"
-            >
-              {submitting ? 'Publishing...' : 'Publish Homework Assignment'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex-1 bg-brand-navy hover:bg-brand-navyDark disabled:opacity-60 text-white font-bold py-2.5 px-5 rounded-lg shadow transition text-sm cursor-pointer"
+              >
+                {submitting
+                  ? editingHomeworkId
+                    ? 'Saving Changes...'
+                    : 'Publishing...'
+                  : editingHomeworkId
+                    ? 'Save Homework Changes'
+                    : 'Publish Homework Assignment'}
+              </button>
+              {editingHomeworkId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  disabled={submitting}
+                  className="px-4 py-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
@@ -395,10 +486,16 @@ export default function TeacherClassDesk() {
               {homeworkList.map((item) => {
                 const groupWaUrl = getWhatsAppGroupBroadcastUrl(item);
 
+                const isBeingEdited = String(editingHomeworkId) === String(item._id);
+
                 return (
                   <article
                     key={item._id}
-                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:border-brand-gold/50 transition"
+                    className={`bg-white rounded-xl border shadow-sm p-5 transition ${
+                      isBeingEdited
+                        ? 'border-brand-gold ring-2 ring-amber-400/25 bg-amber-50/20'
+                        : 'border-slate-200 hover:border-brand-gold/50'
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -416,20 +513,39 @@ export default function TeacherClassDesk() {
                               Due: {new Date(item.dueDate).toLocaleDateString('en-IN')}
                             </span>
                           )}
+                          {isBeingEdited && (
+                            <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold uppercase tracking-wider">
+                              Editing
+                            </span>
+                          )}
                         </div>
                         <h4 className="font-serif font-bold text-base text-brand-navy">
                           {item.title}
                         </h4>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteHomework(item._id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
-                        title="Delete assignment"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditHomework(item)}
+                          className={`p-1.5 rounded-lg transition cursor-pointer ${
+                            isBeingEdited
+                              ? 'text-brand-gold bg-amber-100'
+                              : 'text-slate-400 hover:text-brand-navy hover:bg-slate-100'
+                          }`}
+                          title="Edit assignment"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteHomework(item._id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                          title="Delete assignment"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
                     <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mt-2 whitespace-pre-line">

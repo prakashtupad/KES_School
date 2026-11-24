@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { UserPlus, Users, Shield, CheckCircle, Ban } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { UserPlus, Users, Shield, CheckCircle, Ban, Pencil, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const GRADE_OPTIONS = [
@@ -16,7 +16,7 @@ const GRADE_OPTIONS = [
 
 export default function StaffManagement() {
   const { user, token } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,9 +28,11 @@ export default function StaffManagement() {
   const [phone, setPhone] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('All Classes');
 
+  const [editingStaffId, setEditingStaffId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const formCardRef = useRef(null);
 
   const fetchStaff = useCallback(async () => {
     setLoading(true);
@@ -55,50 +57,102 @@ export default function StaffManagement() {
     fetchStaff();
   }, [fetchStaff]);
 
-  const toggleGradeSelection = (grade) => {
-    setAssignedGrades((prev) =>
-      prev.includes(grade) ? prev.filter((g) => g !== grade) : [...prev, grade]
-    );
+  const resetForm = () => {
+    setEditingStaffId(null);
+    setFullName('');
+    setEmail('');
+    setPassword('');
+    setRole('teacher');
+    setPhone('');
+    setSelectedGrade('All Classes');
   };
 
-  const handleCreateUser = async (e) => {
+  const handleStartEditStaff = (member) => {
+    setError('');
+    setSuccessMsg('');
+    setEditingStaffId(member._id);
+    setFullName(member.fullName || '');
+    setEmail(member.email || '');
+    setPassword('');
+    setRole(member.role === 'admin' ? 'admin' : 'teacher');
+    setPhone(member.phone || '');
+    const primaryGrade =
+      Array.isArray(member.assignedGrades) && member.assignedGrades.length > 0
+        ? member.assignedGrades[0]
+        : 'All Classes';
+    setSelectedGrade(GRADE_OPTIONS.includes(primaryGrade) ? primaryGrade : 'All Classes');
+    if (formCardRef.current) {
+      formCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setError('');
+    setSuccessMsg('');
+    resetForm();
+  };
+
+  const handleSubmitStaff = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
 
-    if (!fullName.trim() || !email.trim() || password.length < 4) {
-      setError('Please provide full name, official email, and a password of at least 4 characters.');
+    const isEditing = Boolean(editingStaffId);
+
+    if (!fullName.trim() || !email.trim()) {
+      setError('Please provide full name and official email.');
+      return;
+    }
+
+    if (!isEditing && password.length < 4) {
+      setError('Please provide an initial password of at least 4 characters.');
+      return;
+    }
+
+    if (isEditing && password.length > 0 && password.length < 4) {
+      setError('New password must be at least 4 characters long (or leave blank to keep existing).');
       return;
     }
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/v1/auth/users', {
-        method: 'POST',
+      const payload = {
+        fullName: fullName.trim(),
+        email: email.trim(),
+        role: isAdmin ? role : 'teacher',
+        phone: phone.trim(),
+        assignedGrades: role === 'teacher' ? [selectedGrade] : ['All Classes'],
+      };
+      if (!isEditing || password.length >= 4) {
+        payload.password = password;
+      }
+
+      const endpoint = isEditing
+        ? `/api/v1/auth/users/${editingStaffId}`
+        : '/api/v1/auth/users';
+
+      const res = await fetch(endpoint, {
+        method: isEditing ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          fullName: fullName.trim(),
-          email: email.trim(),
-          password,
-          role: isAdmin ? role : 'teacher',
-          phone: phone.trim(),
-          assignedGrades: role === 'teacher' ? [selectedGrade] : ['All Classes'],
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Unable to create account.');
+        throw new Error(
+          data.message ||
+            (isEditing ? 'Unable to update staff account.' : 'Unable to create account.')
+        );
       }
 
-      setSuccessMsg(data.message || 'Staff account created!');
-      setFullName('');
-      setEmail('');
-      setPassword('');
-      setPhone('');
+      setSuccessMsg(
+        data.message ||
+          (isEditing ? 'Staff account updated successfully!' : 'Staff account created!')
+      );
+      resetForm();
       fetchStaff();
     } catch (err) {
       setError(err.message);
@@ -143,12 +197,35 @@ export default function StaffManagement() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left: Create Account Form */}
-        <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200 shadow-sm p-5 sm:p-6">
-          <h3 className="font-serif font-bold text-base text-brand-navy border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-            <UserPlus className="w-4 h-4 text-brand-gold" />
-            <span>Create Staff Account</span>
-          </h3>
+        {/* Left: Create / Edit Account Form */}
+        <div
+          ref={formCardRef}
+          className={`lg:col-span-5 bg-white rounded-xl border shadow-sm p-5 sm:p-6 transition ${
+            editingStaffId
+              ? 'border-brand-gold ring-2 ring-amber-400/20'
+              : 'border-slate-200'
+          }`}
+        >
+          <div className="border-b border-slate-100 pb-3 mb-4 flex items-center justify-between gap-2">
+            <h3 className="font-serif font-bold text-base text-brand-navy flex items-center gap-2">
+              {editingStaffId ? (
+                <Pencil className="w-4 h-4 text-brand-gold" />
+              ) : (
+                <UserPlus className="w-4 h-4 text-brand-gold" />
+              )}
+              <span>{editingStaffId ? 'Edit Staff Account' : 'Create Staff Account'}</span>
+            </h3>
+            {editingStaffId && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-brand-navy bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Cancel</span>
+              </button>
+            )}
+          </div>
 
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-300 text-red-800 text-xs font-medium">
@@ -162,7 +239,7 @@ export default function StaffManagement() {
             </div>
           )}
 
-          <form onSubmit={handleCreateUser} className="space-y-4">
+          <form onSubmit={handleSubmitStaff} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Full Name *
@@ -194,15 +271,15 @@ export default function StaffManagement() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Initial Password *
+                  {editingStaffId ? 'New Password (Optional)' : 'Initial Password *'}
                 </label>
                 <input
                   type="password"
-                  required
-                  minLength={4}
+                  required={!editingStaffId}
+                  minLength={editingStaffId ? undefined : 4}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min 4 characters"
+                  placeholder={editingStaffId ? 'Leave blank to keep' : 'Min 4 characters'}
                   className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:border-brand-navy"
                 />
               </div>
@@ -255,13 +332,31 @@ export default function StaffManagement() {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-brand-navy hover:bg-brand-navyDark disabled:opacity-60 text-white font-bold py-2.5 px-5 rounded-lg shadow transition text-sm"
-            >
-              {submitting ? 'Creating Account...' : 'Create Staff Account'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex-1 bg-brand-navy hover:bg-brand-navyDark disabled:opacity-60 text-white font-bold py-2.5 px-5 rounded-lg shadow transition text-sm cursor-pointer"
+              >
+                {submitting
+                  ? editingStaffId
+                    ? 'Saving Changes...'
+                    : 'Creating Account...'
+                  : editingStaffId
+                    ? 'Save Staff Changes'
+                    : 'Create Staff Account'}
+              </button>
+              {editingStaffId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  disabled={submitting}
+                  className="px-4 py-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
@@ -278,56 +373,105 @@ export default function StaffManagement() {
             <div className="p-8 text-center text-sm text-slate-500">Loading staff roster...</div>
           ) : (
             <div className="space-y-3">
-              {staffList.map((member) => (
-                <div
-                  key={member._id}
-                  className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                >
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-sm text-brand-navy">{member.fullName}</span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-brand-navy/10 text-brand-navy text-[10px] font-mono font-bold uppercase">
-                        <Shield className="w-3 h-3 text-brand-gold" />
-                        {member.role}
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          member.isActive
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-red-50 text-red-700 border border-red-200'
-                        }`}
-                      >
-                        {member.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    <div className="text-xs font-mono text-slate-600 mt-0.5">{member.email}</div>
-                  </div>
+              {staffList.map((member) => {
+                const isBeingEdited = String(editingStaffId) === String(member._id);
+                const assignedGradeLabel =
+                  Array.isArray(member.assignedGrades) && member.assignedGrades.length > 0
+                    ? member.assignedGrades.join(', ')
+                    : '';
 
-                  {isAdmin && member.email !== user.email && (
+                return (
+                  <div
+                    key={member._id}
+                    className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition ${
+                      isBeingEdited
+                        ? 'border-brand-gold ring-2 ring-amber-400/25 bg-amber-50/30'
+                        : 'border-slate-200 bg-slate-50/60 hover:border-slate-300'
+                    }`}
+                  >
                     <button
                       type="button"
-                      onClick={() => handleToggleActive(member)}
-                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-semibold transition ${
-                        member.isActive
-                          ? 'bg-white hover:bg-red-50 text-red-700 border-red-200'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600'
-                      }`}
+                      onClick={() => isAdmin && handleStartEditStaff(member)}
+                      className={`text-left min-w-0 flex-1 ${isAdmin ? 'cursor-pointer group' : ''}`}
+                      title={isAdmin ? 'Click to edit staff details' : undefined}
                     >
-                      {member.isActive ? (
-                        <>
-                          <Ban className="w-3.5 h-3.5" />
-                          <span>Deactivate</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          <span>Activate</span>
-                        </>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-bold text-sm text-brand-navy group-hover:text-brand-gold transition">
+                          {member.fullName}
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-brand-navy/10 text-brand-navy text-[10px] font-mono font-bold uppercase">
+                          <Shield className="w-3 h-3 text-brand-gold" />
+                          {member.role}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            member.isActive
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-red-50 text-red-700 border border-red-200'
+                          }`}
+                        >
+                          {member.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                        {isBeingEdited && (
+                          <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold uppercase">
+                            Editing
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs font-mono text-slate-600 mt-0.5">{member.email}</div>
+                      {(member.phone || (member.role === 'teacher' && assignedGradeLabel)) && (
+                        <div className="text-[11px] text-slate-500 mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                          {member.phone && <span>📞 {member.phone}</span>}
+                          {member.role === 'teacher' && assignedGradeLabel && (
+                            <span>🎓 {assignedGradeLabel}</span>
+                          )}
+                        </div>
                       )}
                     </button>
-                  )}
-                </div>
-              ))}
+
+                    {isAdmin && (
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditStaff(member)}
+                          className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer ${
+                            isBeingEdited
+                              ? 'bg-amber-100 text-brand-navy border-brand-gold'
+                              : 'bg-white hover:bg-slate-100 text-brand-navy border-slate-300'
+                          }`}
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-brand-gold" />
+                          <span>Edit</span>
+                        </button>
+
+                        {member.email !== user.email && (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleActive(member)}
+                            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer ${
+                              member.isActive
+                                ? 'bg-white hover:bg-red-50 text-red-700 border-red-200'
+                                : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600'
+                            }`}
+                          >
+                            {member.isActive ? (
+                              <>
+                                <Ban className="w-3.5 h-3.5" />
+                                <span>Deactivate</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                <span>Activate</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

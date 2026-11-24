@@ -304,34 +304,68 @@ router.post('/users', protect, restrictTo('admin'), async (req, res) => {
 
 /**
  * PATCH /api/v1/auth/users/:id
- * Allows admin to toggle active status or update assignedGrades/role.
+ * Allows admin to update staff profile details (fullName, email, role, phone,
+ * assignedGrades, optional password reset) or toggle active status.
  */
 router.patch('/users/:id', protect, restrictTo('admin'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { isActive, role, assignedGrades, phone, fullName } = req.body || {};
+    const { isActive, role, assignedGrades, phone, fullName, email, password } = req.body || {};
+
+    if (role && !['admin', 'teacher', 'super_admin'].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role specified. Allowed roles: admin, teacher.',
+      });
+    }
+
+    if (typeof password === 'string' && password.length > 0 && password.length < 4) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 4 characters long.',
+      });
+    }
+
+    const normalizedEmail =
+      typeof email === 'string' && email.trim() ? email.trim().toLowerCase() : null;
 
     const dbStatus = getDbStatus();
     if (dbStatus.isConnected) {
-      const updateFields = {};
-      if (typeof isActive === 'boolean') updateFields.isActive = isActive;
-      if (role) updateFields.role = role;
-      if (Array.isArray(assignedGrades)) updateFields.assignedGrades = assignedGrades;
-      if (typeof phone === 'string') updateFields.phone = phone;
-      if (typeof fullName === 'string' && fullName.trim()) updateFields.fullName = fullName.trim();
-
-      const updated = await User.findByIdAndUpdate(id, updateFields, {
-        new: true,
-        runValidators: true,
-      });
-
-      if (!updated) {
+      const userDoc = await User.findById(id);
+      if (!userDoc) {
         return res.status(404).json({ success: false, message: 'User not found.' });
       }
 
+      if (normalizedEmail && normalizedEmail !== userDoc.email) {
+        const duplicate = await User.findOne({
+          email: normalizedEmail,
+          _id: { $ne: id },
+        });
+        if (duplicate) {
+          return res.status(409).json({
+            success: false,
+            message: 'Another staff account already uses this email address.',
+          });
+        }
+        userDoc.email = normalizedEmail;
+      }
+
+      if (typeof isActive === 'boolean') userDoc.isActive = isActive;
+      if (role) userDoc.role = role;
+      if (Array.isArray(assignedGrades)) userDoc.assignedGrades = assignedGrades;
+      if (typeof phone === 'string') userDoc.phone = phone.trim();
+      if (typeof fullName === 'string' && fullName.trim()) {
+        userDoc.fullName = fullName.trim();
+      }
+      if (typeof password === 'string' && password.length >= 4) {
+        userDoc.password = password;
+      }
+
+      const updated = await userDoc.save();
+
       return res.status(200).json({
         success: true,
-        message: 'Staff account updated.',
+        message: `Staff account updated for ${updated.fullName}.`,
         user: sanitizeUser(updated),
       });
     }
@@ -341,15 +375,31 @@ router.patch('/users/:id', protect, restrictTo('admin'), async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
+    if (normalizedEmail && normalizedEmail !== memUser.email) {
+      const duplicateMem = memoryStore.users.find(
+        (u) => u.email === normalizedEmail && String(u._id) !== String(id)
+      );
+      if (duplicateMem) {
+        return res.status(409).json({
+          success: false,
+          message: 'Another staff account already uses this email address.',
+        });
+      }
+      memUser.email = normalizedEmail;
+    }
+
     if (typeof isActive === 'boolean') memUser.isActive = isActive;
     if (role) memUser.role = role;
     if (Array.isArray(assignedGrades)) memUser.assignedGrades = assignedGrades;
-    if (typeof phone === 'string') memUser.phone = phone;
+    if (typeof phone === 'string') memUser.phone = phone.trim();
     if (typeof fullName === 'string' && fullName.trim()) memUser.fullName = fullName.trim();
+    if (typeof password === 'string' && password.length >= 4) {
+      memUser.password = await bcrypt.hash(password, 10);
+    }
 
     return res.status(200).json({
       success: true,
-      message: 'Staff account updated.',
+      message: `Staff account updated for ${memUser.fullName}.`,
       user: sanitizeUser(memUser),
     });
   } catch (error) {

@@ -25,6 +25,7 @@ import {
   printStudentAdmissionSummary,
   printStudentDirectoryTable,
 } from '../../utils/printStudentSummary';
+import { exportStudentDirectoryExcel } from '../../utils/exportStudentDirectoryExcel';
 import DirectAdmissionOnboardingModal from './DirectAdmissionOnboardingModal';
 import StudentProfileDrawer from './StudentProfileDrawer';
 import AdmissionPaymentModal from './AdmissionPaymentModal';
@@ -81,6 +82,7 @@ export default function StudentDirectoryDesk() {
   const [idCardModalStudents, setIdCardModalStudents] = useState(null);
   const [idCardModalTitle, setIdCardModalTitle] = useState('');
   const [feedback, setFeedback] = useState('');
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   const fetchStudents = useCallback(async () => {
     if (!token) return;
@@ -271,80 +273,21 @@ export default function StudentDirectoryDesk() {
     }
   };
 
-  const handleExportReport = () => {
-    if (!students || students.length === 0) return;
-
-    const escapeCsv = (val) => {
-      if (val === null || val === undefined) return '""';
-      return `"${String(val).replace(/"/g, '""')}"`;
-    };
-
-    const headers = [
-      'Admission No',
-      'Roll No',
-      'Student Name',
-      'Gender',
-      'Date of Birth',
-      'Class / Grade',
-      'Section',
-      'Academic Year',
-      'Student Aadhaar No',
-      'Blood Group',
-      'Category',
-      'Father Name',
-      'Mother Name',
-      'Parent Mobile / WhatsApp',
-      'Karnataka STS / SATS No',
-      'National PEN No',
-      'APAAR ID',
-      'Fee Status',
-      'Receipt Number',
-      'Amount Paid (INR)',
-      'Status',
-      'Enrolled Date',
-    ];
-
-    const rows = students.map((st) => [
-      escapeCsv(st.admissionNumber || ''),
-      escapeCsv(st.rollNumber || ''),
-      escapeCsv(st.studentName || ''),
-      escapeCsv(st.gender || ''),
-      escapeCsv(
-        st.dateOfBirth ? new Date(st.dateOfBirth).toLocaleDateString('en-IN') : ''
-      ),
-      escapeCsv(st.grade || ''),
-      escapeCsv(st.section || 'A'),
-      escapeCsv(st.academicYear || '2026-2027'),
-      escapeCsv(st.aadhaarNumber || st.studentAadhaarNo || ''),
-      escapeCsv(st.bloodGroup || ''),
-      escapeCsv(st.category || ''),
-      escapeCsv(st.father?.name || st.fatherName || ''),
-      escapeCsv(st.mother?.name || st.motherName || ''),
-      escapeCsv(st.primaryPhone || st.whatsappNumber || ''),
-      escapeCsv(st.previousStudy?.stsNumber || ''),
-      escapeCsv(st.previousStudy?.penNumber || ''),
-      escapeCsv(st.previousStudy?.apaarId || ''),
-      escapeCsv(st.feeDetails?.paymentStatus || 'Pending'),
-      escapeCsv(st.feeDetails?.receiptNumber || ''),
-      escapeCsv(st.feeDetails?.amountPaid ?? 0),
-      escapeCsv(st.status || 'Active'),
-      escapeCsv(st.createdAt ? new Date(st.createdAt).toLocaleDateString('en-IN') : ''),
-    ]);
-
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute(
-      'download',
-      `KES_Student_Directory_Report_${new Date().toISOString().slice(0, 10)}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleExportReport = async () => {
+    if (!students || students.length === 0 || exportingExcel) return;
+    setExportingExcel(true);
+    try {
+      await exportStudentDirectoryExcel(students, {
+        gradeFilter,
+        sectionFilter,
+      });
+    } catch (err) {
+      console.error('Failed to export Excel report:', err);
+      setFeedback('Unable to generate Excel report. Please try again.');
+      setTimeout(() => setFeedback(''), 5000);
+    } finally {
+      setExportingExcel(false);
+    }
   };
 
   return (
@@ -403,12 +346,13 @@ export default function StudentDirectoryDesk() {
 
           <button
             type="button"
-            disabled={students.length === 0}
+            disabled={students.length === 0 || exportingExcel}
             onClick={handleExportReport}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-50 text-brand-navy font-bold text-xs shadow-sm transition"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 text-emerald-900 font-bold text-xs shadow-sm transition cursor-pointer"
+            title="Download Branded Excel Workbook (.xlsx) with School Header & Fee Totals"
           >
-            <Download className="w-3.5 h-3.5 text-brand-gold" />
-            <span>{t('portal.exportCsv')}</span>
+            <Download className={`w-3.5 h-3.5 text-emerald-700 ${exportingExcel ? 'animate-bounce' : ''}`} />
+            <span>{exportingExcel ? 'Exporting...' : t('portal.exportExcel')}</span>
           </button>
 
           {isAdmin && (

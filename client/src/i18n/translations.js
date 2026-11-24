@@ -246,6 +246,7 @@ export const translations = {
       newStudentAdmission: '+ New Student Admission',
       printDirectory: 'Print Directory',
       exportCsv: 'Export CSV',
+      exportExcel: 'Export Excel',
       searchPlaceholder: 'Search name, Admission No, STS, phone...',
       sisSubheading: 'Student Information System & Pathway 2 Onboarding',
       sisHelper:
@@ -730,6 +731,7 @@ export const translations = {
       newStudentAdmission: '+ ಹೊಸ ವಿದ್ಯಾರ್ಥಿ ದಾಖಲಾತಿ',
       printDirectory: 'ಪಟ್ಟಿ ಮುದ್ರಿಸಿ',
       exportCsv: 'CSV ಡೌನ್‌ಲೋಡ್',
+      exportExcel: 'Excel ಡೌನ್‌ಲೋಡ್',
       searchPlaceholder: 'ಹೆಸರು, ದಾಖಲಾತಿ ಸಂಖ್ಯೆ, STS, ಫೋನ್ ಹುಡುಕಿ...',
       sisSubheading: 'ವಿದ್ಯಾರ್ಥಿ ಮಾಹಿತಿ ವ್ಯವಸ್ಥೆ ಮತ್ತು ನೇರ ದಾಖಲಾತಿ',
       sisHelper:

@@ -125,6 +125,93 @@ router.post('/homework', async (req, res) => {
 });
 
 /**
+ * PUT /api/v1/teacher/homework/:id
+ * Allows author teacher, admin, or super_admin to edit an existing assignment.
+ */
+router.put('/homework/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { grade, section = 'A', subject, title, description, dueDate } = req.body || {};
+
+    if (!grade || !subject || !title || !description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Grade, subject, title, and description are required to update homework.',
+      });
+    }
+
+    const dbStatus = getDbStatus();
+
+    if (dbStatus.isConnected && mongoose.Types.ObjectId.isValid(id)) {
+      const hw = await Homework.findById(id);
+      if (!hw) {
+        return res.status(404).json({
+          success: false,
+          message: 'Homework assignment not found.',
+        });
+      }
+
+      if (
+        req.user.role === 'teacher' &&
+        String(hw.teacher) !== String(req.user._id)
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only edit homework assignments that you published.',
+        });
+      }
+
+      hw.grade = grade;
+      hw.section = String(section || 'A').trim().toUpperCase();
+      hw.subject = String(subject).trim();
+      hw.title = String(title).trim();
+      hw.description = String(description).trim();
+      hw.dueDate = dueDate ? new Date(dueDate) : undefined;
+
+      const updated = await hw.save();
+      await updated.populate('teacher', 'fullName role email');
+
+      return res.status(200).json({
+        success: true,
+        message: `Homework updated for ${grade} (${subject}).`,
+        data: updated,
+      });
+    }
+
+    const idx = memoryStore.homework.findIndex((h) => String(h._id) === String(id));
+    if (idx === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Homework assignment not found.',
+      });
+    }
+
+    memoryStore.homework[idx] = {
+      ...memoryStore.homework[idx],
+      grade,
+      section: String(section || 'A').trim().toUpperCase(),
+      subject: String(subject).trim(),
+      title: String(title).trim(),
+      description: String(description).trim(),
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+      updatedAt: new Date(),
+    };
+
+    return res.status(200).json({
+      success: true,
+      message: `Homework updated for ${grade} (${subject}).`,
+      data: memoryStore.homework[idx],
+    });
+  } catch (error) {
+    console.error('[Teacher PUT /homework/:id Error]', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update homework assignment.',
+    });
+  }
+});
+
+/**
  * DELETE /api/v1/teacher/homework/:id
  * Allows author teacher, admin, or super_admin to delete an assignment.
  */

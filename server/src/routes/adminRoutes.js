@@ -304,6 +304,95 @@ router.post('/notices', async (req, res) => {
 });
 
 /**
+ * PUT /api/v1/admin/notices/:id
+ * Edit an existing public notice / circular.
+ */
+router.put('/notices/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      category = 'Notice',
+      content,
+      targetAudience = 'All Parents',
+      issuedBy = 'Office Desk',
+    } = req.body || {};
+
+    if (!title || !content) {
+      return res.status(400).json({
+        success: false,
+        message: 'Notice title and content are required.',
+      });
+    }
+
+    const cleanTitle = String(title).trim();
+    const cleanContent = String(content).trim();
+    const cleanAudience = String(targetAudience || 'All Parents').trim();
+    const cleanIssuedBy = String(issuedBy || 'Office Desk').trim();
+    const statusLabel = `Notice for: ${cleanAudience}`;
+
+    const dbStatus = getDbStatus();
+    if (dbStatus.isConnected && mongoose.Types.ObjectId.isValid(id)) {
+      const updated = await Notice.findByIdAndUpdate(
+        id,
+        {
+          title: cleanTitle,
+          category,
+          content: cleanContent,
+          targetAudience: cleanAudience,
+          issuedBy: cleanIssuedBy,
+          statusLabel,
+        },
+        { new: true, runValidators: true }
+      );
+
+      if (!updated) {
+        return res.status(404).json({
+          success: false,
+          message: 'Notice not found.',
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Notice updated successfully.',
+        data: updated,
+      });
+    }
+
+    const idx = memoryStore.notices.findIndex((n) => String(n._id) === String(id));
+    if (idx === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notice not found.',
+      });
+    }
+
+    memoryStore.notices[idx] = {
+      ...memoryStore.notices[idx],
+      title: cleanTitle,
+      category,
+      content: cleanContent,
+      targetAudience: cleanAudience,
+      issuedBy: cleanIssuedBy,
+      statusLabel,
+      updatedAt: new Date(),
+    };
+
+    return res.status(200).json({
+      success: true,
+      message: 'Notice updated successfully.',
+      data: memoryStore.notices[idx],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update notice.',
+    });
+  }
+});
+
+/**
  * DELETE /api/v1/admin/notices/:id
  * Remove or deactivate a public notice.
  */
