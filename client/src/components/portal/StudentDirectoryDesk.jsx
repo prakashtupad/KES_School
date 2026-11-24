@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Search,
@@ -66,6 +66,10 @@ export default function StudentDirectoryDesk() {
   const [sectionFilter, setSectionFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
   // Multi-Step Onboarding Wizard & Full Profile Drawer States
   const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
@@ -112,6 +116,122 @@ export default function StudentDirectoryDesk() {
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
+
+  // Reset to page 1 whenever filters or page size change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [gradeFilter, sectionFilter, searchQuery, rowsPerPage]);
+
+  const totalPages = Math.max(1, Math.ceil(students.length / rowsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIdx = (safePage - 1) * rowsPerPage;
+  const endIdx = Math.min(startIdx + rowsPerPage, students.length);
+
+  const paginatedStudents = useMemo(
+    () => students.slice(startIdx, endIdx),
+    [students, startIdx, endIdx]
+  );
+
+  const visiblePageNumbers = useMemo(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages = [1];
+    if (safePage > 3) pages.push('ellipsis-start');
+    const rangeStart = Math.max(2, safePage - 1);
+    const rangeEnd = Math.min(totalPages - 1, safePage + 1);
+    for (let p = rangeStart; p <= rangeEnd; p += 1) {
+      pages.push(p);
+    }
+    if (safePage < totalPages - 2) pages.push('ellipsis-end');
+    pages.push(totalPages);
+    return pages;
+  }, [safePage, totalPages]);
+
+  const renderPaginationBar = (wrapperClassName) => (
+    <div className={wrapperClassName}>
+      {/* Left: Showing X - Y of N students */}
+      <div className="text-xs text-slate-600 font-medium whitespace-nowrap">
+        Showing{' '}
+        <span className="font-semibold text-slate-800">
+          {students.length === 0 ? 0 : startIdx + 1} - {endIdx}
+        </span>{' '}
+        of <span className="font-semibold text-slate-800">{students.length}</span>{' '}
+        {students.length === 1 ? 'student' : 'students'}
+      </div>
+
+      {/* Center: Previous | 1 2 3 ... | Next */}
+      <div className="flex items-center gap-1 flex-wrap justify-center">
+        <button
+          type="button"
+          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          disabled={safePage <= 1}
+          className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${
+            safePage <= 1
+              ? 'text-slate-400 cursor-not-allowed'
+              : 'text-slate-700 hover:text-brand-navy hover:bg-slate-100 cursor-pointer'
+          }`}
+        >
+          Previous
+        </button>
+
+        {visiblePageNumbers.map((item) =>
+          typeof item === 'string' ? (
+            <span
+              key={item}
+              className="px-1.5 py-1 text-xs text-slate-400 select-none"
+            >
+              …
+            </span>
+          ) : (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setCurrentPage(item)}
+              aria-current={item === safePage ? 'page' : undefined}
+              className={`min-w-[28px] px-2 py-1 rounded-md text-xs transition cursor-pointer ${
+                item === safePage
+                  ? 'font-bold text-[#1A365D] bg-slate-100 border border-slate-200'
+                  : 'font-medium text-slate-500 hover:text-[#1A365D] hover:bg-slate-50'
+              }`}
+            >
+              {item}
+            </button>
+          )
+        )}
+
+        <button
+          type="button"
+          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          disabled={safePage >= totalPages}
+          className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${
+            safePage >= totalPages
+              ? 'text-slate-400 cursor-not-allowed'
+              : 'text-[#1A365D] hover:bg-slate-100 cursor-pointer'
+          }`}
+        >
+          Next
+        </button>
+      </div>
+
+      {/* Right: Rows per page */}
+      <label className="flex items-center gap-2 text-xs text-slate-600 whitespace-nowrap">
+        <span className="text-slate-500">Rows per page:</span>
+        <select
+          aria-label="Rows per page"
+          value={rowsPerPage}
+          onChange={(e) => setRowsPerPage(Number(e.target.value))}
+          className="px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 focus:border-brand-navy focus:outline-none cursor-pointer"
+        >
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+          <option value={20}>20</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+        </select>
+      </label>
+    </div>
+  );
 
   const handleOpenNewAdmission = () => {
     setEditingStudent(null);
@@ -378,8 +498,9 @@ export default function StudentDirectoryDesk() {
       ) : (
         <>
           {/* MOBILE & SMALL TABLET VIEW: Clean Compact Cards (visible below md) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
-            {students.map((st) => {
+          <div className="space-y-3 md:hidden">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {paginatedStudents.map((st) => {
               const waUrl = getDirectStudentChatUrl(
                 st.whatsappNumber || st.primaryPhone,
                 st.studentName,
@@ -550,6 +671,10 @@ export default function StudentDirectoryDesk() {
                 </div>
               );
             })}
+            </div>
+            {renderPaginationBar(
+              'bg-white rounded-xl border border-slate-200 shadow-sm px-3.5 py-3 flex flex-col sm:flex-row items-center justify-between gap-2.5'
+            )}
           </div>
 
           {/* DESKTOP & TABLET VIEW: Clean Streamlined Table (visible md and up) */}
@@ -565,15 +690,15 @@ export default function StudentDirectoryDesk() {
                       {t('table.studentName')}
                     </th>
                     <th className="py-3 px-4">{t('table.classCol')}</th>
+                    <th className="py-3 px-4">{t('table.feeStatus')}</th>
+                    <th className="py-3 px-4">{t('table.actions')}</th>
                     <th className="py-3 px-4">{t('table.parentGuardian')}</th>
                     <th className="py-3 px-4">{t('table.mobile')}</th>
-                    <th className="py-3 px-4">{t('table.feeStatus')}</th>
                     <th className="py-3 px-4">{t('table.status')}</th>
-                    <th className="py-3 px-4 text-right">{t('table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 text-xs">
-                  {students.map((st) => {
+                  {paginatedStudents.map((st) => {
                     const fatherDisplay = st.father?.name || st.fatherName || '—';
                     const rawMother = st.mother?.name || st.motherName || '';
                     const motherDisplay = String(rawMother) !== 'true' ? rawMother : '';
@@ -638,17 +763,6 @@ export default function StudentDirectoryDesk() {
                           )}
                         </td>
 
-                        <td className="py-3 px-4">
-                          <div className="font-semibold text-slate-800">{fatherDisplay}</div>
-                          {motherDisplay && (
-                            <div className="text-[11px] text-slate-400">{motherDisplay}</div>
-                          )}
-                        </td>
-
-                        <td className="py-3 px-4 whitespace-nowrap font-mono font-semibold text-slate-800">
-                          {st.primaryPhone}
-                        </td>
-
                         <td className="py-3 px-4 whitespace-nowrap">
                           {hasPaidAny ? (
                             <div className="space-y-0.5">
@@ -707,13 +821,7 @@ export default function StudentDirectoryDesk() {
                         </td>
 
                         <td className="py-3 px-4 whitespace-nowrap">
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
-                            {st.status || 'Active'}
-                          </span>
-                        </td>
-
-                        <td className="py-3 px-4 text-right whitespace-nowrap">
-                          <div className="inline-flex items-center justify-end gap-1.5">
+                          <div className="inline-flex items-center justify-start gap-1.5">
                             {hasPaidAny && (
                               <button
                                 type="button"
@@ -825,12 +933,32 @@ export default function StudentDirectoryDesk() {
                             )}
                           </div>
                         </td>
+
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="font-semibold text-slate-800">{fatherDisplay}</div>
+                          {motherDisplay && (
+                            <div className="text-[11px] text-slate-400">{motherDisplay}</div>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4 whitespace-nowrap font-mono font-semibold text-slate-800">
+                          {st.primaryPhone}
+                        </td>
+
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
+                            {st.status || 'Active'}
+                          </span>
+                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
+            {renderPaginationBar(
+              'border-t border-slate-200 bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3'
+            )}
           </div>
         </>
       )}
