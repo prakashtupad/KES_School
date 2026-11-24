@@ -224,6 +224,7 @@ export default function NoticePublisher() {
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"
                   >
                     <option value="Notice">Notice</option>
+                    <option value="Circular">Circular</option>
                     <option value="Event">Event</option>
                     <option value="Academic">Academic</option>
                   </select>

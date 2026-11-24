@@ -15,7 +15,7 @@ const NoticeSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ['Notice', 'Event', 'Academic'],
+      enum: ['Notice', 'Circular', 'Event', 'Academic'],
       default: 'Notice',
     },
     content: {

@@ -309,7 +309,7 @@ export function printStudentAdmissionSummary(student) {
                   img.addEventListener('error', checkDone);
                 }
               });
-              setTimeout(triggerPrint, 900);
+              setTimeout(triggerPrint, 1800);
             }
           })();
         </script>
@@ -358,11 +358,29 @@ export function printStudentDirectoryTable(students = [], gradeFilter = 'All Cla
           ? `Paid: ₹${paidAmt.toLocaleString('en-IN')} • <span style="color:#b91c1c;font-weight:bold;">Due: ₹${balanceDue.toLocaleString('en-IN')}</span>`
           : `Paid: ₹${paidAmt.toLocaleString('en-IN')} • <span style="color:#047857;font-weight:bold;">Cleared</span>`;
 
+      const photoUrl = st.documents?.studentPhotoUrl
+        ? resolveAbsoluteUrl(st.documents.studentPhotoUrl)
+        : '';
+      const initials = (st.studentName || 'S')
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((p) => p[0].toUpperCase())
+        .join('');
+      const avatarHtml = photoUrl
+        ? `<img class="student-avatar" src="${photoUrl}" alt="${st.studentName || 'Student'}" />`
+        : `<span class="student-avatar-fallback">${initials}</span>`;
+
       return `
         <tr>
           <td style="text-align:center;">${idx + 1}</td>
           <td><strong>${st.admissionNumber || '—'}</strong></td>
-          <td><strong>${st.studentName || '—'}</strong></td>
+          <td>
+            <div class="student-name-cell">
+              ${avatarHtml}
+              <strong>${st.studentName || '—'}</strong>
+            </div>
+          </td>
           <td>${st.grade || '—'} (${st.section || 'A'})</td>
           <td>${dob} / ${st.gender || '—'}</td>
           <td>${father}</td>
@@ -422,8 +440,33 @@ export function printStudentDirectoryTable(students = [], gradeFilter = 'All Cla
           }
           table { width: 100%; border-collapse: collapse; font-size: 11px; }
           th { background: #1A365D; color: #ffffff; padding: 6px 7px; text-align: left; border: 1px solid #1A365D; }
-          td { padding: 5px 7px; border: 1px solid #cbd5e1; }
+          td { padding: 5px 7px; border: 1px solid #cbd5e1; vertical-align: middle; }
           tr:nth-child(even) td { background: #f8fafc; }
+          .student-name-cell { display: flex; align-items: center; gap: 7px; }
+          .student-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+            object-position: top;
+            border: 1.5px solid #D97706;
+            flex-shrink: 0;
+            background: #f1f5f9;
+          }
+          .student-avatar-fallback {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #1A365D;
+            border: 1.5px solid #cbd5e1;
+            font-size: 10px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          }
         </style>
       </head>
       <body>
@@ -493,7 +536,7 @@ export function printStudentDirectoryTable(students = [], gradeFilter = 'All Cla
                   img.addEventListener('error', done);
                 }
               });
-              setTimeout(triggerPrint, 900);
+              setTimeout(triggerPrint, 1800);
             }
           })();
         </script>

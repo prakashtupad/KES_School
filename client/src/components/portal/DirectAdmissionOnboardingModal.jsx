@@ -825,7 +825,18 @@ export default function DirectAdmissionOnboardingModal({
   };
 
   const wizardContent = successInfo ? (
-    <div className="bg-white rounded-2xl p-6 sm:p-8 border border-emerald-200 shadow-xl text-center max-w-2xl mx-auto my-4">
+    <div className="relative bg-white rounded-2xl p-6 sm:p-8 border border-emerald-200 shadow-xl text-center max-w-2xl mx-auto my-4">
+      {handleDismiss && (
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-brand-navy hover:bg-slate-100 transition cursor-pointer"
+          aria-label="Close confirmation dialog"
+          title="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      )}
       <div className="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-3">
         <CheckCircle2 className="w-8 h-8" />
       </div>
@@ -2440,14 +2451,27 @@ export default function DirectAdmissionOnboardingModal({
             )}
 
             {step < 4 ? (
-              <button
-                type="button"
-                onClick={handleNextStep}
-                className="inline-flex items-center gap-1.5 px-5 py-2 bg-brand-navy hover:bg-brand-navyDark text-white text-xs font-bold rounded-lg shadow transition"
-              >
-                <span>Next Step</span>
-                <ArrowRight className="w-3.5 h-3.5 text-brand-gold" />
-              </button>
+              <>
+                {isEditing && (
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-bold rounded-lg shadow transition cursor-pointer"
+                    title="Save updated changes on this page immediately"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{submitting ? 'Saving...' : 'Save'}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className="inline-flex items-center gap-1.5 px-5 py-2 bg-brand-navy hover:bg-brand-navyDark text-white text-xs font-bold rounded-lg shadow transition cursor-pointer"
+                >
+                  <span>Next Step</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-brand-gold" />
+                </button>
+              </>
             ) : (
               <button
                 type="submit"

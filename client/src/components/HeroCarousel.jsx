@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SCHOOL_INFO } from '../constants/schoolData';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -216,13 +217,36 @@ export default function HeroCarousel() {
                   </div>
 
                   {/* Right: Wide & Prominent School Visual Showcase Card (7 cols on desktop) */}
-                  <div className="lg:col-span-7">
-                    <div className="relative rounded-2xl overflow-hidden border-2 border-brand-gold/40 shadow-2xl bg-brand-navyDark">
+                  <div className="lg:col-span-7 space-y-3">
+                    <div className="relative group rounded-2xl overflow-hidden border-2 border-brand-gold/40 shadow-2xl bg-brand-navyDark">
                       <img
                         src={imgSrc}
                         alt={typeof slide.title === 'string' ? slide.title : 'School highlight'}
                         className="w-full h-56 sm:h-72 lg:h-[360px] object-cover object-center"
                       />
+
+                      {/* Subtle On-Image Prev / Next Overlay Arrows */}
+                      {slideCount > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            aria-label="Previous slide"
+                            onClick={prevSlide}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/45 hover:bg-slate-900/75 text-white border border-white/25 backdrop-blur-sm flex items-center justify-center transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                          >
+                            <ChevronLeft className="w-5 h-5" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Next slide"
+                            onClick={nextSlide}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/45 hover:bg-slate-900/75 text-white border border-white/25 backdrop-blur-sm flex items-center justify-center transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                          >
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
+                        </>
+                      )}
+
                       <div className="bg-brand-navyDark/95 px-4 py-2.5 border-t border-brand-gold/30 flex items-center justify-between text-xs text-slate-200">
                         <span className="font-medium truncate mr-2">{imgCaption}</span>
                         <span className="text-brand-gold font-semibold flex-shrink-0">
@@ -230,72 +254,104 @@ export default function HeroCarousel() {
                         </span>
                       </div>
                     </div>
+
+                    {/* Glassmorphic Bottom Control Bar (Prev/Next + Gold Pill Dots + Slide Preview) */}
+                    {slideCount > 1 && (() => {
+                      const nextIndex = (currentSlide + 1) % slideCount;
+                      const nextSlideObj = slides[nextIndex] || {};
+                      const currentLabel =
+                        slide.caption ||
+                        slide.imageCaption ||
+                        tContent(slide, 'subtitle') ||
+                        `Highlight ${currentSlide + 1}`;
+                      const nextLabel =
+                        nextSlideObj.caption ||
+                        nextSlideObj.imageCaption ||
+                        tContent(nextSlideObj, 'subtitle') ||
+                        `Highlight ${nextIndex + 1}`;
+
+                      return (
+                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
+                          {/* Left Pill: Prev & Next Icon Buttons */}
+                          <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/10 border border-white/15 backdrop-blur-md flex-shrink-0">
+                            <button
+                              id={isActive ? 'prevSlideBtn' : undefined}
+                              type="button"
+                              aria-label="Previous slide"
+                              onClick={prevSlide}
+                              className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <button
+                              id={isActive ? 'nextSlideBtn' : undefined}
+                              type="button"
+                              aria-label="Next slide"
+                              onClick={nextSlide}
+                              className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Center Pill: Elongated Gold Active Bar + Dots */}
+                          <div
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/15 backdrop-blur-md flex-shrink-0"
+                            role="tablist"
+                            aria-label="Slide indicators"
+                          >
+                            {slides.map((s, dotIdx) => {
+                              const isSelected = dotIdx === currentSlide;
+                              return (
+                                <button
+                                  key={s._id || s.id || dotIdx}
+                                  type="button"
+                                  role="tab"
+                                  aria-label={`Go to slide ${dotIdx + 1}`}
+                                  aria-selected={isSelected}
+                                  data-index={dotIdx}
+                                  onClick={() => setCurrentSlide(dotIdx)}
+                                  className={`carousel-dot h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                                    isSelected
+                                      ? 'w-6 bg-amber-400'
+                                      : 'w-1.5 bg-white/35 hover:bg-white/70'
+                                  }`}
+                                />
+                              );
+                            })}
+                          </div>
+
+                          {/* Right Pill: Mini Thumbnail + Slide Counter + Next Preview */}
+                          <button
+                            type="button"
+                            onClick={nextSlide}
+                            title={`Jump to next slide: ${nextLabel}`}
+                            className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 backdrop-blur-md flex-1 min-w-0 text-left transition cursor-pointer"
+                          >
+                            <img
+                              src={imgSrc}
+                              alt=""
+                              aria-hidden="true"
+                              className="w-9 h-6 rounded-md object-cover border border-white/20 flex-shrink-0"
+                            />
+                            <div className="min-w-0 flex items-center gap-2 text-[11px] sm:text-xs truncate">
+                              <span className="font-semibold text-white truncate">
+                                Slide {currentSlide + 1} of {slideCount}: {currentLabel}
+                              </span>
+                              <span className="hidden xl:inline text-slate-300/80 pl-2 border-l border-white/15 truncate">
+                                Next: {nextLabel}
+                              </span>
+                            </div>
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
             );
           })}
         </div>
-
-        {/* Carousel Controls (Keyboard & Touch Accessible) */}
-        {slideCount > 1 && (
-          <div className="absolute bottom-3 right-4 sm:right-8 flex items-center gap-2 z-10">
-            <button
-              id="prevSlideBtn"
-              type="button"
-              aria-label="Previous slide"
-              onClick={prevSlide}
-              className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white focus:outline-none focus:ring-2 focus:ring-brand-gold transition"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-
-            {/* Slide indicators */}
-            <div className="flex items-center gap-1.5 px-2" role="tablist" aria-label="Slide indicators">
-              {slides.map((slide, index) => {
-                const isSelected = index === currentSlide;
-                return (
-                  <button
-                    key={slide._id || slide.id || index}
-                    type="button"
-                    role="tab"
-                    aria-label={`Go to slide ${index + 1}`}
-                    aria-selected={isSelected}
-                    data-index={index}
-                    onClick={() => setCurrentSlide(index)}
-                    className={`carousel-dot w-2.5 h-2.5 rounded-full transition ${
-                      isSelected ? 'bg-brand-gold' : 'bg-white/40 hover:bg-white/70'
-                    }`}
-                  />
-                );
-              })}
-            </div>
-
-            <button
-              id="nextSlideBtn"
-              type="button"
-              aria-label="Next slide"
-              onClick={nextSlide}
-              className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white focus:outline-none focus:ring-2 focus:ring-brand-gold transition"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          </div>
-        )}
       </div>
     </section>
   );
