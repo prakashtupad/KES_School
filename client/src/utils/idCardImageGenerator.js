@@ -4,6 +4,8 @@ import {
   formatIdCardDob,
   formatIndianPhone,
   PROMOTION_YEARS,
+  PRINCIPAL_SIGNATURE_URL,
+  isCurrentAcademicYear,
 } from '../components/portal/StudentIdCard';
 
 function loadImage(src) {
@@ -76,9 +78,10 @@ export async function generateIdCardPng(
   ctx.fillStyle = '#F8FAFC';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const [logoImg, photoImg] = await Promise.all([
+  const [logoImg, photoImg, principalSigImg] = await Promise.all([
     loadImage(SCHOOL_INFO.logoUrl || '/images/logo.jpg'),
     loadImage(student.documents?.studentPhotoUrl || ''),
+    loadImage(PRINCIPAL_SIGNATURE_URL),
   ]);
 
   const fatherName = student.father?.name || student.fatherName || '—';
@@ -270,6 +273,11 @@ export async function generateIdCardPng(
       const colW = boxW / PROMOTION_YEARS.length;
       PROMOTION_YEARS.forEach((yr, i) => {
         const cx = boxX + i * colW;
+        const isCur = isCurrentAcademicYear(yr, student.academicYear);
+        if (isCur) {
+          ctx.fillStyle = '#ECFDF5';
+          ctx.fillRect(cx + 1, boxY + 29, colW - 2, boxH - 30);
+        }
         if (i > 0) {
           ctx.beginPath();
           ctx.moveTo(cx, boxY + 29);
@@ -283,18 +291,38 @@ export async function generateIdCardPng(
         ctx.font = 'bold 16px Arial, sans-serif';
         ctx.fillText(yr, cx + colW / 2, boxY + 52);
 
-        ctx.save();
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(cx + 14, boxY + 76);
-        ctx.lineTo(cx + colW - 14, boxY + 76);
-        ctx.strokeStyle = '#CBD5E1';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.restore();
+        if (isCur) {
+          ctx.fillStyle = '#059669';
+          ctx.font = 'bold 24px Arial, sans-serif';
+          ctx.fillText('✓', cx + colW / 2, boxY + 79);
+        } else {
+          ctx.save();
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(cx + 14, boxY + 76);
+          ctx.lineTo(cx + colW - 14, boxY + 76);
+          ctx.strokeStyle = '#CBD5E1';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.restore();
+        }
       });
 
-      // Clean Bottom Footer: White space left + PRINCIPAL signature line bottom right
+      // Clean Bottom Footer: Principal Signature Image + PRINCIPAL label bottom right
+      if (principalSigImg) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'multiply';
+        const sigH = 44;
+        const sigW = Math.min(160, (principalSigImg.width / principalSigImg.height) * sigH);
+        ctx.drawImage(
+          principalSigImg,
+          ox + cardW - 135 - sigW / 2,
+          oy + cardH - 54 - sigH + 6,
+          sigW,
+          sigH
+        );
+        ctx.restore();
+      }
       ctx.strokeStyle = '#475569';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -450,6 +478,11 @@ export async function generateIdCardPng(
       const colW = boxW / PROMOTION_YEARS.length;
       PROMOTION_YEARS.forEach((yr, i) => {
         const cx = boxX + i * colW;
+        const isCur = isCurrentAcademicYear(yr, student.academicYear);
+        if (isCur) {
+          ctx.fillStyle = '#ECFDF5';
+          ctx.fillRect(cx + 1, boxY + 23, colW - 2, boxH - 24);
+        }
         if (i > 0) {
           ctx.beginPath();
           ctx.moveTo(cx, boxY + 23);
@@ -461,17 +494,37 @@ export async function generateIdCardPng(
         ctx.fillStyle = '#1A365D';
         ctx.font = 'bold 14px Arial, sans-serif';
         ctx.fillText(yr, cx + colW / 2, boxY + 42);
-        ctx.save();
-        ctx.setLineDash([3, 3]);
-        ctx.beginPath();
-        ctx.moveTo(cx + 12, boxY + 58);
-        ctx.lineTo(cx + colW - 12, boxY + 58);
-        ctx.strokeStyle = '#CBD5E1';
-        ctx.stroke();
-        ctx.restore();
+        if (isCur) {
+          ctx.fillStyle = '#059669';
+          ctx.font = 'bold 20px Arial, sans-serif';
+          ctx.fillText('✓', cx + colW / 2, boxY + 62);
+        } else {
+          ctx.save();
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.moveTo(cx + 12, boxY + 58);
+          ctx.lineTo(cx + colW - 12, boxY + 58);
+          ctx.strokeStyle = '#CBD5E1';
+          ctx.stroke();
+          ctx.restore();
+        }
       });
 
-      // Clean Bottom Footer: PRINCIPAL signature line bottom right
+      // Clean Bottom Footer: Principal Signature Image + PRINCIPAL label bottom right
+      if (principalSigImg) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'multiply';
+        const sigH = 40;
+        const sigW = Math.min(150, (principalSigImg.width / principalSigImg.height) * sigH);
+        ctx.drawImage(
+          principalSigImg,
+          ox + cardW - 132 - sigW / 2,
+          oy + cardH - 52 - sigH + 6,
+          sigW,
+          sigH
+        );
+        ctx.restore();
+      }
       ctx.strokeStyle = '#475569';
       ctx.lineWidth = 2;
       ctx.beginPath();

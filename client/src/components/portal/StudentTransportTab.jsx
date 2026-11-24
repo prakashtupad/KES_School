@@ -69,15 +69,10 @@ export default function StudentTransportTab({ student, onOpenFeesTab }) {
   return (
     <div className="space-y-4 sm:space-y-5">
       {/* Top Page Title & Active Route Pill */}
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="text-lg sm:text-2xl font-serif font-bold text-[#1A365D] leading-tight">
-            {t('studentPortal.transport.heading')}
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Home / Student Portal / {t('studentPortal.tabs.transport')}
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg sm:text-2xl font-serif font-bold text-[#1A365D] leading-tight">
+          {t('studentPortal.transport.heading')}
+        </h2>
 
         <span className="inline-flex items-center px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
           Active Route: {shortRouteLabel}

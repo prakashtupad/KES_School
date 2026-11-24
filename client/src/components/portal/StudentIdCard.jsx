@@ -4,6 +4,18 @@ import { SCHOOL_INFO } from '../../constants/schoolData';
 import { getStudentInitials } from './SiblingSwitcherHeader';
 
 export const PROMOTION_YEARS = ['2026-27', '2027-28', '2028-29', '2029-30'];
+export const PRINCIPAL_SIGNATURE_URL = '/principal-signature.png';
+
+export function isCurrentAcademicYear(shortYr, studentAcademicYear = '2026-2027') {
+  const norm = String(studentAcademicYear || '2026-2027')
+    .replace(/\s+/g, '')
+    .replace(/[–—]/g, '-');
+  // Match "2026-27" against "2026-2027" or "2026-27"
+  if (norm === shortYr) return true;
+  const parts = shortYr.split('-');
+  if (parts.length === 2 && norm === `${parts[0]}-20${parts[1]}`) return true;
+  return shortYr === '2026-27' && !norm;
+}
 
 export function formatIdCardDob(dob) {
   if (!dob) return '—';
@@ -282,26 +294,43 @@ export default function StudentIdCard({
             )}
           </div>
 
-          {/* Always-Shown 4-Year Yearly Validation Strip */}
+          {/* Always-Shown 4-Year Yearly Validation Strip (Green Tick for Current Academic Year) */}
           <div className="mt-1.5 rounded-lg border border-slate-300 overflow-hidden bg-white">
             <div className="bg-slate-100 text-[#1A365D] text-[6.5px] font-bold uppercase tracking-wider text-center py-0.5 border-b border-slate-300">
               YEARLY VALIDATION
             </div>
             <div className="grid grid-cols-4 divide-x divide-slate-300 text-center">
-              {PROMOTION_YEARS.map((yr) => (
-                <div key={yr} className="py-1 px-0.5">
-                  <div className="text-[6.8px] font-bold text-[#1A365D] leading-none">
-                    {yr}
+              {PROMOTION_YEARS.map((yr) => {
+                const isCur = isCurrentAcademicYear(yr, student.academicYear);
+                return (
+                  <div
+                    key={yr}
+                    className={`py-1 px-0.5 ${isCur ? 'bg-emerald-50/70' : ''}`}
+                  >
+                    <div className="text-[6.8px] font-bold text-[#1A365D] leading-none">
+                      {yr}
+                    </div>
+                    {isCur ? (
+                      <div className="h-3.5 flex items-center justify-center mt-0.5 text-emerald-600 font-extrabold text-[11px] leading-none">
+                        ✓
+                      </div>
+                    ) : (
+                      <div className="h-3 border-b border-dashed border-slate-300 mx-1 mt-1" />
+                    )}
                   </div>
-                  <div className="h-3 border-b border-dashed border-slate-300 mx-1 mt-1" />
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          {/* Clean Bottom Footer: White space left + PRINCIPAL signature line bottom right */}
-          <div className="mt-2 pt-1 flex items-end justify-end">
-            <div className="text-center">
+          {/* Clean Bottom Footer: Principal Signature Image + PRINCIPAL label bottom right */}
+          <div className="mt-1 pt-0.5 flex items-end justify-end">
+            <div className="text-center flex flex-col items-center">
+              <img
+                src={PRINCIPAL_SIGNATURE_URL}
+                alt="Principal Signature"
+                className="h-6 w-auto max-w-[74px] object-contain mix-blend-multiply -mb-0.5"
+              />
               <div className="w-20 border-b border-slate-500 mb-0.5" />
               <span className="font-bold text-[#1A365D] uppercase tracking-widest text-[7.2px]">
                 PRINCIPAL
@@ -417,18 +446,35 @@ export default function StudentIdCard({
                 YEARLY VALIDATION
               </div>
               <div className="grid grid-cols-4 divide-x divide-slate-300 text-center">
-                {PROMOTION_YEARS.map((yr) => (
-                  <div key={yr} className="py-0.5 px-0.5">
-                    <div className="text-[5.8px] font-bold text-[#1A365D] leading-none">
-                      {yr}
+                {PROMOTION_YEARS.map((yr) => {
+                  const isCur = isCurrentAcademicYear(yr, student.academicYear);
+                  return (
+                    <div
+                      key={yr}
+                      className={`py-0.5 px-0.5 ${isCur ? 'bg-emerald-50/70' : ''}`}
+                    >
+                      <div className="text-[5.8px] font-bold text-[#1A365D] leading-none">
+                        {yr}
+                      </div>
+                      {isCur ? (
+                        <div className="h-2.5 flex items-center justify-center mt-0.5 text-emerald-600 font-extrabold text-[9px] leading-none">
+                          ✓
+                        </div>
+                      ) : (
+                        <div className="h-2 border-b border-dashed border-slate-300 mx-0.5 mt-0.5" />
+                      )}
                     </div>
-                    <div className="h-2 border-b border-dashed border-slate-300 mx-0.5 mt-0.5" />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
-            <div className="text-center flex-shrink-0">
+            <div className="text-center flex flex-col items-center flex-shrink-0">
+              <img
+                src={PRINCIPAL_SIGNATURE_URL}
+                alt="Principal Signature"
+                className="h-5 w-auto max-w-[66px] object-contain mix-blend-multiply -mb-0.5"
+              />
               <div className="w-18 border-b border-slate-500 mb-0.5" />
               <span className="font-bold text-[#1A365D] uppercase tracking-widest text-[7px]">
                 PRINCIPAL

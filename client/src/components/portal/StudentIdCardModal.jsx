@@ -15,6 +15,8 @@ import StudentIdCard, {
   formatIdCardDob,
   formatIndianPhone,
   PROMOTION_YEARS,
+  PRINCIPAL_SIGNATURE_URL,
+  isCurrentAcademicYear,
 } from './StudentIdCard';
 import { getStudentInitials } from './SiblingSwitcherHeader';
 import { generateIdCardPng } from '../../utils/idCardImageGenerator';
@@ -96,6 +98,7 @@ export default function StudentIdCardModal({
   const handlePrintA4Sheet = () => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const logoSrc = `${origin}${SCHOOL_INFO.logoUrl || '/images/logo.jpg'}`;
+    const principalSigSrc = `${origin}${PRINCIPAL_SIGNATURE_URL}`;
     const isPortrait = orientation === 'portrait';
 
     const printWin = window.open('', '_blank', 'width=1000,height=820');
@@ -110,18 +113,23 @@ export default function StudentIdCardModal({
       return `${origin}${url}`;
     };
 
-    const promoGridHtml = (compact = false) => `
+    const promoGridHtml = (st, compact = false) => `
       <div class="promo-box ${compact ? 'compact' : ''}">
         <div class="promo-hdr">YEARLY VALIDATION</div>
         <div class="promo-grid">
-          ${PROMOTION_YEARS.map(
-            (yr) => `
-              <div class="promo-cell">
+          ${PROMOTION_YEARS.map((yr) => {
+            const isCur = isCurrentAcademicYear(yr, st.academicYear);
+            return `
+              <div class="promo-cell ${isCur ? 'cur-yr' : ''}">
                 <div class="promo-yr">${yr}</div>
-                <div class="promo-line"></div>
+                ${
+                  isCur
+                    ? '<div class="promo-tick">✓</div>'
+                    : '<div class="promo-line"></div>'
+                }
               </div>
-            `
-          ).join('')}
+            `;
+          }).join('')}
         </div>
       </div>
     `;
@@ -176,9 +184,12 @@ export default function StudentIdCardModal({
                       : ''
                   }
                 </div>
-                ${promoGridHtml(false)}
+                ${promoGridHtml(st, false)}
                 <div class="sig-row">
-                  <div class="sig"><span>PRINCIPAL</span></div>
+                  <div class="sig-wrap">
+                    <img src="${principalSigSrc}" alt="Principal Sign" class="sig-img" />
+                    <div class="sig"><span>PRINCIPAL</span></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -221,8 +232,11 @@ export default function StudentIdCardModal({
                   </div>
                 </div>
                 <div class="foot-l">
-                  ${promoGridHtml(true)}
-                  <div class="sig"><span>PRINCIPAL</span></div>
+                  ${promoGridHtml(st, true)}
+                  <div class="sig-wrap">
+                    <img src="${principalSigSrc}" alt="Principal Sign" class="sig-img-l" />
+                    <div class="sig"><span>PRINCIPAL</span></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -346,10 +360,15 @@ export default function StudentIdCardModal({
             .promo-hdr { background: #f1f5f9; color: #1A365D; font-size: 4.6pt; font-weight: bold; text-align: center; padding: 0.4mm; border-bottom: 0.4pt solid #cbd5e1; }
             .promo-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
             .promo-cell { border-right: 0.4pt solid #cbd5e1; padding: 0.6mm 0.4mm; text-align: center; }
+            .promo-cell.cur-yr { background: #ecfdf5; }
             .promo-cell:last-child { border-right: none; }
             .promo-yr { font-size: 4.5pt; font-weight: bold; color: #1A365D; }
+            .promo-tick { color: #059669; font-size: 7.5pt; font-weight: 900; line-height: 1; margin-top: 0.3mm; }
             .promo-line { height: 2mm; border-bottom: 0.4pt dashed #cbd5e1; margin: 0.5mm 0.8mm 0; }
-            .sig-row { display: flex; justify-content: flex-end; align-items: flex-end; margin-top: 1.4mm; }
+            .sig-row { display: flex; justify-content: flex-end; align-items: flex-end; margin-top: 0.8mm; }
+            .sig-wrap { display: flex; flex-direction: column; align-items: center; }
+            .sig-img { height: 4.8mm; width: auto; max-width: 15mm; object-fit: contain; mix-blend-mode: multiply; margin-bottom: -0.5mm; }
+            .sig-img-l { height: 4mm; width: auto; max-width: 14mm; object-fit: contain; mix-blend-mode: multiply; margin-bottom: -0.5mm; }
             .sig { border-top: 0.6pt solid #475569; width: 15mm; text-align: center; font-size: 5pt; font-weight: bold; color: #1A365D; letter-spacing: 0.5pt; padding-top: 0.4mm; }
             /* Landscape */
             .hdr-l { background: #1A365D; color: #fff; padding: 1.6mm 2.4mm; display: flex; align-items: center; gap: 1.8mm; border-bottom: 1.6pt solid #D97706; }

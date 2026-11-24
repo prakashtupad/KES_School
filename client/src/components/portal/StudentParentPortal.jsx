@@ -373,12 +373,44 @@ export default function StudentParentPortal() {
             </div>
           ) : (
             <>
-              {/* Top Sibling Switcher Bar (Client-Side Instant Switching) */}
+              {/* Top Sibling Switcher Bar (Client-Side Instant Switching — Multi-Sibling Only) */}
               <SiblingSwitcherHeader
                 siblings={siblings}
                 activeSiblingIndex={safeIndex}
                 onSelectSibling={(idx) => setActiveSiblingIndex(idx)}
               />
+
+              {/* Unified Interactive Student Portal Breadcrumb */}
+              {(() => {
+                const currentTabObj = visibleTabs.find((tab) => tab.id === activeTab);
+                const activeTabLabel = currentTabObj
+                  ? t(currentTabObj.labelKey)
+                  : t('studentPortal.tabs.overview');
+                return (
+                  <nav
+                    aria-label="Student Portal Breadcrumb"
+                    className="flex items-center flex-wrap gap-1.5 text-xs font-medium text-slate-500"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('overview')}
+                      className="text-[#D97706] hover:text-[#1A365D] font-semibold transition cursor-pointer"
+                    >
+                      Home
+                    </button>
+                    <span className="text-slate-300">/</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('overview')}
+                      className="text-[#D97706] hover:text-[#1A365D] font-semibold transition cursor-pointer"
+                    >
+                      {t('studentPortal.dashboardMenu')}
+                    </button>
+                    <span className="text-slate-300">/</span>
+                    <span className="text-[#1A365D] font-bold">{activeTabLabel}</span>
+                  </nav>
+                );
+              })()}
 
               {/* Mobile Quick Horizontal Tab Switcher */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:hidden">
@@ -405,7 +437,15 @@ export default function StudentParentPortal() {
 
               {/* Active Tab Content */}
               {activeTab === 'overview' && (
-                <StudentOverviewTab student={currentStudent} />
+                <StudentOverviewTab
+                  student={currentStudent}
+                  attendanceData={
+                    attendanceCacheByMonth[attendanceMonth]?.[String(currentStudent._id)] ||
+                    null
+                  }
+                  homeworkList={homeworkList}
+                  onNavigateTab={setActiveTab}
+                />
               )}
               {activeTab === 'attendance' && (
                 <StudentAttendanceTab
