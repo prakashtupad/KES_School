@@ -5,7 +5,7 @@ const User = require('../models/User');
 const SEED_ACCOUNTS = [
   {
     fullName: 'Khanatti Office Admin',
-    email: 'admin@keskhanatti.org',
+    email: 'admin@kes.com',
     password: process.env.ADMIN_PASSWORD,
     role: 'admin',
     phone: '+91 77957 70785',

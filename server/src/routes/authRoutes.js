@@ -42,12 +42,13 @@ const ensureDemoUsersSeeded = async () => {
   if (!dbStatus.isConnected || demoUsersSynced) return;
 
   try {
-    // Remove legacy super_admin accounts
+    // Remove legacy super_admin and old admin@keskhanatti.org accounts
     await User.deleteMany({
       $or: [
         { role: 'super_admin' },
         { email: 'prakashtuppad@gmail.com' },
         { email: 'superadmin@keskhanatti.org' },
+        { email: 'admin@keskhanatti.org' },
       ],
     });
 
@@ -78,7 +79,7 @@ const ensureDemoUsersSeeded = async () => {
       }
     }
     demoUsersSynced = true;
-    console.log('[Auth] Synced Office Admin (admin@keskhanatti.org) and Teacher (teacher@keskhanatti.org) accounts in MongoDB.');
+    console.log('[Auth] Synced Office Admin (admin@kes.com) and Teacher (teacher@keskhanatti.org) accounts in MongoDB.');
   } catch (err) {
     console.warn('[Auth] Auto-seed check warning:', err.message);
   }
