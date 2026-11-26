@@ -18,6 +18,10 @@ import EnquiryForm from './components/EnquiryForm';
 import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import BackToTopButton from './components/BackToTopButton';
+import MobileQuickActionsGrid from './components/MobileQuickActionsGrid';
+import MobileBottomTabBar from './components/MobileBottomTabBar';
+import InstallPwaBanner from './components/InstallPwaBanner';
+import FloatingWhatsAppButton from './components/FloatingWhatsAppButton';
 
 // Staff & Teacher Portal Pages & Modules
 import PortalLogin from './pages/PortalLogin';
@@ -113,7 +117,7 @@ function PublicHomePage({ defaultHash = '' }) {
   }, [hash, defaultHash]);
 
   return (
-    <div className="bg-brand-cream text-slate-800 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-goldSoft selection:text-brand-navyDark">
+    <div className="bg-brand-cream text-slate-800 font-sans antialiased min-h-screen flex flex-col pb-20 md:pb-0 selection:bg-brand-goldSoft selection:text-brand-navyDark">
       {/* 1. Top Navy Announcement Bar */}
       <AnnouncementBar />
 
@@ -124,6 +128,9 @@ function PublicHomePage({ defaultHash = '' }) {
       <main className="flex-grow" id="home">
         {/* Hero Photo Carousel Section */}
         <HeroCarousel />
+
+        {/* Mobile-Only Quick-Action 4x2 App Grid (Public Home Only) */}
+        <MobileQuickActionsGrid />
 
         {/* Welcome & About Us Section */}
         <AboutSection />
@@ -155,6 +162,15 @@ function PublicHomePage({ defaultHash = '' }) {
 
       {/* Floating Back to Top Button */}
       <BackToTopButton />
+
+      {/* Floating WhatsApp Admission Enquiry Pill (Public Only) */}
+      <FloatingWhatsAppButton />
+
+      {/* Dismissible Mobile PWA Install Banner (Public Only) */}
+      <InstallPwaBanner />
+
+      {/* Fixed 5-Tab Mobile Bottom Navigation Bar (Public Only) */}
+      <MobileBottomTabBar />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { SCHOOL_INFO } from '../constants/schoolData';
 import { useLanguage } from '../context/LanguageContext';
@@ -17,6 +17,8 @@ const NAV_ITEMS = [
 
 export default function Header() {
   const { t } = useLanguage();
+  const location = useLocation();
+  const isPortalRoute = location.pathname.startsWith('/portal');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleToggleMenu = () => {
@@ -28,8 +30,14 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3 lg:gap-4">
+    <header
+      className={`sticky top-0 z-50 backdrop-blur-md shadow-sm ${
+        !isPortalRoute
+          ? 'bg-[#1A365D] md:bg-white/95 border-b border-[#D97706]/40 md:border-slate-200 pt-[env(safe-area-inset-top)] md:pt-0'
+          : 'bg-white/95 border-b border-slate-200'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-2.5 md:py-3 flex items-center justify-between gap-2 sm:gap-3 lg:gap-4">
         {/* School Identity & Emblem — Fixed No-Wrap on Desktop so School Name Never Wraps */}
         <a
           href="#home"
@@ -39,10 +47,10 @@ export default function Header() {
           <img
             src={SCHOOL_INFO.logoUrl}
             alt="Shri Siddharoodha English Medium School Khanatti Logo"
-            className="w-10 h-10 sm:w-12 sm:h-12 xl:w-13 xl:h-13 rounded-full object-contain border-2 border-brand-gold shadow-sm flex-shrink-0 bg-white p-0.5"
+            className="w-9 h-9 md:w-12 md:h-12 xl:w-13 xl:h-13 rounded-full object-contain border-2 border-brand-gold shadow-sm flex-shrink-0 bg-white p-0.5"
           />
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <div className="hidden md:flex items-center gap-1.5 whitespace-nowrap">
               <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">
                 {t('common.societyName')}
               </span>
@@ -50,10 +58,20 @@ export default function Header() {
                 {SCHOOL_INFO.registrationNo}
               </span>
             </div>
-            <h1 className="text-xs sm:text-sm md:text-base xl:text-[17px] font-bold text-brand-navy leading-snug font-serif group-hover:text-brand-navyLight transition truncate sm:whitespace-nowrap">
+            <h1
+              className={`text-[11px] sm:text-sm md:text-base xl:text-[17px] font-bold leading-tight sm:leading-snug font-serif transition whitespace-normal sm:whitespace-nowrap ${
+                !isPortalRoute
+                  ? 'text-white md:text-brand-navy md:group-hover:text-brand-navyLight'
+                  : 'text-brand-navy group-hover:text-brand-navyLight'
+              }`}
+            >
               {t('common.schoolName')}
             </h1>
-            <span className="text-[11px] sm:text-xs font-semibold text-brand-gold flex items-center gap-1 whitespace-nowrap">
+            <span
+              className={`text-[10px] md:text-xs font-semibold flex items-center gap-1 whitespace-nowrap ${
+                !isPortalRoute ? 'text-amber-300 md:text-brand-gold' : 'text-brand-gold'
+              }`}
+            >
               {t('common.locationShort')}
             </span>
           </div>
@@ -116,8 +134,10 @@ export default function Header() {
             </a>
           </div>
 
-          {/* Mobile Compact Language Toggle (visible below md, next to hamburger) */}
-          <LanguageToggle compact className="hidden sm:inline-flex md:hidden" />
+          {/* Mobile Compact Language Toggle (visible below md on public site) */}
+          {!isPortalRoute && (
+            <LanguageToggle compact variant="dark" className="md:hidden" />
+          )}
 
           {/* Hamburger Menu Button (Visible below xl) */}
           <button
@@ -127,7 +147,11 @@ export default function Header() {
             aria-controls="mobileMenu"
             aria-label="Toggle navigation menu"
             onClick={handleToggleMenu}
-            className="xl:hidden p-2 rounded-lg border border-slate-200 text-slate-700 hover:text-brand-navy hover:bg-slate-100 transition focus:outline-none flex-shrink-0"
+            className={`xl:hidden p-2 rounded-lg border transition focus:outline-none flex-shrink-0 ${
+              !isPortalRoute
+                ? 'border-white/25 text-white hover:bg-white/10 md:border-slate-200 md:text-slate-700 md:hover:text-brand-navy md:hover:bg-slate-100'
+                : 'border-slate-200 text-slate-700 hover:text-brand-navy hover:bg-slate-100'
+            }`}
           >
             {!mobileMenuOpen ? (
               <svg
@@ -172,9 +196,6 @@ export default function Header() {
           id="mobileMenu"
           className="xl:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-5 space-y-3 shadow-lg transition-all duration-200"
         >
-          <div className="sm:hidden pb-2 border-b border-slate-100 flex justify-end">
-            <LanguageToggle variant="light" />
-          </div>
           <nav
             className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm sm:text-base font-medium text-slate-700"
             aria-label="Mobile Navigation"

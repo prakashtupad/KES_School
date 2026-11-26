@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Lock,
   Mail,
@@ -21,6 +21,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SCHOOL_INFO } from '../constants/schoolData';
 import LanguageToggle from '../components/LanguageToggle';
+import MobileBottomTabBar from '../components/MobileBottomTabBar';
 
 const STAFF_HIGHLIGHTS = [
   {
@@ -62,9 +63,22 @@ export default function PortalLogin() {
   const { login, parentLogin, isAuthenticated, user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Login Mode: 'staff' | 'parent'
-  const [loginMode, setLoginMode] = useState('staff');
+  // Login Mode: 'staff' | 'parent' (supports ?mode=parent or ?mode=staff deep links)
+  const [loginMode, setLoginMode] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('mode') === 'parent' ? 'parent' : 'staff';
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const requestedMode = params.get('mode');
+    if (requestedMode === 'parent' || requestedMode === 'staff') {
+      setLoginMode(requestedMode);
+      setError('');
+    }
+  }, [location.search]);
 
   // Staff / Admin State (always starts clean — zero autofill)
   const [email, setEmail] = useState('');
@@ -144,7 +158,7 @@ export default function PortalLogin() {
     loginMode === 'parent' ? PARENT_HIGHLIGHTS : STAFF_HIGHLIGHTS;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0B1B33] via-[#13294B] to-[#1A365D] flex flex-col justify-between py-6 sm:py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#0B1B33] via-[#13294B] to-[#1A365D] flex flex-col justify-between pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Subtle Ambient Decorative Glows */}
       <div
         aria-hidden="true"
@@ -173,20 +187,20 @@ export default function PortalLogin() {
       </div>
 
       {/* Main Executive Login Container */}
-      <div className="max-w-5xl w-full mx-auto my-8 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center z-10">
+      <div className="max-w-5xl w-full mx-auto my-5 sm:my-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center z-10">
         {/* Left: Institutional Identity & Portal Highlights (No Demo Credentials) */}
-        <div className="lg:col-span-6 text-white space-y-6">
-          <div className="flex items-center gap-4">
+        <div className="lg:col-span-6 text-white space-y-5 sm:space-y-6">
+          <div className="flex items-center gap-3.5 sm:gap-4">
             <img
               src={SCHOOL_INFO.logoUrl}
               alt="Shri Siddharoodha EMS Logo"
-              className="w-16 h-16 sm:w-[70px] sm:h-[70px] rounded-full object-contain border-2 border-[#D97706] bg-white p-0.5 shadow-xl flex-shrink-0"
+              className="w-14 h-14 sm:w-[70px] sm:h-[70px] rounded-full object-contain border-2 border-[#D97706] bg-white p-0.5 shadow-xl flex-shrink-0"
             />
             <div>
-              <span className="text-[11px] uppercase tracking-widest text-[#F59E0B] font-bold block">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-widest text-[#F59E0B] font-bold block">
                 {t('common.societyName')}
               </span>
-              <h1 className="text-xl sm:text-2xl lg:text-[26px] font-serif font-bold text-white leading-snug mt-0.5">
+              <h1 className="text-lg sm:text-2xl lg:text-[26px] font-serif font-bold text-white leading-snug mt-0.5">
                 {t('common.schoolName')}
               </h1>
               <span className="text-xs text-slate-300 block mt-0.5">
@@ -195,12 +209,12 @@ export default function PortalLogin() {
             </div>
           </div>
 
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-lg">
+          <p className="hidden sm:block text-xs sm:text-sm text-slate-300 leading-relaxed max-w-lg">
             {loginMode === 'parent' ? t('auth.parentHeroDesc') : t('auth.staffHeroDesc')}
           </p>
 
           {/* Clean Institutional Feature Highlights */}
-          <div className="space-y-3">
+          <div className="hidden lg:block space-y-3">
             {activeHighlights.map((item) => {
               const IconComponent = item.icon;
               return (
@@ -464,6 +478,9 @@ export default function PortalLogin() {
       <div className="max-w-5xl w-full mx-auto text-center text-[11px] text-slate-400 z-10">
         © {new Date().getFullYear()} {SCHOOL_INFO.societyName} • {SCHOOL_INFO.schoolName}, Khanatti
       </div>
+
+      {/* Native Mobile Bottom Tab Bar (matches public home app shell on mobile) */}
+      <MobileBottomTabBar />
     </div>
   );
 }
