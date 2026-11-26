@@ -153,7 +153,7 @@ export default function EnquiryForm() {
   };
 
   return (
-    <section id="enquiry" className="py-12 sm:py-16 bg-white border-b border-slate-200">
+    <section id="enquiry" className="scroll-mt-24 py-12 sm:py-16 bg-white border-b border-slate-200">
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-8">
           <span className="text-xs font-semibold text-brand-gold uppercase tracking-wider">

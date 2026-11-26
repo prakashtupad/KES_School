@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -36,8 +36,9 @@ import DailyAttendanceDesk from './components/portal/DailyAttendanceDesk';
 import HolidayCalendarDesk from './components/portal/HolidayCalendarDesk';
 import StudentParentPortal from './components/portal/StudentParentPortal';
 
-function PublicHomePage() {
+function PublicHomePage({ defaultHash = '' }) {
   const { isAuthenticated, logout } = useAuth();
+  const { hash } = useLocation();
 
   // Automatically end staff portal session whenever the user returns to the public website
   // so clicking "Staff Portal" requires signing in again.
@@ -46,6 +47,70 @@ function PublicHomePage() {
       logout();
     }
   }, [isAuthenticated, logout]);
+
+  // Reliably scroll to hash anchors (e.g. /#enquiry from Instagram/Facebook bio links)
+  // on cold first load even while images & async sections above finish decoding.
+  useEffect(() => {
+    const targetHash =
+      hash || defaultHash || (typeof window !== 'undefined' ? window.location.hash : '');
+    if (!targetHash) return undefined;
+
+    const targetId = targetHash.replace(/^#/, '');
+    if (!targetId) return undefined;
+
+    let userInteracted = false;
+    let lockWindowActive = true;
+    const markInteracted = () => {
+      userInteracted = true;
+    };
+
+    const scrollToTarget = (behavior = 'auto') => {
+      if (userInteracted || !lockWindowActive) return;
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      const headerOffset = 88;
+      const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+      window.scrollTo({ top: Math.max(0, top), behavior });
+    };
+
+    window.addEventListener('wheel', markInteracted, { passive: true });
+    window.addEventListener('touchstart', markInteracted, { passive: true });
+    window.addEventListener('pointerdown', markInteracted, { passive: true });
+
+    const onWindowLoad = () => scrollToTarget('auto');
+    window.addEventListener('load', onWindowLoad);
+
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== 'undefined' && document.body) {
+      resizeObserver = new ResizeObserver(() => {
+        scrollToTarget('auto');
+      });
+      resizeObserver.observe(document.body);
+    }
+
+    const rafId = window.requestAnimationFrame(() => scrollToTarget('auto'));
+    const t1 = window.setTimeout(() => scrollToTarget('auto'), 250);
+    const t2 = window.setTimeout(() => scrollToTarget('auto'), 700);
+    const t3 = window.setTimeout(() => scrollToTarget('smooth'), 1400);
+    const releaseLockTimer = window.setTimeout(() => {
+      lockWindowActive = false;
+      if (resizeObserver) resizeObserver.disconnect();
+    }, 3200);
+
+    return () => {
+      lockWindowActive = false;
+      window.cancelAnimationFrame(rafId);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+      window.clearTimeout(releaseLockTimer);
+      window.removeEventListener('wheel', markInteracted);
+      window.removeEventListener('touchstart', markInteracted);
+      window.removeEventListener('pointerdown', markInteracted);
+      window.removeEventListener('load', onWindowLoad);
+      if (resizeObserver) resizeObserver.disconnect();
+    };
+  }, [hash, defaultHash]);
 
   return (
     <div className="bg-brand-cream text-slate-800 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-goldSoft selection:text-brand-navyDark">
@@ -102,6 +167,7 @@ export default function App() {
         <Routes>
           {/* Public School Website */}
           <Route path="/" element={<PublicHomePage />} />
+          <Route path="/enquiry" element={<PublicHomePage defaultHash="#enquiry" />} />
 
           {/* Portal Authentication */}
           <Route path="/portal/login" element={<PortalLogin />} />
