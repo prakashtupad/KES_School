@@ -11,11 +11,11 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: ['icons/*.png', 'images/logo.jpg'],
       manifest: {
-        name: 'KES School',
+        name: 'Shri Siddharoodha English Medium School — KES Portal',
         short_name: 'KES School',
         description:
           "Khanatti Education Society's Shri Siddharoodha English Medium School — Official School & Parent Portal",
-        start_url: '/',
+        start_url: '/portal/login',
         scope: '/',
         display: 'standalone',
         orientation: 'portrait-primary',
@@ -60,6 +60,17 @@ export default defineConfig({
               },
               cacheableResponse: {
                 statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|woff2?)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'kes-static-assets',
+              expiration: {
+                maxEntries: 80,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
               },
             },
           },

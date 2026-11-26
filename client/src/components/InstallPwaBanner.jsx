@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { Download, Share, X } from 'lucide-react';
 import { SCHOOL_INFO } from '../constants/schoolData';
+import { useAuth } from '../context/AuthContext';
+import { isNativeMobileRole } from '../utils/nativeMobileRole';
 
 const DISMISS_STORAGE_KEY = 'kes_pwa_install_dismissed';
 
 export default function InstallPwaBanner() {
-  const location = useLocation();
+  const { user } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIosPrompt, setIsIosPrompt] = useState(false);
   const [dismissed, setDismissed] = useState(() => {
@@ -52,8 +53,8 @@ export default function InstallPwaBanner() {
     };
   }, [dismissed]);
 
-  // Strict scope guard: never render inside /portal/* routes
-  if (location.pathname.startsWith('/portal') || dismissed) {
+  // Strict role guard: render ONLY for Teacher/Faculty and Student/Parent roles (never on Admin/Staff)
+  if (!isNativeMobileRole(user) || dismissed) {
     return null;
   }
 

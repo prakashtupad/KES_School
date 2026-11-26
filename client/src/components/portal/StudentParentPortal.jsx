@@ -29,6 +29,15 @@ import StudentReportCardTab from './StudentReportCardTab';
 import StudentAttendanceTab from './StudentAttendanceTab';
 import StudentTransportTab from './StudentTransportTab';
 import OurLeadership from '../OurLeadership';
+import StudentIdCardModal from './StudentIdCardModal';
+import { isNativeMobileRole } from '../../utils/nativeMobileRole';
+import NativeMobileAppBar from './NativeMobileAppBar';
+import {
+  StudentMobileHomeHub,
+  StudentMobileBottomBar,
+} from './StudentMobileNativeShell';
+import InstallPwaBanner from '../InstallPwaBanner';
+import BackToTopButton from '../BackToTopButton';
 
 const PORTAL_TABS = [
   {
@@ -90,6 +99,8 @@ export default function StudentParentPortal() {
   const [activeSiblingIndex, setActiveSiblingIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [idCardModalOpen, setIdCardModalOpen] = useState(false);
+  const showNativeMobile = isNativeMobileRole(user);
 
   // Batch-cached monthly attendance across ALL siblings for zero-reload sibling switching
   const [attendanceMonth, setAttendanceMonth] = useState(getCurrentMonthStr);
@@ -180,8 +191,21 @@ export default function StudentParentPortal() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
-      {/* Sticky Top Navy Portal Header */}
-      <header className="sticky top-0 z-50 w-full bg-[#1A365D] text-white border-b border-[#D97706]/40 shadow-md overflow-hidden shrink-0">
+      {/* Native Mobile App Bar (Student/Parent only, < 768px) */}
+      {showNativeMobile && (
+        <NativeMobileAppBar
+          appSubtitle="KES Student App"
+          onBellClick={() => setActiveTab('leadership')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {/* Sticky Top Navy Portal Header (Desktop-only when Student native mobile bar is active) */}
+      <header
+        className={`${
+          showNativeMobile ? 'hidden md:block' : ''
+        } sticky top-0 z-50 w-full bg-[#1A365D] text-white border-b border-[#D97706]/40 shadow-md overflow-hidden shrink-0`}
+      >
         <div className="max-w-7xl mx-auto w-full px-2.5 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between flex-nowrap gap-1.5 sm:gap-4 overflow-hidden">
           <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
             <button
@@ -352,7 +376,11 @@ export default function StudentParentPortal() {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-grow p-3 sm:p-5 lg:p-7 min-w-0 w-full overflow-x-auto space-y-5">
+        <main
+          className={`flex-grow p-3 sm:p-5 lg:p-7 min-w-0 w-full overflow-x-auto space-y-5 ${
+            showNativeMobile ? 'pb-24 md:pb-7' : ''
+          }`}
+        >
           {!currentStudent ? (
             <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center space-y-3">
               <GraduationCap className="w-10 h-10 text-slate-300 mx-auto" />
@@ -412,8 +440,9 @@ export default function StudentParentPortal() {
                 );
               })()}
 
-              {/* Mobile Quick Horizontal Tab Switcher */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:hidden">
+              {/* Mobile Quick Horizontal Tab Switcher (hidden when native 5-tab bottom bar is active) */}
+              {!showNativeMobile && (
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:hidden">
                 {visibleTabs.map((tab) => {
                   const IconComponent = tab.icon;
                   const isActive = activeTab === tab.id;
@@ -434,9 +463,40 @@ export default function StudentParentPortal() {
                   );
                 })}
               </div>
+              )}
 
               {/* Active Tab Content */}
               {activeTab === 'overview' && (
+                <>
+                  {showNativeMobile && (
+                    <StudentMobileHomeHub
+                      student={currentStudent}
+                      attendanceData={
+                        attendanceCacheByMonth[attendanceMonth]?.[
+                          String(currentStudent._id)
+                        ] || null
+                      }
+                      homeworkList={homeworkList}
+                      hasTransportOptIn={hasTransportOptIn}
+                      onNavigateTab={setActiveTab}
+                      onOpenIdCard={() => setIdCardModalOpen(true)}
+                    />
+                  )}
+                  <div className={showNativeMobile ? 'hidden md:block' : ''}>
+                    <StudentOverviewTab
+                      student={currentStudent}
+                      attendanceData={
+                        attendanceCacheByMonth[attendanceMonth]?.[
+                          String(currentStudent._id)
+                        ] || null
+                      }
+                      homeworkList={homeworkList}
+                      onNavigateTab={setActiveTab}
+                    />
+                  </div>
+                </>
+              )}
+              {activeTab === 'profile' && (
                 <StudentOverviewTab
                   student={currentStudent}
                   attendanceData={
@@ -480,6 +540,27 @@ export default function StudentParentPortal() {
           )}
         </main>
       </div>
+
+      {/* Student Digital ID Card Modal (1-tap from Mobile Quick Grid) */}
+      {idCardModalOpen && currentStudent && (
+        <StudentIdCardModal
+          isOpen={idCardModalOpen}
+          students={[currentStudent]}
+          title={`Digital Student ID Card — ${currentStudent.studentName}`}
+          onClose={() => setIdCardModalOpen(false)}
+        />
+      )}
+
+      {/* Back to Top Button */}
+      <BackToTopButton />
+
+      {/* Student Native Mobile Bottom Bar & Install Prompt (< 768px) */}
+      {showNativeMobile && (
+        <>
+          <InstallPwaBanner />
+          <StudentMobileBottomBar activeTab={activeTab} onSelectTab={setActiveTab} />
+        </>
+      )}
     </div>
   );
 }

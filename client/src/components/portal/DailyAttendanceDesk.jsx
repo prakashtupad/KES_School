@@ -31,7 +31,7 @@ const GRADES = [
   'Grade 10',
 ];
 
-const SECTIONS = ['A', 'B', 'C', 'N/A', 'ALL'];
+const SECTIONS = ['N/A', 'A', 'B', 'C', 'ALL'];
 
 const STATUS_OPTIONS = [
   {
@@ -88,7 +88,7 @@ export default function DailyAttendanceDesk() {
     const firstSpecific = assigned.find((g) => GRADES.includes(g));
     return firstSpecific || 'Grade 1';
   });
-  const [selectedSection, setSelectedSection] = useState('A');
+  const [selectedSection, setSelectedSection] = useState('N/A');
 
   const [records, setRecords] = useState([]);
   const [absentees, setAbsentees] = useState([]);

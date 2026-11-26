@@ -138,29 +138,22 @@ export default function UpcomingHolidaysSection() {
               return (
                 <div
                   key={h._id}
-                  className="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-between gap-3"
+                  className="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center gap-3"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-200 flex flex-col items-center justify-center flex-shrink-0 text-indigo-900">
-                      <span className="text-[9px] font-bold uppercase">{dt.month}</span>
-                      <span className="text-base font-mono font-extrabold leading-none">
-                        {dt.day}
-                      </span>
+                  <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-200 flex flex-col items-center justify-center flex-shrink-0 text-indigo-900">
+                    <span className="text-[9px] font-bold uppercase">{dt.month}</span>
+                    <span className="text-base font-mono font-extrabold leading-none">
+                      {dt.day}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-sm text-[#1A365D] truncate">
+                      {isKn && h.titleKn ? h.titleKn : h.title}
                     </div>
-                    <div className="min-w-0">
-                      <div className="font-bold text-sm text-[#1A365D] truncate">
-                        {isKn && h.titleKn ? h.titleKn : h.title}
-                      </div>
-                      <div className="text-[11px] text-slate-500">
-                        {endDt ? `${dt.full} – ${endDt.full}` : `${dt.full} (${dt.weekday})`}
-                      </div>
+                    <div className="text-[11px] text-slate-500">
+                      {endDt ? `${dt.full} – ${endDt.full}` : `${dt.full} (${dt.weekday})`}
                     </div>
                   </div>
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex-shrink-0 ${badgeStyle}`}
-                  >
-                    {h.category.replace('_', ' ')}
-                  </span>
                 </div>
               );
             })

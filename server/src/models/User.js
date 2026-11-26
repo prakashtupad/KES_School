@@ -44,6 +44,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    photoUrl: {
+      type: String,
+      default: '',
+    },
     dateOfBirth: {
       type: Date,
     },

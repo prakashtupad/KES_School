@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   ClipboardList,
   ClipboardCheck,
@@ -22,6 +22,15 @@ import { useLanguage } from '../../context/LanguageContext';
 import { SCHOOL_INFO } from '../../constants/schoolData';
 import BirthdayGreetingDesk from './BirthdayGreetingDesk';
 import LanguageToggle from '../LanguageToggle';
+import { isNativeMobileRole } from '../../utils/nativeMobileRole';
+import NativeMobileAppBar from './NativeMobileAppBar';
+import {
+  TeacherMobileHomeHub,
+  TeacherMobileBottomBar,
+  TeacherProfileCard,
+} from './TeacherMobileNativeShell';
+import InstallPwaBanner from '../InstallPwaBanner';
+import BackToTopButton from '../BackToTopButton';
 
 const NAV_CONFIG = [
   {
@@ -101,7 +110,12 @@ export default function PortalLayout() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const showNativeMobile = isNativeMobileRole(user);
+  const isTeacherHome =
+    location.pathname === '/portal/teacher' && !location.search.includes('tab=homework');
 
   const allowedNavItems = NAV_CONFIG.filter((item) =>
     item.roles.includes(user?.role || 'teacher')
@@ -119,8 +133,21 @@ export default function PortalLayout() {
 
   return (
     <div className="min-h-screen bg-brand-cream flex flex-col">
-      {/* Top Portal Header */}
-      <header className="sticky top-0 z-40 w-full bg-[#1A365D] text-white border-b border-brand-gold/40 shadow-md overflow-hidden shrink-0">
+      {/* Native Mobile App Bar (Teacher/Faculty only, < 768px) */}
+      {showNativeMobile && (
+        <NativeMobileAppBar
+          appSubtitle="KES Teacher App"
+          onBellClick={() => navigate('/portal/notices')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {/* Top Portal Header (Always shown for Admin/Staff; Desktop-only when Teacher native mobile bar is active) */}
+      <header
+        className={`${
+          showNativeMobile ? 'hidden md:block' : ''
+        } sticky top-0 z-40 w-full bg-[#1A365D] text-white border-b border-brand-gold/40 shadow-md overflow-hidden shrink-0`}
+      >
         <div className="max-w-7xl mx-auto w-full px-2.5 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between flex-nowrap gap-1.5 sm:gap-4 overflow-hidden">
           <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
             <button
@@ -244,11 +271,67 @@ export default function PortalLayout() {
         </aside>
 
         {/* Active Portal View */}
-        <main className="flex-grow p-3 sm:p-5 lg:p-7 min-w-0 w-full overflow-x-auto">
+        <main
+          className={`flex-grow p-3 sm:p-5 lg:p-7 min-w-0 w-full overflow-x-auto ${
+            showNativeMobile ? 'pb-24 md:pb-7' : ''
+          }`}
+        >
+          {/* Teacher Portal Breadcrumb (Clickable Home / Active Page) */}
+          {showNativeMobile && (() => {
+            const routeLabels = {
+              '/portal/teacher': location.search.includes('tab=homework')
+                ? 'Classroom & Homework'
+                : 'Teacher Home',
+              '/portal/daily-attendance': 'Daily Attendance',
+              '/portal/students': 'Student Directory & Marks',
+              '/portal/timesheet': 'Teacher Profile & Timesheet',
+              '/portal/notices': 'Notices & Circulars',
+              '/portal/holidays': 'School Holiday Calendar',
+            };
+            const currentLabel = routeLabels[location.pathname] || 'Dashboard';
+            return (
+              <nav
+                aria-label="Teacher Portal Breadcrumb"
+                className="flex items-center flex-wrap gap-1.5 text-xs font-medium text-slate-500 mb-3"
+              >
+                <Link
+                  to="/portal/teacher"
+                  className="text-[#D97706] hover:text-[#1A365D] font-semibold transition"
+                >
+                  Home
+                </Link>
+                <span className="text-slate-300">/</span>
+                <Link
+                  to="/portal/teacher"
+                  className="text-[#D97706] hover:text-[#1A365D] font-semibold transition"
+                >
+                  Teacher Portal
+                </Link>
+                <span className="text-slate-300">/</span>
+                <span className="text-[#1A365D] font-bold">{currentLabel}</span>
+              </nav>
+            );
+          })()}
+
+          {showNativeMobile && isTeacherHome && <TeacherMobileHomeHub user={user} />}
+          {showNativeMobile && location.pathname === '/portal/timesheet' && (
+            <TeacherProfileCard user={user} />
+          )}
           <BirthdayGreetingDesk />
           <Outlet />
         </main>
       </div>
+
+      {/* Back to Top Button (All Portal Roles) */}
+      <BackToTopButton />
+
+      {/* Teacher Native Mobile Bottom Bar & Install Prompt (Teacher/Faculty only, < 768px) */}
+      {showNativeMobile && (
+        <>
+          <InstallPwaBanner />
+          <TeacherMobileBottomBar />
+        </>
+      )}
     </div>
   );
 }

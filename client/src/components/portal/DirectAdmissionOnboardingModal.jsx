@@ -141,7 +141,7 @@ export const INITIAL_ONBOARDING_FORM = {
   admissionNumber: '',
   rollNumber: '',
   grade: 'Grade 1',
-  section: 'A',
+  section: 'N/A',
   academicYear: '2026-2027',
   languageIII: 'Kannada',
   transportRequired: false,
@@ -244,7 +244,7 @@ function mapStudentToForm(st) {
     admissionNumber: st.admissionNumber || '',
     rollNumber: st.rollNumber || '',
     grade: st.grade || 'Grade 1',
-    section: st.section || 'A',
+    section: st.section || 'N/A',
     academicYear: st.academicYear || '2026-2027',
     languageIII: st.languageIII || 'Kannada',
     transportRequired: Boolean(

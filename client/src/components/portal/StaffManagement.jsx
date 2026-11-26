@@ -1,6 +1,31 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { UserPlus, Users, Shield, CheckCircle, Ban, Pencil, X } from 'lucide-react';
+import { UserPlus, Users, Shield, CheckCircle, Ban, Pencil, X, Camera, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+
+function compressStaffPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxSize = 320;
+        const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1);
+        const w = Math.max(1, Math.round(img.width * ratio));
+        const h = Math.max(1, Math.round(img.height * ratio));
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = reject;
+      img.src = ev.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 const GRADE_OPTIONS = [
   'All Classes',
@@ -26,6 +51,7 @@ export default function StaffManagement() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('teacher');
   const [phone, setPhone] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('All Classes');
 
   const [editingStaffId, setEditingStaffId] = useState(null);
@@ -64,6 +90,7 @@ export default function StaffManagement() {
     setPassword('');
     setRole('teacher');
     setPhone('');
+    setPhotoUrl('');
     setSelectedGrade('All Classes');
   };
 
@@ -76,6 +103,7 @@ export default function StaffManagement() {
     setPassword('');
     setRole(member.role === 'admin' ? 'admin' : 'teacher');
     setPhone(member.phone || '');
+    setPhotoUrl(member.photoUrl || '');
     const primaryGrade =
       Array.isArray(member.assignedGrades) && member.assignedGrades.length > 0
         ? member.assignedGrades[0]
@@ -90,6 +118,17 @@ export default function StaffManagement() {
     setError('');
     setSuccessMsg('');
     resetForm();
+  };
+
+  const handlePhotoFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressStaffPhoto(file);
+      setPhotoUrl(compressed);
+    } catch {
+      setError('Unable to read image file. Please try a valid JPG/PNG photo.');
+    }
   };
 
   const handleSubmitStaff = async (e) => {
@@ -121,6 +160,7 @@ export default function StaffManagement() {
         email: email.trim(),
         role: isAdmin ? role : 'teacher',
         phone: phone.trim(),
+        photoUrl,
         assignedGrades: role === 'teacher' ? [selectedGrade] : ['All Classes'],
       };
       if (!isEditing || password.length >= 4) {
@@ -240,6 +280,48 @@ export default function StaffManagement() {
           )}
 
           <form onSubmit={handleSubmitStaff} className="space-y-4">
+            {/* Staff Profile Photo Upload */}
+            <div className="flex items-center gap-3.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+              {photoUrl ? (
+                <img
+                  src={photoUrl}
+                  alt={fullName || 'Staff photo'}
+                  className="w-14 h-14 rounded-full object-cover object-top border-2 border-[#D97706] bg-white flex-shrink-0"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-[#1A365D]/10 text-[#1A365D] border-2 border-dashed border-[#D97706]/60 flex items-center justify-center flex-shrink-0">
+                  <Camera className="w-5 h-5 text-[#D97706]" />
+                </div>
+              )}
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                  Staff Profile Photo (Optional)
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-300 text-[#1A365D] text-xs font-semibold cursor-pointer transition">
+                    <Camera className="w-3.5 h-3.5 text-[#D97706]" />
+                    <span>{photoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoFileChange}
+                      className="sr-only"
+                    />
+                  </label>
+                  {photoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setPhotoUrl('')}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold cursor-pointer transition"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Remove</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Full Name *
@@ -392,9 +474,26 @@ export default function StaffManagement() {
                     <button
                       type="button"
                       onClick={() => isAdmin && handleStartEditStaff(member)}
-                      className={`text-left min-w-0 flex-1 ${isAdmin ? 'cursor-pointer group' : ''}`}
+                      className={`text-left min-w-0 flex-1 flex items-center gap-3 ${isAdmin ? 'cursor-pointer group' : ''}`}
                       title={isAdmin ? 'Click to edit staff details' : undefined}
                     >
+                      {member.photoUrl ? (
+                        <img
+                          src={member.photoUrl}
+                          alt={member.fullName}
+                          className="w-11 h-11 rounded-full object-cover object-top border-2 border-[#D97706] bg-white flex-shrink-0"
+                        />
+                      ) : (
+                        <span className="w-11 h-11 rounded-full bg-[#1A365D]/10 text-[#1A365D] border border-[#1A365D]/20 text-xs font-bold inline-flex items-center justify-center flex-shrink-0">
+                          {(member.fullName || 'S')
+                            .split(' ')
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .map((p) => p[0].toUpperCase())
+                            .join('')}
+                        </span>
+                      )}
+                      <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-bold text-sm text-brand-navy group-hover:text-brand-gold transition">
                           {member.fullName}
@@ -427,6 +526,7 @@ export default function StaffManagement() {
                           )}
                         </div>
                       )}
+                      </div>
                     </button>
 
                     {isAdmin && (

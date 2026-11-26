@@ -212,6 +212,7 @@ router.post('/users', protect, restrictTo('admin'), async (req, res) => {
       password,
       role = 'teacher',
       phone = '',
+      photoUrl = '',
       assignedGrades = [],
     } = req.body || {};
 
@@ -254,6 +255,7 @@ router.post('/users', protect, restrictTo('admin'), async (req, res) => {
         password: String(password),
         role,
         phone: String(phone).trim(),
+        photoUrl: typeof photoUrl === 'string' ? photoUrl.trim() : '',
         assignedGrades: Array.isArray(assignedGrades) ? assignedGrades : [],
         isActive: true,
       });
@@ -282,6 +284,7 @@ router.post('/users', protect, restrictTo('admin'), async (req, res) => {
       password: hashedPassword,
       role,
       phone: String(phone).trim(),
+      photoUrl: typeof photoUrl === 'string' ? photoUrl.trim() : '',
       assignedGrades: Array.isArray(assignedGrades) ? assignedGrades : [],
       isActive: true,
       createdAt: new Date(),
@@ -311,7 +314,8 @@ router.post('/users', protect, restrictTo('admin'), async (req, res) => {
 router.patch('/users/:id', protect, restrictTo('admin'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { isActive, role, assignedGrades, phone, fullName, email, password } = req.body || {};
+    const { isActive, role, assignedGrades, phone, photoUrl, fullName, email, password } =
+      req.body || {};
 
     if (role && !['admin', 'teacher', 'super_admin'].includes(role)) {
       return res.status(400).json({
@@ -355,6 +359,7 @@ router.patch('/users/:id', protect, restrictTo('admin'), async (req, res) => {
       if (role) userDoc.role = role;
       if (Array.isArray(assignedGrades)) userDoc.assignedGrades = assignedGrades;
       if (typeof phone === 'string') userDoc.phone = phone.trim();
+      if (typeof photoUrl === 'string') userDoc.photoUrl = photoUrl.trim();
       if (typeof fullName === 'string' && fullName.trim()) {
         userDoc.fullName = fullName.trim();
       }
@@ -393,6 +398,7 @@ router.patch('/users/:id', protect, restrictTo('admin'), async (req, res) => {
     if (role) memUser.role = role;
     if (Array.isArray(assignedGrades)) memUser.assignedGrades = assignedGrades;
     if (typeof phone === 'string') memUser.phone = phone.trim();
+    if (typeof photoUrl === 'string') memUser.photoUrl = photoUrl.trim();
     if (typeof fullName === 'string' && fullName.trim()) memUser.fullName = fullName.trim();
     if (typeof password === 'string' && password.length >= 4) {
       memUser.password = await bcrypt.hash(password, 10);

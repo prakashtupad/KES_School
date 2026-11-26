@@ -31,10 +31,10 @@ const CLASS_GRADE_OPTIONS = [
 ];
 
 const SECTION_OPTIONS = [
+  { value: 'N/A', label: 'N/A (Not Applicable)' },
   { value: 'A', label: 'Sec A' },
   { value: 'B', label: 'Sec B' },
   { value: 'C', label: 'Sec C' },
-  { value: 'N/A', label: 'N/A (Not Applicable)' },
 ];
 
 const isSectionApplicable = (sec) => {
@@ -47,7 +47,7 @@ export default function TeacherClassDesk() {
   const { user, token } = useAuth();
 
   const [selectedGrade, setSelectedGrade] = useState('All Classes');
-  const [selectedSection, setSelectedSection] = useState('A');
+  const [selectedSection, setSelectedSection] = useState('N/A');
   const [filterGrade, setFilterGrade] = useState('All Classes');
   const [subject, setSubject] = useState('');
   const [title, setTitle] = useState('');
@@ -97,7 +97,7 @@ export default function TeacherClassDesk() {
   const resetForm = () => {
     setEditingHomeworkId(null);
     setSelectedGrade('All Classes');
-    setSelectedSection('A');
+    setSelectedSection('N/A');
     setSubject('');
     setTitle('');
     setDescription('');
@@ -109,7 +109,7 @@ export default function TeacherClassDesk() {
     setSuccessMsg('');
     setEditingHomeworkId(item._id);
     setSelectedGrade(item.grade || 'All Classes');
-    setSelectedSection(item.section || 'A');
+    setSelectedSection(item.section || 'N/A');
     setSubject(item.subject || '');
     setTitle(item.title || '');
     setDescription(item.description || '');
@@ -151,7 +151,7 @@ export default function TeacherClassDesk() {
         },
         body: JSON.stringify({
           grade: selectedGrade,
-          section: selectedSection || 'A',
+          section: selectedSection || 'N/A',
           subject: subject.trim(),
           title: title.trim(),
           description: description.trim(),

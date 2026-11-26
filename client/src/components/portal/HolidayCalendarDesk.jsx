@@ -601,33 +601,32 @@ export default function HolidayCalendarDesk() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
-                  <th className="py-3 px-4">Date(s)</th>
-                  <th className="py-3 px-4">Day / Span</th>
-                  <th className="py-3 px-4">Holiday Name (English &amp; ಕನ್ನಡ)</th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4">Applies To</th>
-                  {isAdmin && <th className="py-3 px-4 text-right">Actions</th>}
+                <tr className="bg-slate-50 text-[10.5px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                  <th className="py-2.5 px-3 sm:py-3 sm:px-4">Date &amp; Day</th>
+                  <th className="py-2.5 px-3 sm:py-3 sm:px-4">Holiday Name (English &amp; ಕನ್ನಡ)</th>
+                  <th className="hidden sm:table-cell py-3 px-4">Applies To</th>
+                  {isAdmin && <th className="py-2.5 px-3 sm:py-3 sm:px-4 text-right">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {filteredHolidays.map((h) => {
-                  const cat = CATEGORY_META[h.category] || CATEGORY_META.Public_Festival;
                   const isRange = h.endDate && h.endDate !== h.startDate;
                   return (
                     <tr key={h._id} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3 px-4 whitespace-nowrap font-mono font-bold text-[#1A365D]">
-                        {formatDateReadable(h.startDate)}
+                      <td className="py-2.5 px-3 sm:py-3 sm:px-4 whitespace-nowrap align-top">
+                        <div className="font-mono font-bold text-[#1A365D]">
+                          {formatDateReadable(h.startDate)}
+                        </div>
                         {isRange && (
-                          <span className="block text-[10px] text-indigo-700 font-semibold">
+                          <div className="text-[10px] text-indigo-700 font-semibold">
                             to {formatDateReadable(h.endDate)}
-                          </span>
+                          </div>
                         )}
+                        <div className="text-[11px] text-slate-500 font-medium mt-0.5">
+                          {getDayOfWeekLabel(h.startDate, h.endDate)}
+                        </div>
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-600 font-medium">
-                        {getDayOfWeekLabel(h.startDate, h.endDate)}
-                      </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2.5 px-3 sm:py-3 sm:px-4 align-top">
                         <div className="font-bold text-[#1A365D] flex items-center gap-1.5 flex-wrap">
                           <span>{h.title}</span>
                           {h.isFlagHoistingDay && (
@@ -643,14 +642,7 @@ export default function HolidayCalendarDesk() {
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${cat.badge}`}
-                        >
-                          {cat.label}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <td className="hidden sm:table-cell py-3 px-4 whitespace-nowrap align-top">
                         <div className="flex items-center gap-1 flex-wrap">
                           {h.appliesTo?.students !== false && (
                             <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold">
@@ -670,7 +662,7 @@ export default function HolidayCalendarDesk() {
                         </div>
                       </td>
                       {isAdmin && (
-                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <td className="py-2.5 px-3 sm:py-3 sm:px-4 text-right whitespace-nowrap align-top">
                           <div className="inline-flex items-center gap-1.5">
                             <button
                               type="button"
