@@ -1,4 +1,5 @@
 import { SCHOOL_INFO } from '../constants/schoolData';
+import { drawOfficialDigitalSignatureOnCanvas } from '../components/common/OfficialDigitalSignature';
 
 /**
  * Load an image from URL into an HTMLImageElement for canvas drawing
@@ -478,6 +479,13 @@ export async function generateProgressReportImage({
   ctx.moveTo(centerSigX, sigLineY);
   ctx.lineTo(centerSigX + sigColW, sigLineY);
   ctx.stroke();
+
+  // Right: Official Digital Signature & School Crest Stamp above Headmaster / Principal line
+  drawOfficialDigitalSignatureOnCanvas(ctx, logoImg, {
+    centerX: innerRight - 10 - sigColW / 2,
+    baselineY: sigLineY - 4,
+    scale: 0.9,
+  });
 
   // Right: Headmaster / Principal
   ctx.beginPath();

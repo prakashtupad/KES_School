@@ -13,6 +13,9 @@ import {
 import { SCHOOL_INFO } from '../../constants/schoolData';
 import { printStudentAdmissionSummary } from '../../utils/printStudentSummary';
 import { generateReceiptImage } from '../../utils/receiptImageGenerator';
+import OfficialDigitalSignature, {
+  getOfficialDigitalSignatureHtml,
+} from '../common/OfficialDigitalSignature';
 import '../../styles/printReceipt.css';
 
 /**
@@ -355,7 +358,10 @@ export default function PrintableFeeReceipt({ student, onClose }) {
 
         <div class="cf-sigs">
           <div class="sig-box">Parent / Guardian Signature</div>
-          <div class="sig-box">Authorized Cashier / Principal Seal &amp; Signature</div>
+          <div style="text-align: center;">
+            ${getOfficialDigitalSignatureHtml(logoSrc, { compact: true })}
+            <div class="sig-box" style="color: #1A365D;">Authorized Cashier / Principal Seal &amp; Signature</div>
+          </div>
         </div>
       </div>
     `;
@@ -767,13 +773,14 @@ export default function PrintableFeeReceipt({ student, onClose }) {
       </div>
 
       {/* Dual Signatures */}
-      <div className="relative z-10 flex items-end justify-between pt-5 text-xs font-semibold text-slate-700">
+      <div className="relative z-10 flex flex-wrap items-end justify-between gap-4 pt-3 text-xs font-semibold text-slate-700">
         <div className="text-center">
           <div className="w-40 sm:w-48 border-b border-dashed border-slate-500 mb-1" />
           <span className="text-[11px]">Parent / Guardian Signature</span>
         </div>
-        <div className="text-center">
-          <div className="w-48 sm:w-56 border-b border-dashed border-slate-800 mb-1" />
+        <div className="text-center flex flex-col items-center">
+          <OfficialDigitalSignature />
+          <div className="w-52 sm:w-60 border-b border-dashed border-slate-800 mb-1" />
           <span className="text-[11px] font-bold text-brand-navy">
             Authorized Cashier / Principal Seal &amp; Signature
           </span>

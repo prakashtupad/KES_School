@@ -13,6 +13,9 @@ import { SCHOOL_INFO } from '../../constants/schoolData';
 import { isSectionApplicable } from './SiblingSwitcherHeader';
 import { useLanguage } from '../../context/LanguageContext';
 import { generateProgressReportImage } from '../../utils/progressReportImageGenerator';
+import OfficialDigitalSignature, {
+  getOfficialDigitalSignatureHtml,
+} from '../common/OfficialDigitalSignature';
 
 const EXAM_TERMS = [
   'FA-1',
@@ -400,7 +403,10 @@ export default function StudentReportCardTab({ student }) {
             <div class="cf-sigs">
               <div class="sig-box">Class Teacher Signature</div>
               <div class="sig-box">Parent / Guardian Signature</div>
-              <div class="sig-box" style="color:#1A365D;">Headmaster / Principal Seal &amp; Signature</div>
+              <div style="text-align:center;">
+                ${getOfficialDigitalSignatureHtml(logoSrc, { compact: true })}
+                <div class="sig-box" style="color:#1A365D;">Headmaster / Principal Seal &amp; Signature</div>
+              </div>
             </div>
           </div>
 
@@ -820,8 +826,9 @@ export default function StudentReportCardTab({ student }) {
                 <div className="w-36 sm:w-44 border-b border-dashed border-slate-500 mb-1" />
                 <span className="text-[11px]">Parent / Guardian Signature</span>
               </div>
-              <div className="text-center">
-                <div className="w-44 sm:w-56 border-b border-dashed border-slate-800 mb-1" />
+              <div className="text-center flex flex-col items-center">
+                <OfficialDigitalSignature compact />
+                <div className="w-48 sm:w-60 border-b border-dashed border-slate-800 mb-1" />
                 <span className="text-[11px] font-bold text-brand-navy">
                   Headmaster / Principal Seal &amp; Signature
                 </span>

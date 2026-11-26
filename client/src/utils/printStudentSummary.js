@@ -1,4 +1,5 @@
 import { SCHOOL_INFO } from '../constants/schoolData';
+import { getOfficialDigitalSignatureHtml } from '../components/common/OfficialDigitalSignature';
 
 /**
  * Resolve an asset path (like '/images/logo.jpg') to an absolute URL
@@ -180,7 +181,8 @@ export function printStudentAdmissionSummary(student) {
           .sigs {
             display: flex;
             justify-content: space-between;
-            margin-top: 52px;
+            align-items: flex-end;
+            margin-top: 28px;
             padding-top: 8px;
             font-family: Arial, sans-serif;
             font-size: 12px;
@@ -278,7 +280,10 @@ export function printStudentAdmissionSummary(student) {
         <div class="sigs">
           <div class="sig-line">Parent / Guardian Signature</div>
           <div class="sig-line">Office Clerk</div>
-          <div class="sig-line">Headmaster / Principal Seal</div>
+          <div style="text-align:center;">
+            ${getOfficialDigitalSignatureHtml(logoSrc, { compact: true })}
+            <div class="sig-line" style="color:#1A365D;font-weight:bold;">Headmaster / Principal Seal</div>
+          </div>
         </div>
 
         <script>

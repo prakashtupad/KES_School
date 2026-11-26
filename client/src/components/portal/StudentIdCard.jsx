@@ -2,6 +2,7 @@ import React from 'react';
 import { Home, Phone } from 'lucide-react';
 import { SCHOOL_INFO } from '../../constants/schoolData';
 import { getStudentInitials } from './SiblingSwitcherHeader';
+import OfficialDigitalSignature from '../common/OfficialDigitalSignature';
 
 export const PROMOTION_YEARS = ['2026-27', '2027-28', '2028-29', '2029-30'];
 export const PRINCIPAL_SIGNATURE_URL = '/principal-signature.png';
@@ -323,16 +324,12 @@ export default function StudentIdCard({
             </div>
           </div>
 
-          {/* Clean Bottom Footer: Principal Signature Image + PRINCIPAL label bottom right */}
-          <div className="mt-1 pt-0.5 flex items-end justify-end">
+          {/* Clean Bottom Footer: Official Pure-SVG Seal & Signature + PRINCIPAL label bottom right */}
+          <div className="mt-0.5 pt-0.5 flex items-end justify-end">
             <div className="text-center flex flex-col items-center">
-              <img
-                src={PRINCIPAL_SIGNATURE_URL}
-                alt="Principal Signature"
-                className="h-6 w-auto max-w-[74px] object-contain mix-blend-multiply -mb-0.5"
-              />
-              <div className="w-20 border-b border-slate-500 mb-0.5" />
-              <span className="font-bold text-[#1A365D] uppercase tracking-widest text-[7.2px]">
+              <OfficialDigitalSignature size="mini" />
+              <div className="w-24 border-b border-slate-500 mb-0.5" />
+              <span className="font-bold text-[#1A365D] uppercase tracking-widest text-[7px]">
                 PRINCIPAL
               </span>
             </div>
@@ -470,13 +467,9 @@ export default function StudentIdCard({
             </div>
 
             <div className="text-center flex flex-col items-center flex-shrink-0">
-              <img
-                src={PRINCIPAL_SIGNATURE_URL}
-                alt="Principal Signature"
-                className="h-5 w-auto max-w-[66px] object-contain mix-blend-multiply -mb-0.5"
-              />
-              <div className="w-18 border-b border-slate-500 mb-0.5" />
-              <span className="font-bold text-[#1A365D] uppercase tracking-widest text-[7px]">
+              <OfficialDigitalSignature size="mini" />
+              <div className="w-24 border-b border-slate-500 mb-0.5" />
+              <span className="font-bold text-[#1A365D] uppercase tracking-widest text-[6.8px]">
                 PRINCIPAL
               </span>
             </div>

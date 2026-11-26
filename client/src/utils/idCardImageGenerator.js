@@ -1,4 +1,5 @@
 import { SCHOOL_INFO } from '../constants/schoolData';
+import { drawOfficialDigitalSignatureOnCanvas } from '../components/common/OfficialDigitalSignature';
 import { getStudentInitials } from '../components/portal/SiblingSwitcherHeader';
 import {
   formatIdCardDob,
@@ -308,25 +309,16 @@ export async function generateIdCardPng(
         }
       });
 
-      // Clean Bottom Footer: Principal Signature Image + PRINCIPAL label bottom right
-      if (principalSigImg) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'multiply';
-        const sigH = 44;
-        const sigW = Math.min(160, (principalSigImg.width / principalSigImg.height) * sigH);
-        ctx.drawImage(
-          principalSigImg,
-          ox + cardW - 135 - sigW / 2,
-          oy + cardH - 54 - sigH + 6,
-          sigW,
-          sigH
-        );
-        ctx.restore();
-      }
+      // Clean Bottom Footer: Official Pure-SVG Seal & Signature + PRINCIPAL label bottom right
+      drawOfficialDigitalSignatureOnCanvas(ctx, null, {
+        centerX: ox + cardW - 142,
+        baselineY: oy + cardH - 54,
+        scale: 0.72,
+      });
       ctx.strokeStyle = '#475569';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(ox + cardW - 224, oy + cardH - 52);
+      ctx.moveTo(ox + cardW - 236, oy + cardH - 52);
       ctx.lineTo(ox + cardW - 46, oy + cardH - 52);
       ctx.stroke();
 
@@ -510,25 +502,16 @@ export async function generateIdCardPng(
         }
       });
 
-      // Clean Bottom Footer: Principal Signature Image + PRINCIPAL label bottom right
-      if (principalSigImg) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'multiply';
-        const sigH = 40;
-        const sigW = Math.min(150, (principalSigImg.width / principalSigImg.height) * sigH);
-        ctx.drawImage(
-          principalSigImg,
-          ox + cardW - 132 - sigW / 2,
-          oy + cardH - 52 - sigH + 6,
-          sigW,
-          sigH
-        );
-        ctx.restore();
-      }
+      // Clean Bottom Footer: Official Pure-SVG Seal & Signature + PRINCIPAL label bottom right
+      drawOfficialDigitalSignatureOnCanvas(ctx, null, {
+        centerX: ox + cardW - 138,
+        baselineY: oy + cardH - 54,
+        scale: 0.68,
+      });
       ctx.strokeStyle = '#475569';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(ox + cardW - 220, oy + cardH - 52);
+      ctx.moveTo(ox + cardW - 232, oy + cardH - 52);
       ctx.lineTo(ox + cardW - 44, oy + cardH - 52);
       ctx.stroke();
 
