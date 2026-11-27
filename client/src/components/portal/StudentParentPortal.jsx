@@ -27,7 +27,8 @@ import StudentFeesTab from './StudentFeesTab';
 import StudentCurriculumTab from './StudentCurriculumTab';
 import StudentReportCardTab from './StudentReportCardTab';
 import StudentAttendanceTab from './StudentAttendanceTab';
-import StudentTransportTab from './StudentTransportTab';
+import TransportDetailsSection from './TransportDetailsSection';
+import ParentMobileDrawer from './ParentMobileDrawer';
 import OurLeadership from '../OurLeadership';
 import StudentIdCardModal from './StudentIdCardModal';
 import { isNativeMobileRole } from '../../utils/nativeMobileRole';
@@ -99,8 +100,11 @@ export default function StudentParentPortal() {
   const [activeSiblingIndex, setActiveSiblingIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [idCardModalOpen, setIdCardModalOpen] = useState(false);
-  const showNativeMobile = isNativeMobileRole(user);
+  const userRole = String(user?.role || '').toLowerCase().trim();
+  const isParentOrStudent = userRole === 'parent' || userRole === 'student';
+  const showNativeMobile = isNativeMobileRole(user) && isParentOrStudent;
 
   // Batch-cached monthly attendance across ALL siblings for zero-reload sibling switching
   const [attendanceMonth, setAttendanceMonth] = useState(getCurrentMonthStr);
@@ -155,7 +159,6 @@ export default function StudentParentPortal() {
   const hasTransportOptIn = Boolean(currentStudent?.transportDetails?.optedIn);
 
   const visibleTabs = useMemo(() => {
-    if (!hasTransportOptIn) return PORTAL_TABS;
     const transportTab = {
       id: 'transport',
       labelKey: 'studentPortal.tabs.transport',
@@ -170,14 +173,7 @@ export default function StudentParentPortal() {
       transportTab,
       ...PORTAL_TABS.slice(feesIdx + 1),
     ];
-  }, [hasTransportOptIn]);
-
-  // If parent switches to a sibling who has NOT opted into School Cab, exit the transport tab cleanly
-  useEffect(() => {
-    if (activeTab === 'transport' && !hasTransportOptIn) {
-      setActiveTab('overview');
-    }
-  }, [activeTab, hasTransportOptIn]);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -191,13 +187,29 @@ export default function StudentParentPortal() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
-      {/* Native Mobile App Bar (Student/Parent only, < 768px) */}
+      {/* Native Mobile App Bar & Slide-Out Drawer (Student/Parent only, < 768px) */}
       {showNativeMobile && (
-        <NativeMobileAppBar
-          appSubtitle="KES Student App"
-          onBellClick={() => setActiveTab('leadership')}
-          onLogout={handleLogout}
-        />
+        <>
+          <NativeMobileAppBar
+            appSubtitle="KES Parent App"
+            onMenuClick={() => setIsDrawerOpen(true)}
+            onBellClick={() => setActiveTab('leadership')}
+            hideLogout={true}
+          />
+          <ParentMobileDrawer
+            isOpen={isDrawerOpen}
+            onClose={() => setIsDrawerOpen(false)}
+            parentName={user?.fullName}
+            siblings={siblings}
+            activeSiblingIndex={safeIndex}
+            onSelectSibling={(idx) => setActiveSiblingIndex(idx)}
+            onChangePassword={() => {
+              setActiveTab('profile');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onLogout={handleLogout}
+          />
+        </>
       )}
 
       {/* Sticky Top Navy Portal Header (Desktop-only when Student native mobile bar is active) */}
@@ -520,10 +532,10 @@ export default function StudentParentPortal() {
                 />
               )}
               {activeTab === 'fees' && <StudentFeesTab student={currentStudent} />}
-              {activeTab === 'transport' && hasTransportOptIn && (
-                <StudentTransportTab
-                  student={currentStudent}
-                  onOpenFeesTab={() => setActiveTab('fees')}
+              {activeTab === 'transport' && (
+                <TransportDetailsSection
+                  siblings={siblings}
+                  activeStudent={currentStudent}
                 />
               )}
               {activeTab === 'homework' && (

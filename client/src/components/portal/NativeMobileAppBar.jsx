@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, LogOut } from 'lucide-react';
+import { Bell, LogOut, Menu } from 'lucide-react';
 import { SCHOOL_INFO } from '../../constants/schoolData';
 import LanguageToggle from '../LanguageToggle';
 
@@ -8,19 +8,21 @@ import LanguageToggle from '../LanguageToggle';
  */
 export default function NativeMobileAppBar({
   appSubtitle = 'KES Portal App',
+  onMenuClick,
   onBellClick,
   bellCount = 0,
   onLogout,
+  hideLogout = false,
 }) {
   return (
-    <header className="md:hidden sticky top-0 z-50 w-full bg-[#1A365D] text-white border-b border-[#D97706]/40 shadow-md pt-[env(safe-area-inset-top)] shrink-0">
+    <header className="md:hidden sticky top-0 z-40 w-full bg-[#1A365D] text-white border-b border-[#D97706]/40 shadow-md pt-[env(safe-area-inset-top)] shrink-0">
       <div className="px-3 h-14 flex items-center justify-between gap-2">
         {/* Left: Circular Crest + School Name + App Role Subtitle */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <img
             src={SCHOOL_INFO.logoUrl || '/images/logo.jpg'}
             alt="KES School Crest"
-            className="w-9 h-9 rounded-full object-contain border-2 border-[#D97706] bg-white p-0.5 flex-shrink-0"
+            className="w-8 h-8 rounded-full object-contain border border-amber-400/60 bg-white p-0.5 flex-shrink-0"
           />
           <div className="min-w-0">
             <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300 block leading-none mb-0.5">
@@ -32,7 +34,7 @@ export default function NativeMobileAppBar({
           </div>
         </div>
 
-        {/* Right: Language Pill + Notification Bell + Logout */}
+        {/* Right: Language Pill + Notification Bell + Hamburger Menu (or Logout when not hidden) */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <LanguageToggle compact variant="dark" />
 
@@ -52,15 +54,28 @@ export default function NativeMobileAppBar({
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={onLogout}
-            aria-label="Sign out"
-            title="Sign out"
-            className="p-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+          {onMenuClick && (
+            <button
+              type="button"
+              onClick={onMenuClick}
+              aria-label="Open navigation menu"
+              className="w-9 h-9 rounded-lg border border-white/25 bg-white/5 hover:bg-white/15 flex items-center justify-center text-white flex-shrink-0 transition cursor-pointer"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
+
+          {!hideLogout && onLogout && (
+            <button
+              type="button"
+              onClick={onLogout}
+              aria-label="Sign out"
+              title="Sign out"
+              className="p-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </header>

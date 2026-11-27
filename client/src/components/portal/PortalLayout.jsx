@@ -24,6 +24,7 @@ import BirthdayGreetingDesk from './BirthdayGreetingDesk';
 import LanguageToggle from '../LanguageToggle';
 import { isNativeMobileRole } from '../../utils/nativeMobileRole';
 import NativeMobileAppBar from './NativeMobileAppBar';
+import TeacherMobileDrawer from './TeacherMobileDrawer';
 import {
   TeacherMobileHomeHub,
   TeacherMobileBottomBar,
@@ -112,6 +113,7 @@ export default function PortalLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [teacherDrawerOpen, setTeacherDrawerOpen] = useState(false);
 
   const showNativeMobile = isNativeMobileRole(user);
   const isTeacherHome =
@@ -133,13 +135,22 @@ export default function PortalLayout() {
 
   return (
     <div className="min-h-screen bg-brand-cream flex flex-col">
-      {/* Native Mobile App Bar (Teacher/Faculty only, < 768px) */}
+      {/* Native Mobile App Bar & Slide-Out Drawer (Teacher/Faculty only, < 768px) */}
       {showNativeMobile && (
-        <NativeMobileAppBar
-          appSubtitle="KES Teacher App"
-          onBellClick={() => navigate('/portal/notices')}
-          onLogout={handleLogout}
-        />
+        <>
+          <NativeMobileAppBar
+            appSubtitle="KES Teacher App"
+            onMenuClick={() => setTeacherDrawerOpen(true)}
+            hideLogout={true}
+          />
+          <TeacherMobileDrawer
+            isOpen={teacherDrawerOpen}
+            onClose={() => setTeacherDrawerOpen(false)}
+            user={user}
+            onNotificationsClick={() => navigate('/portal/notices')}
+            onLogout={handleLogout}
+          />
+        </>
       )}
 
       {/* Top Portal Header (Always shown for Admin/Staff; Desktop-only when Teacher native mobile bar is active) */}

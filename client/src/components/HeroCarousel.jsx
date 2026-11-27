@@ -7,58 +7,100 @@ const DEFAULT_SLIDES = [
   {
     _id: 'default-slide-0',
     subtitle: 'WELCOME TO KHANATTI',
+    subtitleKn: 'ಖಾನಟ್ಟಿಗೆ ಸುಸ್ವಾಗತ',
     title: 'Inspiring with Values & Quality Education',
+    titleKn: 'ಮೌಲ್ಯಾಧಾರಿತ ಮತ್ತು ಗುಣಮಟ್ಟದ ಶಿಕ್ಷಣದೊಂದಿಗೆ ಪ್ರೇರಣೆ',
     description:
       'Rooted in Khanatti under the guidance of Khanatti Education Society, nurturing curious, disciplined, and compassionate learners for a bright future.',
+    descriptionKn:
+      'ಖಾನಟ್ಟಿ ಎಜುಕೇಶನ್ ಸೊಸೈಟಿಯ ಮಾರ್ಗದರ್ಶನದಲ್ಲಿ ಖಾನಟ್ಟಿಯಲ್ಲಿ ಬೇರೂರಿರುವ ನಮ್ಮ ಶಾಲೆಯು, ಉಜ್ವಲ ಭವಿಷ್ಯಕ್ಕಾಗಿ ಶಿಸ್ತು, ಜ್ಞಾನ ಮತ್ತು ಮೌಲ್ಯಯುತ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ರೂಪಿಸುತ್ತಿದೆ.',
     primaryButtonText: `Enquire for ${SCHOOL_INFO.admissionYear}`,
+    primaryButtonTextKn: `${SCHOOL_INFO.admissionYear} ದಾಖಲಾತಿ ವಿಚಾರಣೆ`,
     primaryButtonLink: '#enquiry',
     secondaryButtonText: 'Learn Our Story',
+    secondaryButtonTextKn: 'ನಮ್ಮ ಶಾಲೆಯ ಬಗ್ಗೆ ತಿಳಿಯಿರಿ',
     secondaryButtonLink: '#about',
     imageUrl: '/images/governance-campus.jpg',
     caption: 'Guided by Moral Values & Community Excellence',
+    captionKn: 'ನೈತಿಕ ಮೌಲ್ಯಗಳು ಮತ್ತು ಸಮುದಾಯದ ಶ್ರೇಷ್ಠತೆಯ ಮಾರ್ಗದರ್ಶನ',
   },
   {
     _id: 'default-slide-1',
     subtitle: 'ACADEMIC PATHWAY',
+    subtitleKn: 'ಶೈಕ್ಷಣಿಕ ಮಾರ್ಗ',
     title: `Structured Learning for Classes: ${SCHOOL_INFO.classesOffered}`,
+    titleKn: `ತರಗತಿಗಳಿಗೆ ವ್ಯವಸ್ಥಿತ ಶಿಕ್ಷಣ: ${SCHOOL_INFO.classesOffered}`,
     description: `Following verified curriculum guidelines under ${SCHOOL_INFO.curriculumBoard}, helping each child develop foundational mastery and language fluency.`,
+    descriptionKn: `${SCHOOL_INFO.curriculumBoard} ಪಠ್ಯಕ್ರಮದ ಮಾರ್ಗಸೂಚಿಗಳ ಅಡಿಯಲ್ಲಿ, ಪ್ರತಿ ಮಗುವಿನಲ್ಲಿ ಮೂಲಭೂತ ಕಲಿಕೆ ಮತ್ತು ಭಾಷಾ ಪ್ರಾವೀಣ್ಯತೆಯನ್ನು ಬೆಳೆಸಲಾಗುತ್ತದೆ.`,
     primaryButtonText: 'Enquire About Admission',
+    primaryButtonTextKn: 'ದಾಖಲಾತಿ ಬಗ್ಗೆ ವಿಚಾರಿಸಿ',
     primaryButtonLink: '#enquiry',
     secondaryButtonText: '',
+    secondaryButtonTextKn: '',
     secondaryButtonLink: '',
     imageUrl: '/images/interactive-classroom.jpg',
     caption: 'Interactive Classroom Learning at Khanatti',
+    captionKn: 'ಖಾನಟ್ಟಿಯಲ್ಲಿ ಸಂವಾದಾತ್ಮಕ ತರಗತಿ ಕಲಿಕೆ',
   },
   {
     _id: 'default-slide-2',
     subtitle: 'NURTURING ATMOSPHERE',
+    subtitleKn: 'ಪೋಷಣೆಯ ವಾತಾವರಣ',
     title: 'A Safe, Supportive Campus for Every Rural & Town Child',
+    titleKn: 'ಪ್ರತಿ ಗ್ರಾಮೀಣ ಮತ್ತು ಪಟ್ಟಣದ ಮಗುವಿಗೆ ಸುರಕ್ಷಿತ, ಪೂರಕ ಶಾಲಾ ಆವರಣ',
     description:
       'Dedicated educators, caring classroom culture, and regular student activities focused on moral values and holistic growth in Khanatti.',
+    descriptionKn:
+      'ಖಾನಟ್ಟಿಯಲ್ಲಿ ನೈತಿಕ ಮೌಲ್ಯಗಳು ಮತ್ತು ಸರ್ವತೋಮುಖ ಬೆಳವಣಿಗೆಗೆ ಒತ್ತು ನೀಡುವ ಸಮರ್ಪಿತ ಶಿಕ್ಷಕರು, ಕಾಳಜಿಯುತ ತರಗತಿ ಸಂಸ್ಕೃತಿ ಮತ್ತು ನಿಯಮಿತ ವಿದ್ಯಾರ್ಥಿ ಚಟುವಟಿಕೆಗಳು.',
     primaryButtonText: 'View Campus Life',
+    primaryButtonTextKn: 'ಶಾಲಾ ಚಟುವಟಿಕೆಗಳನ್ನು ನೋಡಿ',
     primaryButtonLink: '#campus-life',
     secondaryButtonText: '',
+    secondaryButtonTextKn: '',
     secondaryButtonLink: '',
     imageUrl: '/images/campus-joy.jpg',
     caption: 'Joyful, Child-Centric Campus Environment',
+    captionKn: 'ಆನಂದದಾಯಕ, ಮಕ್ಕಳ ಕೇಂದ್ರಿತ ಶಾಲಾ ಪರಿಸರ',
   },
   {
     _id: 'default-slide-3',
     subtitle: 'ADMISSIONS & ENQUIRIES',
+    subtitleKn: 'ದಾಖಲಾತಿ ಮತ್ತು ವಿಚಾರಣೆಗಳು',
     title: `Admissions Open for New Session ${SCHOOL_INFO.admissionYear}`,
+    titleKn: `${SCHOOL_INFO.admissionYear} ಹೊಸ ಶೈಕ್ಷಣಿಕ ವರ್ಷದ ದಾಖಲಾತಿ ಪ್ರಾರಂಭವಾಗಿದೆ`,
     description:
       'Simple enquiry process for parents and guardians. Submit your interest online and our school admissions desk will assist you directly.',
+    descriptionKn:
+      'ಪೋಷಕರು ಮತ್ತು ಪಾಲಕರಿಗೆ ಸರಳ ವಿಚಾರಣೆ ಪ್ರಕ್ರಿಯೆ. ನಿಮ್ಮ ವಿವರಗಳನ್ನು ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಸಲ್ಲಿಸಿ, ನಮ್ಮ ಶಾಲಾ ದಾಖಲಾತಿ ವಿಭಾಗವು ನಿಮಗೆ ನೇರವಾಗಿ ಸಹಾಯ ಮಾಡುತ್ತದೆ.',
     primaryButtonText: 'Fill Admission Form',
+    primaryButtonTextKn: 'ದಾಖಲಾತಿ ಅರ್ಜಿ ಭರ್ತಿ ಮಾಡಿ',
     primaryButtonLink: '#enquiry',
     secondaryButtonText: 'Office & Map Info',
+    secondaryButtonTextKn: 'ಕಚೇರಿ ಮತ್ತು ನಕ್ಷೆ ಮಾಹಿತಿ',
     secondaryButtonLink: '#contact',
     imageUrl: '/images/morning-assembly.jpg',
     caption: `Admissions Open for ${SCHOOL_INFO.admissionYear}`,
+    captionKn: `${SCHOOL_INFO.admissionYear} ದಾಖಲಾತಿ ಪ್ರಾರಂಭ`,
   },
 ];
 
+// Fallback Kannada lookup when MongoDB CMS slides do not have *Kn fields populated
+const KN_FALLBACK_BY_TEXT = DEFAULT_SLIDES.reduce((acc, s) => {
+  if (s.subtitle && s.subtitleKn) acc[s.subtitle.trim()] = s.subtitleKn;
+  if (s.title && s.titleKn) acc[s.title.trim()] = s.titleKn;
+  if (s.description && s.descriptionKn) acc[s.description.trim()] = s.descriptionKn;
+  if (s.primaryButtonText && s.primaryButtonTextKn) {
+    acc[s.primaryButtonText.trim()] = s.primaryButtonTextKn;
+  }
+  if (s.secondaryButtonText && s.secondaryButtonTextKn) {
+    acc[s.secondaryButtonText.trim()] = s.secondaryButtonTextKn;
+  }
+  if (s.caption && s.captionKn) acc[s.caption.trim()] = s.captionKn;
+  return acc;
+}, {});
+
 export default function HeroCarousel() {
-  const { t, tContent } = useLanguage();
+  const { language, t, tContent } = useLanguage();
   const [slides, setSlides] = useState(DEFAULT_SLIDES);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -141,23 +183,38 @@ export default function HeroCarousel() {
         >
           {slides.map((slide, index) => {
             const isActive = index === currentSlide;
+            const translateWithFallback = (field, rawFallback = '') => {
+              const direct = tContent(slide, field);
+              const val = direct || rawFallback;
+              if (language === 'kn' && !slide?.[`${field}Kn`] && val) {
+                return KN_FALLBACK_BY_TEXT[String(val).trim()] || val;
+              }
+              return val;
+            };
+
             const badgeText =
-              tContent(slide, 'subtitle') || slide.tag || t('hero.badgeDefault');
-            const slideTitle = tContent(slide, 'title') || t('hero.titleDefault');
-            const slideDesc = tContent(slide, 'description') || t('hero.descDefault');
+              translateWithFallback('subtitle', slide.tag) || t('hero.badgeDefault');
+            const slideTitle =
+              translateWithFallback('title') || t('hero.titleDefault');
+            const slideDesc =
+              translateWithFallback('description') || t('hero.descDefault');
             const primaryText =
-              slide.primaryButtonText || slide.primaryCta?.label || t('hero.enquireCta');
+              translateWithFallback('primaryButtonText', slide.primaryCta?.label) ||
+              t('hero.enquireCta');
             const primaryLink =
               slide.primaryButtonLink || slide.primaryCta?.href || '#enquiry';
-            const secondaryText =
-              slide.secondaryButtonText ?? slide.secondaryCta?.label ?? '';
+            const secondaryText = translateWithFallback(
+              'secondaryButtonText',
+              slide.secondaryCta?.label ?? ''
+            );
             const secondaryLink =
               slide.secondaryButtonLink || slide.secondaryCta?.href || '#about';
             const imgSrc = slide.imageUrl || slide.image || '/images/governance-campus.jpg';
             const imgCaption =
-              slide.caption ||
-              slide.imageCaption ||
-              'Guided by Moral Values & Community Excellence';
+              translateWithFallback('caption', slide.imageCaption) ||
+              (language === 'kn'
+                ? 'ನೈತಿಕ ಮೌಲ್ಯಗಳು ಮತ್ತು ಸಮುದಾಯದ ಶ್ರೇಷ್ಠತೆಯ ಮಾರ್ಗದರ್ಶನ'
+                : 'Guided by Moral Values & Community Excellence');
 
             return (
               <div
@@ -169,8 +226,8 @@ export default function HeroCarousel() {
                 aria-hidden={!isActive}
               >
                 <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
-                  {/* Left: Compact & Balanced Slide Text Content (5 cols on desktop) */}
-                  <div className="lg:col-span-5">
+                  {/* Left on desktop / Bottom on mobile: Compact & Balanced Slide Text Content (5 cols on desktop) */}
+                  <div className="order-2 lg:order-1 lg:col-span-5">
                     {badgeText && (
                       <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-gold/20 text-brand-gold text-xs font-semibold tracking-wide uppercase mb-3 border border-brand-gold/30">
                         {badgeText}
@@ -216,8 +273,8 @@ export default function HeroCarousel() {
                     </div>
                   </div>
 
-                  {/* Right: Wide & Prominent School Visual Showcase Card (7 cols on desktop) */}
-                  <div className="lg:col-span-7 space-y-3">
+                  {/* Right on desktop / Top on mobile: Wide & Prominent School Visual Showcase Card (7 cols on desktop) */}
+                  <div className="order-1 lg:order-2 lg:col-span-7 space-y-3">
                     <div className="relative group rounded-2xl overflow-hidden border-2 border-brand-gold/40 shadow-2xl bg-brand-navyDark">
                       <img
                         src={imgSrc}
@@ -250,7 +307,7 @@ export default function HeroCarousel() {
                       <div className="bg-brand-navyDark/95 px-4 py-2.5 border-t border-brand-gold/30 flex items-center justify-between text-xs text-slate-200">
                         <span className="font-medium truncate mr-2">{imgCaption}</span>
                         <span className="text-brand-gold font-semibold flex-shrink-0">
-                          KES Khanatti
+                          {language === 'kn' ? 'ಕೆಇಎಸ್ ಖಾನಟ್ಟಿ' : 'KES Khanatti'}
                         </span>
                       </div>
                     </div>
@@ -259,16 +316,22 @@ export default function HeroCarousel() {
                     {slideCount > 1 && (() => {
                       const nextIndex = (currentSlide + 1) % slideCount;
                       const nextSlideObj = slides[nextIndex] || {};
-                      const currentLabel =
-                        slide.caption ||
-                        slide.imageCaption ||
-                        tContent(slide, 'subtitle') ||
-                        `Highlight ${currentSlide + 1}`;
-                      const nextLabel =
-                        nextSlideObj.caption ||
-                        nextSlideObj.imageCaption ||
-                        tContent(nextSlideObj, 'subtitle') ||
-                        `Highlight ${nextIndex + 1}`;
+                      const resolveLabel = (sObj, idxNum) => {
+                        const cap = tContent(sObj, 'caption') || sObj.imageCaption;
+                        const sub = tContent(sObj, 'subtitle');
+                        const raw = cap || sub;
+                        if (language === 'kn' && raw) {
+                          return (
+                            sObj?.captionKn ||
+                            sObj?.subtitleKn ||
+                            KN_FALLBACK_BY_TEXT[String(raw).trim()] ||
+                            raw
+                          );
+                        }
+                        return raw || (language === 'kn' ? `ಮುಖ್ಯಾಂಶ ${idxNum}` : `Highlight ${idxNum}`);
+                      };
+                      const currentLabel = resolveLabel(slide, currentSlide + 1);
+                      const nextLabel = resolveLabel(nextSlideObj, nextIndex + 1);
 
                       return (
                         <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
@@ -336,10 +399,12 @@ export default function HeroCarousel() {
                             />
                             <div className="min-w-0 flex items-center gap-2 text-[11px] sm:text-xs truncate">
                               <span className="font-semibold text-white truncate">
-                                Slide {currentSlide + 1} of {slideCount}: {currentLabel}
+                                {language === 'kn'
+                                  ? `ಸ್ಲೈಡ್ ${currentSlide + 1} / ${slideCount}: ${currentLabel}`
+                                  : `Slide ${currentSlide + 1} of ${slideCount}: ${currentLabel}`}
                               </span>
                               <span className="hidden xl:inline text-slate-300/80 pl-2 border-l border-white/15 truncate">
-                                Next: {nextLabel}
+                                {language === 'kn' ? `ಮುಂದಿನದು: ${nextLabel}` : `Next: ${nextLabel}`}
                               </span>
                             </div>
                           </button>

@@ -105,7 +105,7 @@ export function StudentMobileHomeHub({
       label: 'School Van',
       icon: Bus,
       circleBg: 'bg-blue-600',
-      onClick: () => onNavigateTab(hasTransportOptIn ? 'transport' : 'overview'),
+      onClick: () => onNavigateTab('transport'),
     },
     {
       id: 'timetable',
